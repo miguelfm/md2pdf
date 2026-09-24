@@ -37,13 +37,15 @@ O título global do paquete é o nome do ZIP sen extensión. Pódese substituír
 Se un documento do paquete enlaza outro Markdown tamén incluído:
 
 ```markdown
-[Seguinte actividade](U1A2_Execucion.md#2-o-caso-de-java)
+[Seguinte actividade](U1A2_Execucion.md#o-caso-de-java)
 ```
 
-`md2pdf` reescribe automaticamente a ligazón para que apunte ao HTML do paquete:
+`md2pdf` reescribe automaticamente a ligazón para que apunte ao HTML do paquete. O fragmento (`#o-caso-de-java`) é o identificador que Pandoc xera para a cabeceira `## O caso de Java`: non inclúe o número da sección.
+
+Resultado:
 
 ```html
-<a href="U1A2_Execucion.html#2-o-caso-de-java">...</a>
+<a href="U1A2_Execucion.html#o-caso-de-java">...</a>
 ```
 
 As ligazóns locais a `.md` que non forman parte do paquete producen un aviso. Con `--strict` impiden xerar o ZIP, para evitar publicar un paquete con navegación rota.
