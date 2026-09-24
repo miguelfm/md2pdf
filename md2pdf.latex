@@ -1,0 +1,173 @@
+% md2pdf.latex — Template Pandoc/LuaLaTeX propio para md2pdf
+% Substitúe Eisvogel. Sen dependencias externas.
+%
+% Variables Pandoc soportadas:
+%   fontsize, papersize, lang, babel-otherlangs
+%   mainfont, mainfontoptions, sansfont, sansfontoptions, monofont, monofontoptions
+%   geometry, colorlinks, linkcolor, urlcolor, citecolor
+%   title, author, subject, keywords
+%   toc, toc-depth, toc-own-page
+%   header-includes (inxectado con -H)
+%   include-before  (inxectado con -B)
+%   include-after   (inxectado con -A)
+
+% no-math ten que pasarse antes: en instalacións TeX antigas polyglossia carga
+% fontspec pola súa conta e despois \usepackage[no-math]{fontspec} daría
+% «Option clash for package fontspec».
+\PassOptionsToPackage{no-math}{fontspec}
+
+% ── Clase base ───────────────────────────────────────────────
+\documentclass[
+  $if(fontsize)$$fontsize$,$endif$
+  $if(papersize)$$papersize$paper,$endif$
+  parskip=half-
+]{scrartcl}
+
+% ── Codificación e lingua ─────────────────────────────────────
+% polyglossia é o paquete recomendado para LuaLaTeX (non precisa ficheiros .ini)
+\usepackage{polyglossia}
+$if(lang)$
+\setmainlanguage{$lang$}
+$endif$
+$if(babel-otherlangs)$
+\setotherlanguages{$babel-otherlangs$}
+$endif$
+
+% ── Tipografía ────────────────────────────────────────────────
+% no-math: evita que fontspec redefina o modo matemático e cargue
+% fontes CM (CMMI, CMSY) como fallback — uni=no no pdffonts.
+\usepackage[no-math]{fontspec}
+$if(mainfont)$
+\setmainfont[$if(mainfontoptions)$$mainfontoptions$$endif$]{$mainfont$}
+$endif$
+$if(sansfont)$
+\setsansfont[$if(sansfontoptions)$$sansfontoptions$$endif$]{$sansfont$}
+$endif$
+$if(monofont)$
+\setmonofont[$if(monofontoptions)$$monofontoptions$,$endif$Scale=MatchLowercase]{$monofont$}
+$endif$
+
+% unicode-math: substitúe as fontes CM matemáticas por STIX Two Math
+% (OpenType, uni=yes, emb=yes). Cargado despois de fontspec con no-math.
+\usepackage[math-style=ISO,bold-style=ISO]{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage{microtype}
+
+% ── Páxina e marxes ──────────────────────────────────────────
+$if(geometry)$
+\usepackage[$for(geometry)$$geometry$$sep$,$endfor$]{geometry}
+$endif$
+
+% ── Cabeceiras e pés (KOMA) ───────────────────────────────────
+\usepackage{scrlayer-scrpage}
+
+% ── Cores ────────────────────────────────────────────────────
+\usepackage[dvipsnames,svgnames,x11names]{xcolor}
+
+% ── Ligazóns e metadatos PDF ─────────────────────────────────
+% Permitir cortes en URL longas sen cambiar os destinos das ligazóns.
+% Se xurl non está instalado, conservar o comportamento anterior.
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{}
+\usepackage{hyperref}
+\hypersetup{%
+$if(colorlinks)$%
+  colorlinks=true,%
+  $if(linkcolor)$linkcolor={$linkcolor$},$endif$%
+  $if(urlcolor)$urlcolor={$urlcolor$},$endif$%
+  $if(citecolor)$citecolor={$citecolor$},$endif$%
+$else$%
+  hidelinks,%
+$endif$%
+  breaklinks=true,%
+  pdfcreator={md2pdf + LuaLaTeX},%
+  $if(title)$pdftitle={$title$},$endif$%
+  $if(author)$pdfauthor={$for(author)$$author$$sep$, $endfor$},$endif$%
+  $if(subject)$pdfsubject={$subject$},$endif$%
+  $if(keywords)$pdfkeywords={$keywords$}$endif$%
+}
+
+% ── Gráficos ─────────────────────────────────────────────────
+\usepackage{graphicx}
+
+% Forzar posición exacta das figuras (equivalente a -V float-placement-figure=H)
+\usepackage{float}
+\floatplacement{figure}{H}
+
+% ── Táboas ───────────────────────────────────────────────────
+% calc: necesario para \real{} nas anchuras de columna (xerado polo filtro auto-table-widths.lua)
+\usepackage{calc}
+% Compatibilidade con longtable v4.24+ e Pandoc 3.8+:
+% longtable usa o contador 'none' para táboas sen numeración pero non o define;
+% Pandoc inxéctao máis tarde. Definímolo aquí para evitar o erro de orde.
+\makeatletter
+\@ifundefined{c@none}{\newcounter{none}}{}
+\makeatother
+\usepackage{longtable,booktabs,array,colortbl,multirow}
+
+% ── Notas ao pé ──────────────────────────────────────────────
+% footnotehyper: notas ao pé tipograficamente correctas
+% makesavenoteenv: permite notas ao pé dentro de longtable
+\usepackage{footnotehyper}
+\makesavenoteenv{longtable}
+
+% ── Etoolbox ─────────────────────────────────────────────────
+% Necesario para \AfterEndPreamble, \AtBeginEnvironment, \pretocmd
+\usepackage{etoolbox}
+
+% ── Resaltado sintáctico (Pandoc) ────────────────────────────
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+% ── Listas ───────────────────────────────────────────────────
+\usepackage{enumitem}
+% \tightlist: Pandoc xera este comando para listas compactas (\begin{itemize} sen espazo)
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% ── Includes do usuario (-H / header-includes) ───────────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+% ── Numeración de seccións ────────────────────────────────────
+% Pandoc establece numbersections=true con --number-sections.
+% Sen ese flag, desactivamos a numeración explicitamente (scrartcl numera por defecto).
+$if(numbersections)$
+\setcounter{secnumdepth}{$if(secnumdepth)$$secnumdepth$$else$5$endif$}
+$else$
+\setcounter{secnumdepth}{-\maxdimen}  % eliminar numeración de seccións
+$endif$
+
+% ── Metadatos KOMA (sen \maketitle — usamos portada propia) ──
+% Necesario para que \@title estea dispoñible nos snippets -B
+$if(title)$\title{$title$}$endif$%
+\date{}%
+
+
+% ─────────────────────────────────────────────────────────────
+\begin{document}
+
+$for(include-before)$
+$include-before$
+$endfor$
+
+$if(toc)$
+% Título do TOC: usa \toctitlecolor (configurable polo snippet night/print)
+\renewcommand{\contentsname}{{\color{\toctitlecolor}Índice}}%
+$if(toc-roman)$\pagenumbering{roman}\setcounter{page}{1}$endif$
+\tableofcontents
+$if(toc-own-page)$
+\clearpage
+$endif$
+$if(toc-roman)$\pagenumbering{arabic}\setcounter{page}{1}$endif$
+$endif$
+
+$body$
+
+$for(include-after)$
+$include-after$
+$endfor$
+
+\end{document}

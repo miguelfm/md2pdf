@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="$lang$" xml:lang="$lang$"$if(dir)$ dir="$dir$"$endif$>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="md2pdf + Pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+$for(author-meta)$
+  <meta name="author" content="$author-meta$" />
+$endfor$
+$if(keywords)$
+  <meta name="keywords" content="$for(keywords)$$keywords$$sep$, $endfor$" />
+$endif$
+$if(subject)$
+  <meta name="description" content="$subject$" />
+$endif$
+  <title>$if(title-prefix)$$title-prefix$ – $endif$$pagetitle$</title>
+  <style>
+    $styles.html()$
+  </style>
+$for(css)$
+  <link rel="stylesheet" href="$css$" />
+$endfor$
+$for(header-includes)$
+  $header-includes$
+$endfor$
+$if(math)$
+  $math$
+$endif$
+</head>
+<body class="$if(night-mode)$night-mode $endif$$if(print-mode)$print-mode $endif$$if(plain-mode)$plain-mode$endif$">
+<a class="skip-link" href="#content">Saltar ao contido</a>
+<div class="document-shell">
+$if(title)$
+<header id="title-block-header">
+  <h1 class="title">$title$</h1>
+$if(subtitle)$
+  <p class="subtitle">$subtitle$</p>
+$endif$
+$for(author)$
+  <p class="author">$author$</p>
+$endfor$
+</header>
+$endif$
+$if(toc)$
+<nav id="$idprefix$TOC" role="doc-toc" aria-label="Índice">
+$if(toc-title)$
+  <h2 id="$idprefix$toc-title">$toc-title$</h2>
+$else$
+  <h2>Índice</h2>
+$endif$
+$table-of-contents$
+</nav>
+$endif$
+$if(activity)$
+<div class="activity-label">$activity$</div>
+$endif$
+<main id="content">
+$body$
+</main>
+$for(include-after)$
+$include-after$
+$endfor$
+</div>
+<script>
+(function () {
+  function lineSet(spec) {
+    const out = new Set();
+    String(spec || '').split(',').forEach(part => {
+      part = part.trim();
+      if (!part) return;
+      const range = part.match(/^(\d+)\s*[-–]\s*(\d+)$$/);
+      if (range) {
+        let a = Number(range[1]), b = Number(range[2]);
+        if (a > b) [a, b] = [b, a];
+        for (let n = a; n <= b; n++) out.add(n);
+      } else if (/^\d+$$/.test(part)) {
+        out.add(Number(part));
+      }
+    });
+    return out;
+  }
+
+  document.querySelectorAll('div.sourceCode[data-hl], pre[data-hl]').forEach(block => {
+    const wanted = lineSet(block.dataset.hl);
+    const code = block.matches('pre') ? block.querySelector('code') : block.querySelector('pre > code');
+    if (!code) return;
+
+    let lines = Array.from(code.children).filter(el => /^cb\d+-\d+$$/.test(el.id));
+    if (lines.length === 0) {
+      const rawLines = code.textContent.replace(/\n$$/, '').split('\n');
+      code.textContent = '';
+      lines = rawLines.map(text => {
+        const line = document.createElement('span');
+        line.className = 'md2pdf-code-line';
+        line.textContent = text || '\u200b';
+        code.appendChild(line);
+        return line;
+      });
+    } else {
+      lines.forEach(line => line.classList.add('md2pdf-code-line'));
+    }
+
+    lines.forEach((line, index) => {
+      if (wanted.has(index + 1)) line.classList.add('md2pdf-hl-line');
+    });
+  });
+})();
+</script>
+</body>
+</html>

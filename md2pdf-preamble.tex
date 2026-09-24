@@ -1,0 +1,239 @@
+% md2pdf-preamble.tex — Personalizacións LaTeX para md2pdf
+\usepackage{colortbl}
+\providecommand{\pandocbounded}[1]{#1}
+% ── Cores configurables ───────────────────────────────────────
+\newcommand{\toctitlecolor}{blue!45!black}
+\newcommand{\titlebodycolor}{heading-section}
+\newcommand{\tablestripecolor}{gray!6!white}
+\newcommand{\tablebasecolor}{white}
+% ── Cabeceira, pé e lendas de táboa ──────────────────────────
+\KOMAoptions{headsepline=false,footsepline=false}
+\AfterEndPreamble{%
+  \KOMAoptions{headsepline=false,footsepline=false}%
+  \clearpairofpagestyles
+  \cfoot{\pagemark}%
+  \pagestyle{scrheadings}%
+}
+% ── Aliñamento á esquerda ───────────────────────────────────
+\usepackage{ragged2e}
+\setlength{\RaggedRightRightskip}{0pt plus 2.5em}
+\AtBeginDocument{\RaggedRight}
+% ── Microtipografía ─────────────────────────────────────────
+\AtBeginDocument{%
+  \microtypesetup{activate={true,nocompatibility}}%
+}
+
+% ── Orfas, viúvas e paxinación ────────────────────────────────
+\widowpenalty=3000
+\clubpenalty=3000
+\displaywidowpenalty=2000
+
+% ── Hifenación e saltos de páxina ─────────────────────────────
+\brokenpenalty=5000
+\doublehyphendemerits=10000
+\finalhyphendemerits=5000
+
+% ── Notas ao pé ────────────────────────────────────────────────
+\interfootnotelinepenalty=8000
+
+% ── Protección de cabeceiras ───────────────────────────────
+\usepackage{needspace}
+% ── Hifenación multilingüe ──────────────────────────────────
+\tolerance=1500
+\hbadness=1500
+\emergencystretch=1.5em
+\frenchspacing
+\hfuzz=0.5pt
+\hyphenation{
+  func-tion con-trol-ler mid-dle-ware frame-work data-base name-space
+  call-back tem-plate over-ride in-ter-face in-her-it-ance ex-cep-tion
+  re-quest re-sponse rou-ting de-bug-ger break-point run-time
+  type-script java-script check-box drop-down tool-bar work-flow
+  back-end front-end web-hook end-point auto-load auto-com-plete
+  over-flow under-score time-stamp fire-wall to-ken ses-sion brow-ser
+  ser-ver cli-ent
+}
+% ── Espazado vertical e cabeceiras ──────────────────────────
+\usepackage{setspace}
+\setstretch{1.15}
+\RedeclareSectionCommand[beforeskip=1.6em, afterskip=0.6em]{section}
+\RedeclareSectionCommand[beforeskip=1.3em, afterskip=0.4em]{subsection}
+\RedeclareSectionCommand[beforeskip=1.0em, afterskip=0.3em]{subsubsection}
+\definecolor{heading-section}{HTML}{1C2F4A}
+\definecolor{heading-subsection}{HTML}{2D5380}
+\definecolor{heading-subsubsection}{HTML}{4A6A96}
+\addtokomafont{section}{\color{heading-section}}
+\addtokomafont{subsection}{\color{heading-subsection}}
+\addtokomafont{subsubsection}{\color{heading-subsubsection}}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{1pt}
+\AtEndEnvironment{figure}{\vspace{-8pt}}
+\AtBeginDocument{%
+  \pretocmd{\section}{\Needspace{8\baselineskip}}{}{}%
+  \pretocmd{\subsection}{\Needspace{7\baselineskip}}{}{}%
+  \pretocmd{\subsubsection}{\Needspace{6\baselineskip}}{}{}%
+}
+\AfterEndPreamble{%
+  \setlength{\topsep}{0.15em}%
+  \setlength{\partopsep}{0pt}%
+  \setlength{\itemsep}{0.3em}%
+  \setlength{\parsep}{0.2em}%
+}
+% ── Blockquotes ─────────────────────────────────────────────
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+% Estilo baleiro que callouts.lua aplica ao final de cada callout;
+% os snippets --print/--night de lualatex.py redefínenno.
+\tcbset{md2pdf-callout/.style={}}
+\renewenvironment{quote}{%
+  \begin{tcolorbox}[
+    colback=blue!3!white, colframe=blue!40!white,
+    leftrule=3pt, rightrule=0pt, toprule=0pt, bottomrule=0pt,
+    arc=2pt, outer arc=2pt, boxsep=3pt, left=8pt, right=8pt,
+    top=4pt, bottom=4pt, before skip=0.45em, after skip=0.6em,
+    breakable
+  ]%
+}{%
+  \end{tcolorbox}%
+}
+% ── Imaxes, figuras e lendas ─────────────────────────────────
+\usepackage[export]{adjustbox}
+\AtBeginDocument{\setkeys{Gin}{max width=\linewidth}}
+\usepackage{caption}
+\AtBeginDocument{%
+  \captionsetup{format=hang, justification=RaggedRight, font=small, labelfont=bf, labelsep=period, singlelinecheck=true}%
+  \captionsetup[table]{position=above}%
+}
+% ── Código en liña ──────────────────────────────────────────
+\definecolor{inline-fg}{HTML}{0550ae}
+\let\oldtexttt\texttt
+\renewcommand{\texttt}[1]{\textcolor{inline-fg}{\oldtexttt{#1}}}
+% ── Til literal ──────────────────────────────────────────────
+\AtBeginDocument{%
+  \protected\def\textasciitilde{\char126\relax}%
+}
+% ── Bloques de código ───────────────────────────────────────
+\definecolor{code-bg}{HTML}{f6f8fa}
+\definecolor{code-border}{HTML}{e1e4e8}
+\usepackage{fvextra}
+\fvset{breaklines=true, breakanywhere=true}
+\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
+\makeatletter
+\@ifundefined{Shaded}{%
+  \newenvironment{Shaded}{}{}%
+}{%
+  \renewenvironment{Shaded}{}{}%
+}%
+\renewenvironment{Shaded}{%
+  \begin{tcolorbox}[
+    colback=code-bg, colframe=code-border, boxrule=0.5pt,
+    arc=3pt, outer arc=3pt, fontupper=\footnotesize,
+    left=6pt, right=6pt, top=4pt, bottom=4pt,
+    before skip=0.45em, after skip=0.7em, breakable,
+    lines before break=3
+  ]%
+}{%
+  \end{tcolorbox}%
+}
+\makeatother
+% ── Táboas ───────────────────────────────────────────────────
+\makeatletter
+\let\md@orig@midrule\midrule
+\let\md@orig@toprule\toprule
+\let\md@orig@bottomrule\bottomrule
+\renewcommand{\midrule}{\noalign{\vspace{2pt}}}
+\renewcommand{\toprule}{}
+\renewcommand{\bottomrule}{}
+\newcommand{\md@top@minipage}{%
+  \@ifnextchar[{\md@top@minipage@i}{\md@orig@minipage}%
+}
+\def\md@top@minipage@i[#1]{\md@orig@minipage[t]}
+\AtBeginEnvironment{longtable}{%
+  \let\md@orig@minipage\minipage
+  \let\minipage\md@top@minipage
+  \renewcommand{\arraystretch}{1.2}%
+  \small%
+  \addfontfeatures{Numbers=Lining}%
+  \setlength{\tabcolsep}{6pt}%
+  \setlength{\heavyrulewidth}{0.4pt}%
+  \arrayrulecolor{heading-section}%
+  \sloppy\hbadness=9999\emergencystretch=3em%
+  \rowcolors{2}{\tablestripecolor}{\tablebasecolor}%
+}
+\AtBeginEnvironment{tabular}{%
+  \let\md@orig@minipage\minipage
+  \let\minipage\md@top@minipage
+  \renewcommand{\arraystretch}{1.2}%
+  \small%
+  \addfontfeatures{Numbers=Lining}%
+  \setlength{\tabcolsep}{6pt}%
+  \setlength{\heavyrulewidth}{0.4pt}%
+  \arrayrulecolor{heading-section}%
+  \sloppy\hbadness=9999\emergencystretch=3em%
+  \rowcolors{2}{\tablestripecolor}{\tablebasecolor}%
+}
+\AtBeginEnvironment{tabularx}{%
+  \let\md@orig@minipage\minipage
+  \let\minipage\md@top@minipage
+  \renewcommand{\arraystretch}{1.2}%
+  \small%
+  \addfontfeatures{Numbers=Lining}%
+  \setlength{\tabcolsep}{6pt}%
+  \setlength{\heavyrulewidth}{0.4pt}%
+  \arrayrulecolor{heading-section}%
+  \sloppy\hbadness=9999\emergencystretch=3em%
+}
+\makeatother
+% ── Índice (opción B centrada: caixa restrinxida sen puntos guía) ─────
+\AtBeginDocument{%
+  \DeclareTOCStyleEntry[
+    beforeskip=1.1em plus 1pt,
+    entryformat={\bfseries\color{heading-section}},
+    pagenumberformat={\bfseries\color{\toctitlecolor}},
+    linefill=\hfill
+  ]{tocline}{section}%
+  \DeclareTOCStyleEntry[
+    beforeskip=0.2em,
+    entryformat={\color{heading-subsection}},
+    pagenumberformat={\color{\toctitlecolor}},
+    linefill=\hfill
+  ]{tocline}{subsection}%
+  \DeclareTOCStyleEntry[
+    beforeskip=0.15em,
+    entryformat={\color{heading-subsubsection}},
+    pagenumberformat={\color{\toctitlecolor}},
+    linefill=\hfill
+  ]{tocline}{subsubsection}%
+  \let\origtableofcontents\tableofcontents
+  \renewcommand{\tableofcontents}{%
+    \par{\centering
+    \begin{minipage}{0.68\linewidth}%
+      \origtableofcontents
+    \end{minipage}\par}%
+  }%
+}
+% ── Iconas FontAwesome5 ───────────────────────────────────────
+\usepackage{fontawesome5}
+\DeclareRobustCommand{\iconwarning}{{\color{orange!80!black}\faExclamationTriangle}}
+\DeclareRobustCommand{\icontip}{{\color{blue!70!black}\faLightbulb}}
+\DeclareRobustCommand{\iconinfo}{{\color{blue!70!black}\faInfoCircle}}
+\DeclareRobustCommand{\iconerror}{{\color{red!70!black}\faTimesCircle}}
+\DeclareRobustCommand{\iconok}{{\color{green!60!black}\faCheckCircle}}
+\DeclareRobustCommand{\iconbug}{{\color{red!60!black}\faBug}}
+\DeclareRobustCommand{\iconglobe}{{\color{blue!60!black}\faGlobe}}
+\DeclareRobustCommand{\icondesktop}{{\color{gray!70!black}\faDesktop}}
+\DeclareRobustCommand{\iconplay}{{\color{green!60!black}\scalebox{0.9}{\faIcon[regular]{play-circle}}}}
+\DeclareRobustCommand{\iconstop}{{\color{red!60!black}\faStop}}
+\DeclareRobustCommand{\iconnote}{{\color{blue!60!black}\faEdit}}
+\DeclareRobustCommand{\iconlock}{{\color{gray!60!black}\faLock}}
+\DeclareRobustCommand{\iconkey}{{\color{orange!70!black}\faKey}}
+\DeclareRobustCommand{\iconfolder}{{\color{orange!60!black}\faFolderOpen}}
+\DeclareRobustCommand{\iconrocket}{{\color{blue!60!black}\faRocket}}
+\DeclareRobustCommand{\icongear}{{\color{gray!60!black}\faCog}}
+\DeclareRobustCommand{\icontarget}{{\color{blue!60!black}\scalebox{0.9}{\faTasks}}}
+\DeclareRobustCommand{\iconpc}{{\color{gray!70!black}\faLaptop}}
+\DeclareRobustCommand{\iconcheck}{{\color{green!60!black}\faCheck}}
+\DeclareRobustCommand{\iconpencil}{{\color{orange!70!black}\scalebox{0.9}{\faIcon{pencil-alt}}}}
+\DeclareRobustCommand{\icontrophy}{{\color{orange!80!black}\scalebox{0.9}{\faTrophy}}}
+\DeclareRobustCommand{\iconban}{{\color{red!70!black}\faBan}}

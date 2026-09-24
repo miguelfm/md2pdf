@@ -1,0 +1,108 @@
+{
+    "text-color": "#24292e",
+    "background-color": "#f6f8fa",
+    "line-number-color": "#6a737d",
+    "line-number-background-color": "#f0f2f4",
+    "text-styles": {
+        "Normal": {
+            "text-color": "#24292e"
+        },
+        "Keyword": {
+            "text-color": "#cf3544"
+        },
+        "ControlFlow": {
+            "text-color": "#cf3544"
+        },
+        "Operator": {
+            "text-color": "#cf222e"
+        },
+        "Variable": {
+            "text-color": "#b54700"
+        },
+        "DataType": {
+            "text-color": "#005cc5"
+        },
+        "BuiltIn": {
+            "text-color": "#6f42c1"
+        },
+        "Constant": {
+            "text-color": "#005cc5",
+            "bold": true
+        },
+        "DecVal": {
+            "text-color": "#0550ae"
+        },
+        "BaseN": {
+            "text-color": "#0550ae"
+        },
+        "Float": {
+            "text-color": "#0550ae"
+        },
+        "Function": {
+            "text-color": "#6f42c1",
+            "bold": true
+        },
+        "String": {
+            "text-color": "#0a3069"
+        },
+        "Char": {
+            "text-color": "#0a3069"
+        },
+        "VerbatimString": {
+            "text-color": "#0a3069"
+        },
+        "SpecialString": {
+            "text-color": "#0a3069"
+        },
+        "SpecialChar": {
+            "text-color": "#0a3069"
+        },
+        "Comment": {
+            "text-color": "#6a737d",
+            "italic": true
+        },
+        "Documentation": {
+            "text-color": "#6a737d",
+            "italic": true
+        },
+        "CommentVar": {
+            "text-color": "#6a737d",
+            "italic": true
+        },
+        "Annotation": {
+            "text-color": "#8250df"
+        },
+        "Preprocessor": {
+            "text-color": "#8250df",
+            "bold": true
+        },
+        "Attribute": {
+            "text-color": "#953800"
+        },
+        "Import": {
+            "text-color": "#cf3544"
+        },
+        "Extension": {
+            "text-color": "#6f42c1"
+        },
+        "Other": {
+            "text-color": "#1b7c83"
+        },
+        "Information": {
+            "text-color": "#6a737d",
+            "italic": true
+        },
+        "Warning": {
+            "text-color": "#b54700",
+            "italic": true
+        },
+        "Alert": {
+            "text-color": "#cf222e",
+            "bold": true
+        },
+        "Error": {
+            "text-color": "#cf222e",
+            "background-color": "#ffebe9"
+        }
+    }
+}
