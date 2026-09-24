@@ -1,534 +1,685 @@
-# Referencia md2pdf para redacción de documentos Markdown
+# Referencia md2pdf para IA: redacción de materiais docentes en Markdown
 
-Este documento describe as convencións e capacidades do sistema **md2pdf** para que
-poidas xerar ficheiros Markdown compatibles coas tres saídas actuais: PDF con LuaLaTeX
-(motor por defecto e de maior calidade tipográfica), DOCX e HTML5 autocontido.
+Este documento é o **contrato de redacción** para unha IA que cree ou revise materiais
+docentes destinados a **md2pdf**. Fixa dúas cousas: os criterios pedagóxicos e editoriais
+que deben cumprir os materiais (parte I) e a sintaxe Markdown que md2pdf interpreta
+correctamente (parte II). A parte III recolle a validación e a lista de comprobación final.
+
+md2pdf xera tres saídas a partir do mesmo Markdown:
+
+| Saída | Uso habitual | Notas |
+|---|---|---|
+| PDF (LuaLaTeX, por defecto) | Apuntes para ler ou imprimir | Maior calidade tipográfica |
+| HTML5 autocontido (`-e html`) | Web, Moodle | Responsive; valida accesibilidade e ligazóns |
+| DOCX (`-e docx`) | Documento editable | Soporte parcial: ver as notas de cada sección |
+
+Varios HTML poden empaquetarse ademais como **IMS Content Package** para Moodle (`--ims`).
+
+Convencións deste documento: «debe» indica unha regra; «convén» ou «preferir», un criterio
+que admite excepcións xustificadas. Os exemplos marcados con ❌ son erros que hai que evitar.
+Este ficheiro é unha referencia, non un material para converter: as súas cabeceiras `#` de
+parte e a numeración manual das seccións só serven para citalas aquí e **non deben
+imitarse** nos documentos xerados.
 
 ---
 
-## 1. Estrutura xeral do ficheiro
+# Parte I. Criterios pedagóxicos e editoriais
 
-### Front matter YAML (opcional pero recomendado)
+## 1. Finalidade e prioridades
 
-Coloca ao inicio do ficheiro para metadatos e información da portada:
+Ao xerar unha unidade, actividade, tarefa, autoavaliación ou solucionario, prioriza nesta
+orde:
+
+1. **Corrección técnica e conceptual.**
+2. **Secuencia pedagóxica:** cada concepto aparece despois dos seus prerrequisitos.
+3. **Comprensión:** explicar o modelo mental antes de acumular sintaxe ou casos especiais.
+4. **Aplicación:** acompañar os conceptos importantes con exemplos que se poidan executar,
+   comprobar ou razoar.
+5. **Coherencia coa unidade:** non repetir sen motivo contidos xa tratados nin adiantar
+   en detalle contidos reservados para actividades posteriores.
+6. **Calidade editorial:** táboas, diagramas, callouts e código só cando melloren
+   realmente a comprensión.
+7. **Portabilidade:** o mesmo Markdown debe funcionar en PDF, HTML e, cando corresponda,
+   nun paquete IMS para Moodle.
+
+O obxectivo é construír unha **secuencia de aprendizaxe**, non unha enciclopedia nin unha
+colección de apuntes illados.
+
+## 2. Antes de redactar
+
+Se existen guía da unidade, programación, resultados de aprendizaxe (RA), criterios de
+avaliación (CA), actividades veciñas ou materiais xa escritos, revísaos antes de crear
+contido novo e:
+
+- respecta a orde, nomenclatura e profundidade xa establecidas;
+- comproba que cada actividade ten unha función clara dentro da progresión;
+- non expliques de novo con detalle o que xa se traballou antes;
+- introduce só os conceptos posteriores imprescindibles para entender o punto actual;
+- non inventes correspondencias con RA/CA ou normativa que non estean nas fontes
+  proporcionadas;
+- mantén consistentes nomes de variables, exemplos, proxectos, rutas e ferramentas entre
+  as actividades dunha mesma unidade.
+
+Para unha unidade completa, planifica primeiro a distribución de conceptos entre
+actividades e sesións, e redacta despois cada peza.
+
+## 3. Estrutura dunha actividade de contidos
+
+Non todas as actividades necesitan as mesmas seccións, pero a progresión habitual é:
+
+1. **Contexto ou problema:** para que serve o que se vai aprender.
+2. **Conceptos fundamentais:** poucos por sección e con relación explícita entre eles.
+3. **Exemplo mínimo:** illa a idea nova sen ruído accidental.
+4. **Exemplo aplicado:** achégase ao uso real cando aporte valor.
+5. **Contrastes e casos límite:** só os que axuden a evitar erros previsibles.
+6. **Síntese ou conexión coa actividade seguinte.**
+
+Tarefas, autoavaliacións e solucionarios poden ir en ficheiros separados. Se o proxecto xa
+segue esta separación, non dupliques no ficheiro teórico unha práctica que xa existe como
+tarefa.
+
+## 4. Teoría, exemplos e profundidade
+
+As explicacións deben responder, cando sexa relevante: **que é**, **para que serve**,
+**como funciona**, **que cambia respecto do que o alumnado xa coñece**, **que erro
+conceptual é máis probable** e **como se comproba na práctica**.
+
+Prefire explicacións causais a regras para memorizar: se un comportamento ten unha razón
+técnica sinxela, explícaa.
+
+Os exemplos deben ser pequenos, executables e coherentes coa versión das ferramentas do
+curso. Se a saída é importante para entender o exemplo, amósaa. Non introduzas
+dependencias, APIs ou sintaxe avanzada innecesarias para o obxectivo inmediato.
+
+## 5. Terminoloxía
+
+Emprega galego claro e preciso. Na primeira aparición útil dun termo técnico que o
+alumnado atopará en documentación, ferramentas ou código, engade o termo inglés en cursiva:
+código fonte (*source code*), tempo de execución (*runtime*), forzado de tipos (*cast*),
+ámbito (*scope*). Despois usa o termo máis natural.
+
+Non traduzas identificadores, comandos, nomes de APIs, nomes de ficheiro nin termos que
+formen parte literal dunha ferramenta.
+
+## 6. Código e terminal
+
+O código debe ensinar unha idea concreta; evita exemplos artificialmente longos. Patrón
+recomendado:
+
+1. presentar a idea;
+2. amosar o código mínimo;
+3. explicar as liñas non evidentes;
+4. indicar o resultado ou efecto cando sexa útil;
+5. introducir despois unha variante ou erro típico.
+
+Resalta con `hl=` (sección 13.2) só as liñas que o texto comenta. Se precisas resaltar
+medio bloque, divide ou simplifica o exemplo.
+
+Nos exemplos de terminal distingue claramente a orde escrita polo usuario, a saída da
+ferramenta e o erro esperado cando se mostre deliberadamente. Unha opción clara é separar
+a orde (bloque `bash`) da súa saída (bloque `text`).
+
+## 7. Escoller entre texto, táboa, diagrama e gráfico
+
+Un recurso visual debe reducir carga cognitiva; non se engade por decoración.
+
+| Necesidade | Recurso |
+|---|---|
+| Comparar propiedades, opcións, sintaxe ou resultados | Táboa |
+| Fluxo, secuencia ou relación simple | Mermaid |
+| Estrutura densa, arquitectura, grafo, árbore ou autómata | D2 ou Graphviz |
+| Datos cuantitativos, tendencias, distribucións | Vega-Lite |
+| Razoamento, matices, causas | Texto |
+
+Non forces Mermaid cando D2 ou Graphviz representen a relación de maneira máis natural,
+nin uses Vega-Lite para diagramas conceptuais.
+
+Como orientación, un diagrama con máis de seis ou oito nodos, ou con etiquetas longas,
+adoita quedar con texto pequeno. Divídeo, cambia de motor ou de orientación, ou
+substitúeo por unha táboa. As etiquetas dos nodos deben ser curtas: o detalle pertence ao
+texto que acompaña a figura. A sección 14.6 explica como dimensiona md2pdf os diagramas.
+
+## 8. Uso semántico dos callouts
+
+Cada tipo de callout ten unha función:
+
+| Tipo | Función |
+|---|---|
+| `note` | Aclaración ou recordatorio |
+| `tip` | Práctica recomendable ou atallo útil |
+| `warning` | Risco de erro frecuente ou comportamento sorprendente |
+| `danger` | Erro grave, perda de datos, seguridade ou acción difícil de reverter |
+| `info` | Contexto técnico que amplía pero non interrompe o fío principal |
+
+Non convertas cada dato interesante nun callout. Varios callouts seguidos indican que parte
+dese contido debe volver ao texto normal. Reserva `warning` e `danger` para situacións que
+o xustifiquen. A sintaxe está na sección 12.
+
+## 9. Tarefas, autoavaliacións e solucionarios
+
+As tarefas avalían o que xa se ensinou: non pidas unha técnica nova sen introducila antes.
+Nas tarefas prácticas:
+
+- formula un produto ou resultado observable;
+- indica só restricións que formen parte da aprendizaxe;
+- pide evidencias só cando sirvan para verificar o proceso ou o resultado;
+- evita pasos artificiais que só comproben que o alumnado sabe seguir unha receita;
+- gradúa a dificultade desde a aplicación directa ata a integración ou o diagnóstico.
+
+As autoavaliacións cobren conceptos relevantes, non detalles accidentais. As opcións
+incorrectas deben representar erros ou confusións plausibles.
+
+Os solucionarios docentes explican **por que** unha solución é correcta e, cando aporte
+valor, sinalan erros frecuentes ou alternativas válidas. Non inclúas respostas de
+solucionario nos materiais para o alumnado.
+
+Se hai rúbrica, os seus criterios deben corresponderse con evidencias observables e evitar
+descricións ambiguas.
+
+## 10. Redacción independente do formato e accesibilidade
+
+Non escribas «na imaxe de abaixo», «na páxina seguinte» nin «como se ve á dereita»: PDF e
+HTML presentan os elementos de forma distinta. Prefire:
+
+- «como se mostra na @fig:identificador»;
+- «como resume a @tbl:identificador»;
+- «no apartado [Conversión explícita](#conversion-explicita)».
+
+Toda figura informativa (imaxe ou diagrama) leva un pé que describa o que importa; en HTML
+ese pé é tamén o texto alternativo. Non dependas só da cor para distinguir estados ou
+categorías.
+
+---
+
+# Parte II. Sintaxe e convencións de md2pdf
+
+md2pdf usa o Markdown de Pandoc, que é **máis estrito ca GitHub** nalgúns puntos
+(sección 11.1). Antes de pasar o texto a Pandoc, un preprocesador corrixe ou elimina
+algunhas construcións; o que se describe aquí é o resultado final.
+
+## 11. Estrutura do ficheiro
+
+### 11.1 Liñas baleiras obrigatorias
+
+Pandoc só recoñece listas, táboas, cabeceiras e citas se van **precedidas dunha liña
+baleira**. Sen ela, pasan a formar parte do parágrafo anterior como texto plano:
+
+```markdown
+❌ As vantaxes son:
+- Separación de responsabilidades
+- Testabilidade
+
+✅ As vantaxes son:
+
+- Separación de responsabilidades
+- Testabilidade
+```
+
+Deixa sempre unha liña baleira antes e despois de: listas, táboas, cabeceiras, citas,
+bloques de código, callouts e fórmulas en bloque.
+
+### 11.2 Front matter YAML
+
+Ao inicio do ficheiro, para metadatos e portada:
 
 ```markdown
 ---
 module: "Desenvolvemento web en contorno servidor"
 subject: "UD3: Introdución a PHP"
 activity: "A01: Estruturas de control"
-school: "CIFP Rodolfo Ucha Piñeiro"
-course: "Curso 2025-2026"
 ---
 
 # A01: Estruturas de control
 ```
 
-#### Que fai cada campo
-
 | Campo | Onde aparece | Notas |
 |---|---|---|
-| `module` | Portada (`--titlepage`) en versaletas | Módulo profesional completo |
-| `subject` | Portada — título principal `\Huge` | Unidade didáctica |
-| `activity` | Portada + inicio da páxina de contido | Actividade concreta; aparece sempre, con ou sen `--titlepage` |
-| `school` | Portada — bloque inferior | Nome do centro; adoita ir en `metadata.yaml` compartido |
-| `course` | Portada — bloque inferior | Curso académico |
-| `author` | **Só metadatos internos do PDF** | Non aparece na portada; vai en `metadata.yaml` |
-| `keywords` | Metadatos internos do PDF | Para buscadores e accesibilidade |
+| `module` | Portada (`--titlepage`) en versaletas | Módulo profesional |
+| `subject` | Portada, título principal | Unidade didáctica; en HTML, metadato `description` |
+| `activity` | Portada e inicio do contido no PDF; título do elemento no paquete IMS | Actividade concreta; `subtitle` é alias |
+| `school` | Portada, bloque inferior | Nome do centro |
+| `course` | Portada, bloque inferior | Curso académico |
+| `author` | Metadatos do PDF; cabeceira do HTML; portada se non hai `school` | Adoita ir en `metadata.yaml` |
+| `keywords` | Metadatos do PDF e do HTML | Cadea separada por comas |
 
-O preprocesador **extrae os metadatos e elimina o bloque completo** antes de
-pasalo a Pandoc. Ningún destes campos aparece como texto no corpo do documento.
+Regras:
 
-O `# Título` (cabeceira de nivel 1) convértese automaticamente no título do PDF.
-**Só debe haber un `#` por documento**, ao inicio. Todo o contido vai baixo `##` en diante.
+- **Cada campo nunha soa liña** (`campo: valor`). O lector de metadatos non admite listas
+  YAML nin valores multiliña: escribe `keywords: "PHP, DAW, Backend"`, non unha lista.
+- O bloque elimínase antes de converter: ningún campo aparece como texto no corpo.
+- Non uses `title`: o título sae do `# Título` (sección 11.4).
 
-#### Campos que adoitan ir en `metadata.yaml` compartido
-
-Os campos que se repiten en todos os documentos dunha unidade (`author`, `school`,
-`keywords`, `course`) convén poñelos nun `metadata.yaml` no mesmo directorio. O front
-matter do `.md` sobreescribe campo a campo:
+Os campos comúns a toda unha unidade (`author`, `school`, `course`, `keywords`) van nun
+ficheiro de metadatos no mesmo directorio. md2pdf busca primeiro
+`<prefixo>-metadata.yaml` (por exemplo `u3-metadata.yaml` para `U3A1.md`) e despois
+`metadata.yaml`. O front matter do `.md` sobrescribe campo a campo:
 
 ```yaml
-# metadata.yaml (compartido por todos os .md do curso)
-author: "Miguel Morales"
-school: "CIFP Rodolfo Ucha Piñeiro"
-keywords: "PHP, DAW, Backend"
+# metadata.yaml (compartido polos .md do directorio)
+author: "Nome Apelidos"
+school: "Nome do centro"
 course: "Curso 2025-2026"
+keywords: "PHP, DAW, Backend"
 ```
 
-### O que NON debes escribir
+### 11.3 O que non debes escribir
 
-O preprocesador elimina automaticamente estas cousas; non as inclúas:
+O preprocesador elimina ou altera estas construcións:
 
-- `[TOC]` nin seccións manuais de índice (`## Índice` con listas de ligazóns)
-- Separadores `---` entre seccións (úsaos só no front matter YAML)
-- Numeración manual nas cabeceiras (`## 1.2. Título` → escribir `## Título`)
+- `[TOC]` e índices manuais (`## Índice` seguido dunha lista de ligazóns): o índice é
+  automático.
+- Liñas `---` fóra do front matter e dos bloques de código: elimínanse todas, tamén dentro
+  de callouts. Non uses separadores horizontais nin cabeceiras subliñadas con `---`.
+- Numeración manual: `## 1.2. Título` convértese en `## Título`. Por iso **unha cabeceira
+  que empece por un número seguido de espazo perde ese número** (`## 2024 en cifras` →
+  «en cifras»). Reformula: `## Cifras de 2024`.
 
----
+### 11.4 Título e cabeceiras
 
-## 2. Cabeceiras e numeración automática
+- **Un só `#` por documento**, ao inicio: é o título do documento. Todo o contido vai
+  desde `##`, que é o nivel 1 da numeración.
+- As seccións numéranse automaticamente (1, 1.1, 1.1.1…); non engadas números.
+- Non saltes niveis (`##` → `####`) e non uses máis de tres niveis salvo necesidade.
 
-As seccións numéranse automaticamente (1, 1.1, 1.1.1…). Non engadas números ti.
+Algunhas palabras nas cabeceiras engaden automaticamente un emoji, en todas as saídas:
 
-Palabras clave nas cabeceiras que reciben un emoji automático:
+| Palabra (con maiúscula inicial) | Emoji |
+|---|---|
+| `Tarefa` | 🎯 |
+| `Exercicio` | ✏️ |
+| `Reto` | 🏆 |
+| `Exemplo` | ▶️ |
 
-- `Tarefa` → 🎯
-- `Exercicio` → ✏️
-- `Reto` → 🏆
-- `Exemplo` → ▶️
+Non escribas ti o emoji. A detección busca o texto en calquera parte da cabeceira e
+distingue maiúsculas: `## Exemplos de uso` recibe ▶️, e tamén **`## Retorno de valores`
+recibe 🏆** porque contén «Reto». Reformula para evitalo: `## Valor de retorno`.
+
+## 12. Callouts
+
+### 12.1 Sintaxe
+
+Usa divs de Pandoc cos **nomes en inglés**, que funcionan igual nas tres saídas:
 
 ```markdown
-## Exercicio: Crear un controlador REST
-## Tarefa: Implementar autenticación
-```
-
----
-
-## 3. Callouts (caixas de aviso)
-
-Son a ferramenta principal para destacar información. Renderízanse con `tcolorbox` en LuaLaTeX, como bloques semánticos con CSS en HTML e como texto estruturado en DOCX.
-
-### Sintaxe recomendada (divs Pandoc)
-
-```markdown
-::: note
-Información xenérica que convén lembrar.
-:::
-
-::: tip
-Consello práctico ou boa práctica.
-:::
-
-::: warning
-Atención: algo que pode causar problemas se non se ten en conta.
-:::
-
-::: danger
-Erro crítico ou acción irreversible. Usar con moderación.
-Preséntase con a etiqueta **Crítico** en galego.
-:::
-
-::: info
-Contexto adicional ou referencia a documentación externa.
-:::
-```
-
-### Tipos dispoñibles e aliases en galego
-
-| Tipo | Alias galego | Uso |
-|------|-------------|-----|
-| `note` | `nota` | Aclaración ou recordatorio |
-| `tip` | `consello` | Boa práctica, atallo |
-| `warning` | — | Precaución, comportamento inesperado |
-| `danger` | `perigo` | Erro grave, dato sensible |
-| `info` | — | Contexto, referencia externa |
-
-### Sintaxe alternativa (GitHub/Obsidian)
-
-Tamén funciona, pero a sintaxe de divs é preferible:
-
-```markdown
-> [!WARNING]
-> Esta sintaxe tamén funciona.
-```
-
-### Callouts con contido estruturado
-
-Os callouts poden conter calquera elemento Markdown: código, listas, táboas.
-O preprocesador insire automaticamente a liña baleira tras `:::tipo` se falta, pero
-como boa práctica escríbea ti explicitamente:
-
-````markdown
 ::: warning
 
-**Migración irreversible.** Antes de executar:
+Nunca almacenes contrasinais en texto plano.
 
-- Fai unha copia de seguridade da base de datos
-- Verifica que non hai datos en produción afectados
-
-```bash
-php artisan migrate:rollback --step=1
-```
 :::
-````
+```
+
+Deixa unha liña baleira tras a apertura (o preprocesador engádea se falta, pero é a forma
+correcta). Os callouts poden conter listas, táboas e bloques de código.
+
+Tipos e aliases:
+
+| Tipo | Alias | Etiqueta | DOCX recoñece o alias |
+|---|---|---|---|
+| `note` | `nota` | Nota | Non |
+| `tip` | `consello` | Consello | Si |
+| `warning` | `atención`, `atencion` | Atención | Non |
+| `danger` | `perigo` | Crítico | Si |
+| `info` | — | Info | — |
+
+Un alias non recoñecido en DOCX sae como texto normal, sen etiqueta. Por iso convén usar
+sempre os nomes ingleses.
+
+### 12.2 Sintaxe alternativa e conversións automáticas
+
+Tamén se converten a callout:
+
+- A sintaxe de GitHub/Obsidian: `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!DANGER]`,
+  `> [!INFO]` (e os alias galegos en maiúsculas).
+- **Unha cita que empece por certos emojis:** `> ⚠️ …` → `warning`, `> 💡 …` → `tip`,
+  `> 📘 …` → `info`, `> 📝 …` → `note`, `> ⛔ …` → `danger`.
+
+Prefire a sintaxe `:::`. Non empeces unha cita textual por un destes emojis se non queres
+un callout.
+
+## 13. Bloques de código
+
+### 13.1 Linguaxe obrigatoria
+
+Indica sempre a linguaxe. Un bloque sen linguaxe convértese a `text` cun aviso e, con
+`--strict`, fai fallar a conversión. Usa `text` para saídas de terminal, árbores de
+directorios ou calquera contido que non sexa código.
+
+Linguaxes habituais: `php`, `html`, `css`, `javascript`, `typescript`, `bash`, `sql`,
+`json`, `yaml`, `xml`, `python`, `java`, `c`, `cpp`, `markdown`, `text`.
+
+Para mostrar un bloque de código dentro doutro (por exemplo, sintaxe Markdown), usa unha
+valla exterior máis longa (catro acentos graves) que a interior.
+
+### 13.2 Resaltado de liñas (PDF e HTML)
 
 ````markdown
-::: tip
-
-Os tres métodos máis útiles de Eloquent para paginación:
-
-| Método | Devolve | Uso |
-|--------|---------|-----|
-| `paginate(n)` | `LengthAwarePaginator` | Páxinas numeradas |
-| `simplePaginate(n)` | `Paginator` | Anterior/Seguinte |
-| `cursorPaginate(n)` | `CursorPaginator` | Conxuntos grandes |
-:::
-````
-
----
-
-## 4. Bloques de código
-
-### Básico con linguaxe
-
-**Especifica sempre a linguaxe.** O preprocesador auto-fixa os bloques sen linguaxe
-substituíndoos por `` ```text `` e emitindo un aviso en stderr, pero é mellor escribilos
-ben desde o principio. Usa `text` para saídas de terminal, diagramas ASCII ou calquera
-contido que non sexa código:
-
-````markdown
-```php
-$usuarios = User::where('activo', true)->get();
-```
-
-```bash
-php artisan migrate --seed
-```
-
-```sql
-SELECT * FROM users WHERE created_at > NOW() - INTERVAL 30 DAY;
-```
-
-```text
-Saída do servidor:
-[OK] Migrando: 2024_01_15_create_users_table
-```
-````
-
-### Linguaxes frecuentes recoñecidas
-
-`php`, `html`, `css`, `javascript`, `typescript`, `bash`, `sql`, `json`, `yaml`,
-`xml`, `python`, `java`, `c`, `cpp`, `markdown`, `text`, `plaintext`
-
-### Resaltado de liñas específicas (LuaLaTeX e HTML)
-
-Usa o atributo `hl` para destacar liñas concretas. Moi útil cando o texto refire
-a liñas específicas do código:
-
-````markdown
-```php {hl="3,5,8-10"}
+```php {hl="3,5"}
 public function store(Request $request)
 {
-    $validated = $request->validate([   // liña 3: validación
-        'nome' => 'required|max:255',
-        'email' => 'required|email',    // liña 5: campo email
-    ]);
-
-    $user = User::create($validated);   // liña 8: crear
-    event(new UserRegistered($user));   // liña 9: evento
-    return redirect()->route('users.index'); // liña 10: redirección
-}
-```
-````
-
-Formatos válidos para `hl`: `"3"`, `"1,3,5"`, `"2-6"`, `"1,3,7-9"`.
-
-### Combinación de resaltado e referencia cruzada
-
-Pódense combinar `hl=` e `#lst:` no mesmo bloque, e engadir o título con `: Texto`
-na liña seguinte ao peche do bloque:
-
-````markdown
-```php {hl="5,6" #lst:validation}
-public function store(Request $request)
-{
-    $request->validate([
+    $validated = $request->validate([
         'nome'  => 'required|max:255',
-        'email' => 'required|email|unique:users',
-        'rol'   => 'required|in:admin,editor,lector',
+        'email' => 'required|email',
     ]);
 }
 ```
-: Validación con regras múltiples
-
-Como se ve na @lst:validation, as liñas 5 e 6 usan regras encadeadas.
 ````
 
-### Diagramas Mermaid
+Formatos válidos: `"3"`, `"1,3,5"`, `"2-6"`, `"1,3,7-9"`. DOCX ignora o resaltado, así que
+o texto non debe depender só del: nomea tamén o elemento («a regra de `email`…»).
 
-Para D2/DOT, layouts, atributos e metadatos diagrams, consultar DIAGRAMAS.md.
-Para gráficos de datos con bloques vega-lite/vegalite e JSON inline,
-consultar VEGA-LITE.md e exemplos-vega-lite.md. Non usar URL de datos externas.
+### 13.3 Pés e referencias de código: non soportados
 
-Os bloques con linguaxe `mermaid` renderízanse automaticamente antes de pasar o
-documento a Pandoc. Úsase `mmdc` (Mermaid CLI) desde o preprocesado Python e o
-formato depende do motor: PDF vectorial para LuaLaTeX, PNG para DOCX e SVG vectorial
-para HTML5. D2, Graphviz e Vega-Lite seguen a mesma política de formatos.
+Os bloques de código non levan pé nin se poden referenciar. Unha liña `: Título` tras o
+bloque aparece literalmente no documento, e `@lst:…` non se resolve. Introduce o bloque
+no parágrafo anterior e, se hai que referirse a el máis adiante, cita o apartado cunha
+ligazón interna (sección 17.2).
+
+### 13.4 Emojis dentro do código
+
+No PDF, os emojis dentro de bloques de código substitúense por texto (`✅` → `[OK]`,
+`⚠️` → `[!]`…). Evítaos no código salvo que formen parte do exemplo.
+
+## 14. Diagramas e gráficos
+
+### 14.1 Regras comúns
+
+md2pdf renderiza os bloques `mermaid`, `d2`, `dot`/`graphviz` e `vega-lite`/`vegalite`
+antes de converter. Para numeralos, citalos e darlles texto alternativo, usa a forma con
+atributos:
 
 ````markdown
-```mermaid
+```{.mermaid #fig:fluxo-login caption="Fluxo de autenticación"}
 flowchart LR
-    A[Petición] --> B{Autenticado?}
-    B -->|Si| C[Controlador]
-    B -->|Non| D[Login]
-    C --> E[Resposta]
+  A[Formulario] --> B{Credenciais válidas?}
+  B -->|Si| C[Panel]
+  B -->|Non| A
+```
+
+Como mostra a @fig:fluxo-login, o formulario volve mostrarse se a validación falla.
+````
+
+Atributos admitidos por todos: `#id` (ou `id=`), `caption`, `width` e `height`, con
+unidades `%`, `px`, `pt`, `cm`, `mm` ou `in`.
+
+- **Todo diagrama informativo debe levar `caption`.** Sen el, o HTML xera un aviso de
+  imaxe sen texto alternativo e `--strict` fai fallar a conversión.
+- O pé é texto literal (non admite Markdown). Non escribas «Figura N.» nin no pé nin na
+  referencia: a numeración é automática.
+- Indica só `width` ou só `height`; os dous xuntos poden deformar a imaxe. Normalmente
+  non precisas ningún (sección 14.6).
+- Un atributo ou valor non admitido deixa o bloque como código e emite un aviso.
+- Un diagrama por bloque.
+
+Se falta o renderizador ou a sintaxe do diagrama é incorrecta, o bloque queda como código
+fonte e emítese un aviso; con `--strict`, a conversión falla.
+
+### 14.2 Mermaid
+
+Admite os tipos habituais: `flowchart`, `sequenceDiagram`, `classDiagram`,
+`stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`…
+
+- Etiquetas curtas; para partir unha etiqueta usa `<br/>`: `A[Verificar<br/>contorna]`.
+- Sintaxe estándar, sen extensións exclusivas de Mermaid Live Editor.
+- Non admite os atributos `layout` nin `theme`.
+
+### 14.3 D2
+
+Adecuado para arquitecturas e diagramas conceptuais. Atributos propios:
+`layout=dagre|elk|tala` e `theme=<número>` (identificador numérico de tema de D2).
+
+````markdown
+```{.d2 #fig:arquitectura layout=elk caption="Arquitectura da aplicación"}
+cliente -> servidor: HTTP
+servidor -> datos: SQL
 ```
 ````
 
-Soporta todos os tipos de diagrama de Mermaid: `flowchart`, `sequenceDiagram`,
-`classDiagram`, `stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`, etc.
+Non uses iconas nin imaxes externas: non se descargan nin se empaquetan.
 
-**Convencións recomendadas:**
+### 14.4 Graphviz
 
-- **Etiquetas curtas** dentro dos nodos. Para forzar un salto de liña dentro
-  dun nodo, usar `<br/>`:
-  ```
-  A[Verificar<br/>contorna]
-  ```
-- **Sintaxe estándar de Mermaid**, sen extensións de Mermaid Live Editor que
-  poidan non estar implementadas en `mmdc`.
-- **Un só diagrama por bloque**. Se necesitas varios, usa varios bloques
-  separados.
+Bloques `dot` ou `graphviz` (son equivalentes). Adecuado para grafos, árbores e
+autómatas. Atributo propio: `layout=dot|neato|fdp|sfdp|circo|twopi|osage|patchwork`.
 
-**Caché**: cada diagrama identifícase por hash do contido. Diagramas idénticos
-non se re-renderizan entre execucións nin entre documentos distintos. O ficheiro
-xerado vive en `/tmp/md2pdf-mermaid/` (Linux/macOS) ou `%TEMP%\md2pdf-mermaid\`
-(Windows).
+````markdown
+```{.dot #fig:automata caption="Autómata que recoñece números pares"}
+digraph {
+    rankdir=LR;
+    q0 -> q1 [label="1"];
+    q1 -> q0 [label="1"];
+}
+```
+````
 
-**Se `mmdc` non está instalado**, o bloque mantense como código fonte no PDF e
-emítese un aviso en stderr; non hai fallo de compilación.
+### 14.5 Vega-Lite
 
----
+Gráficos de datos estáticos (sen interacción nin tooltips). Restricións:
 
-## 5. Táboas
+- O contido é **JSON estrito**: sen comentarios nin comas finais.
+- Os datos van **inline** en `data.values` ou `datasets`. Non se admiten `url`, `href` nin
+  marcas `image`, nin campos de datos con eses nomes.
+- Tema e estilos van no propio JSON (`config`); non se admiten `layout` nin `theme`.
+- `width`/`height` do JSON controlan a composición; os atributos do bloque, o tamaño final.
 
-Pandoc xera táboas con cabeceira repetida en cada páxina (longtable).
-Usa aliñamento explícito cando conveña:
+````markdown
+```{.vega-lite #fig:tempos width=85% caption="Distribución dos tempos de resposta"}
+{
+  "data": {"values": [{"tempo": 12}, {"tempo": 15}, {"tempo": 15},
+                      {"tempo": 18}, {"tempo": 22}, {"tempo": 25}]},
+  "mark": "bar",
+  "encoding": {
+    "x": {"field": "tempo", "type": "quantitative", "bin": {"maxbins": 5},
+          "title": "Tempo (ms)"},
+    "y": {"aggregate": "count", "title": "Frecuencia"}
+  }
+}
+```
+````
 
-```markdown
-| Método | Ruta | Controlador | Descrición |
-|--------|------|-------------|------------|
-| GET | `/users` | `index` | Lista todos os usuarios |
-| POST | `/users` | `store` | Crea un novo usuario |
-| GET | `/users/{id}` | `show` | Mostra un usuario |
-| PUT | `/users/{id}` | `update` | Actualiza un usuario |
-| DELETE | `/users/{id}` | `destroy` | Elimina un usuario |
+Unha regresión (`"transform": [{"regression": …}]`) é un axuste aos datos, non unha
+predición validada: preséntaa como tal no texto.
+
+### 14.6 Tamaño e lexibilidade
+
+Sen `width` nin `height`, md2pdf escala cada diagrama para que o seu texto quede preto do
+tamaño das notas ao pé (uns 9,5 pt), sen superar o ancho da páxina nin uns 14 cm de alto.
+Consecuencias:
+
+- Un diagrama moi alto (moitos niveis en vertical) ou moi ancho (moitos nodos en
+  horizontal) redúcese, e o seu texto tamén.
+- Se o texto estimado queda por debaixo de 8 pt, md2pdf avisa (só no PDF e se PyMuPDF
+  está instalado). O aviso non detén a conversión.
+- A solución adoita ser dividir o diagrama, acurtar etiquetas ou cambiar a orientación
+  (`LR`/`TB`); reducir `width` empeora a lexibilidade.
+
+### 14.7 Valores por documento
+
+Pódense fixar valores por defecto no front matter ou en `metadata.yaml` (require PyYAML):
+
+```yaml
+diagrams:
+  d2:
+    layout: elk
+  graphviz:
+    layout: dot
+  vega-lite:
+    width: 85%
 ```
 
-Para columnas con texto longo, o sistema axusta os anchos automaticamente
-proporcionalmente ao contido (filtro `auto-table-widths.lua`).
+Prioridade: atributo do bloque > front matter > `metadata.yaml` > valor predeterminado.
 
-### Control de anchos de columna
-
-O filtro `auto-table-widths.lua` calcula os anchos **analizando o contido real das celas**, non a lonxitude dos `---`. Cada columna recibe un ancho proporcional á cela máis longa que conteña, cun mínimo garantido para que o código curto non rompa.
-
-Normalmente non precisas facer nada: o resultado é correcto de forma automática. Pero hai dous casos nos que podes axudar ao filtro:
-
-**Columnas con moito código longo**: o filtro limita a lonxitude máxima a 60 chars por cela para que unha columna con nomes longos non espreme as demais. Se queres que unha columna específica sexa máis ancha, ponlle máis contido real ou divide a información en filas.
-
-**Proporcións moi desequilibradas**: se todas as celas dunha columna son moi curtas pero precisa ser ancha, engade texto descritivo en vez de confiar nos `---`. O filtro ignora a lonxitude dos separadores.
-
-**Evita cadeas longas sen espazos nas celas** (URLs, nomes de clase completos,
-código sen separadores), xa que fórzana a que a columna se expanda sen límite:
+## 15. Táboas
 
 ```markdown
-❌ Problemático:
-| Clase | Descrición |
-|-------|------------|
-| `App\Http\Controllers\Api\V2\UserAuthenticationController` | Autentica |
+| Método | Ruta | Descrición |
+|--------|------|------------|
+| GET | `/users` | Lista os usuarios |
+| POST | `/users` | Crea un usuario |
 
-✅ Mellor — rompe o namespace ou abrevia:
-| Clase | Descrición |
-|-------|------------|
-| `UserAuthenticationController` | Autentica usuarios vía API v2 |
+: Rutas do recurso usuarios {#tbl:rutas}
 ```
 
-Se necesitas mostrar un namespace completo, usa código en liña fóra da táboa
-e referenciao desde ela.
-
-### Rotura de páxina en táboas longas
-
-`longtable` repite a cabeceira automaticamente en cada páxina, pero corta as
-filas onde cabe, sen ter en conta a lóxica do contido. Para minimizar
-roturas inapropiadas:
-
-**Agrupa as filas relacionadas en táboas separadas** en vez dunha táboa xigante.
-Unha táboa por concepto é máis lexible e evita cortes no medio dunha sección lóxica:
-
-```markdown
-✅ Mellor que unha táboa de 30 filas:
-
-Métodos de colección:
-
-| Método | Descrición |
-|--------|------------|
-| `all()` | Devolve todos os rexistros |
-| `find($id)` | Busca por clave primaria |
-| `first()` | Primeiro resultado |
-
-Métodos de filtrado:
-
-| Método | Descrición |
-|--------|------------|
-| `where()` | Filtra por condición |
-| `whereIn()` | Filtra por lista de valores |
-| `whereBetween()` | Filtra por rango |
-```
-
-**Pon as filas máis importantes ao inicio** da táboa. Se a rotura é inevitable,
-é mellor que quede ao final dunha sección lóxica ca no medio.
-
-**Evita celas con moito texto** (varios parágrafos). Se unha cela require
-explicación extensa, usa a táboa só para o resumo e desenvolve o detalle
-nun parágrafo ou lista debaixo.
-
-### Saltos de liña dentro dunha cela
-
-Para forzar un salto de liña dentro dunha cela de táboa, usa `<br>`. O filtro
-`br.lua` convérteo en `\newline{}` de LaTeX automaticamente:
+- O pé (`: Texto {#tbl:id}`) vai tras a táboa, separado por unha liña baleira; permite
+  citala con `@tbl:rutas`.
+- Os anchos das columnas calcúlanse polo **contido** das celas, non pola lonxitude dos
+  `---`. Unha táboa curta queda co seu ancho natural e centrada.
+- Evita cadeas longas sen espazos nas celas (URLs, *namespaces* completos): forzan a
+  columna. Abrevia (`UserAuthenticationController`) e deixa o nome completo no texto.
+- Evita celas con varios parágrafos: a táboa resume e o texto desenvolve.
+- No PDF, as táboas de ata 6 filas non se parten entre páxinas; as máis longas pártense
+  repetindo a cabeceira. Prefire varias táboas curtas, unha por concepto, a unha táboa
+  xigante, e pon as filas máis importantes ao inicio.
+- Salto de liña dentro dunha cela: `<br>` (PDF e HTML; DOCX ignórao). Non uses barra
+  invertida nin dobre espazo.
 
 ```markdown
-| Opción | Valores posibles |
-|--------|-----------------|
+| Opción | Valores |
+|--------|---------|
 | `visibility` | `public`<br>`protected`<br>`private` |
-| `type` | `int`<br>`string`<br>`bool` |
 ```
 
-Non uses outros mecanismos (barra invertida, doble espazo) — só funcionan
-fóra de táboas.
+## 16. Imaxes e figuras
 
-### Aliñamento vertical das celas
+### 16.1 Figura con pé
 
-O sistema aliña automaticamente o contido de todas as celas á **parte superior**
-de cada fila (`p{}` por defecto en LaTeX). O código en liña dentro de celas
-altas tamén aliña arriba grazas ao `\leavevmode` que o filtro `auto-table-widths.lua`
-engade automaticamente. Non precisas facer nada para conseguir este comportamento.
-
----
-
-## 6. Imaxes e figuras
-
-### Imaxe simple (en liña, sen pé de figura)
+O texto entre corchetes é o pé numerado e, en HTML, o texto alternativo:
 
 ```markdown
-![](imaxes/diagrama.png)
+![Arquitectura MVC de Laravel](imaxes/mvc-laravel.png){#fig:mvc width=80%}
+
+A @fig:mvc mostra como o controlador separa o modelo da vista.
 ```
 
-### Figura con pé de figura (recomendado)
+- Toda imaxe informativa leva pé. `![](imaxe.png)` sen texto xera un aviso en HTML e un
+  fallo con `--strict`.
+- Unha imaxe puramente decorativa márcase con `{.decorative}`: `![](logo.png){.decorative}`.
+- Non escribas pés manuais do tipo `*Figura 3. …*` baixo a imaxe; son un formato herdado.
+- As rutas son relativas ao ficheiro `.md`. En HTML e IMS as imaxes quedan incrustadas.
 
-O texto alternativo convértese no pé de figura numerado en LuaLaTeX e HTML:
-
-```markdown
-![Diagrama da arquitectura MVC de Laravel](imaxes/mvc-laravel.png)
-```
-
-### Tamaño personalizado
-
-```markdown
-![Esquema de rutas](imaxes/rutas.png){width=80%}
-```
-
-As imaxes nunca sobresaen da marxe (limitadas a `\linewidth` automaticamente).
-
-### Imaxes grandes e PDF vectoriais
+### 16.2 Tamaño e imaxes grandes
 
 ::: danger
 
-**Imaxes PNG/JPG maiores de ~800 px de ancho** ou **PDF vectoriais** sen atributo de ancho
-poden **colgar LuaLaTeX indefinidamente** (sen erro, sen saída — só un proceso que non
-remata). Isto ocorre porque a combinación de `\pandocbounded{}` (Pandoc 3.x), `adjustbox`
-con `max width=\linewidth` e `float{H}` entra nun bucle calculando o tamaño da imaxe.
-
-**Solución** — usa sempre `{width=...}` no Markdown:
+**Imaxes PNG/JPG de máis de ~800 px de ancho** ou **PDF vectoriais** sen ancho explícito
+poden **bloquear LuaLaTeX indefinidamente**, sen erro nin saída. Engade sempre
+`{width=...}` a estas imaxes:
 
 ```markdown
-![Diagrama grande](img/diagrama.png){width=100%}
-![Diagrama mediano](img/esquema.pdf){width=80%}
-```
-
-Isto fai que Pandoc xere `\includegraphics[width=\textwidth]{...}` directamente,
-evitando o cálculo automático de tamaño.
-
-**Alternativa**: redimensionar a imaxe a ≤800 px antes de incluíla:
-
-```bash
-magick img/diagrama.png -resize 800x img/diagrama.png
+![Diagrama de despregamento](img/despregamento.png){width=100%}
 ```
 
 :::
 
-### Posición das figuras
+As imaxes nunca superan o ancho do texto.
 
-En LuaLaTeX as figuras aparecen **exactamente onde se colocan no texto** (opción `H`
-de LaTeX). Non flotan a outra posición. Polo tanto:
+### 16.3 Posición
 
-- Coloca a imaxe **despois** do parágrafo que a introduce, nunca antes
-- Non intentes controlar a posición con comandos LaTeX nin atributos Pandoc especiais
-- Se queres que a imaxe quede nunha páxina concreta, colócaa no punto do texto que corresponda
+No PDF as figuras aparecen **exactamente onde se escriben**; non flotan. Coloca a imaxe
+despois do parágrafo que a introduce e non intentes controlar a posición con comandos
+LaTeX.
 
----
+## 17. Referencias e ligazóns
 
-## 7. Listas de definición
+### 17.1 Figuras e táboas
 
-Útiles para glosarios, listados de parámetros, propiedades dun obxecto ou termos técnicos.
-Prodúcen saída elegante con o termo en negra e a definición indentada:
+- `@fig:id` para figuras (imaxes e diagramas); `@tbl:id` ou `@tab:id` para táboas.
+- Con maiúscula inicial (`@Fig:id`, `@Tbl:id`) escríbese «Figura»/«Táboa»; en minúscula,
+  «figura»/«táboa». Úsaa ao comezo de oración.
+- Resólvense no PDF e no HTML (onde son ligazóns). **En DOCX non se resolven e aparece o
+  texto `@fig:id` literal**; se o destino principal é DOCX, nomea a figura no texto.
+- En HTML, unha referencia sen destino xera un aviso e fai fallar `--strict`.
+
+### 17.2 Seccións: ligazóns internas
+
+`@sec:`, `@eq:` e `@lst:` **non se resolven**: aparecen literalmente. Para remitir a un
+apartado usa unha ligazón interna ao seu identificador:
+
+```markdown
+## Conversión explícita {#conversion-explicita}
+
+…
+
+Revisa o apartado [Conversión explícita](#conversion-explicita).
+```
+
+Se a cabeceira non ten `{#id}`, Pandoc xera un automaticamente: minúsculas, espazos
+convertidos en guións, sen signos de puntuación, **sen o número da sección** e
+conservando as letras acentuadas (`## Conversións de tipo` → `#conversións-de-tipo`).
+Para ligazóns que deban manterse estables, pon un `{#id}` explícito sen acentos.
+
+### 17.3 Ligazóns externas
+
+```markdown
+[Manual de PHP](https://www.php.net/manual/es/)
+
+<https://www.php.net/manual/es/>
+```
+
+Inclúe sempre `https://` ou `http://`. Un URL entre acentos graves é código, non unha
+ligazón.
+
+### 17.4 Ligazóns entre documentos e recursos
+
+Entre actividades da mesma unidade, liga o ficheiro Markdown cunha ruta relativa:
+
+```markdown
+Continúa en [Conversións de tipo](U1A5_Operadores.md#conversións-de-tipo).
+```
+
+Ao empaquetar en IMS, a ligazón reescríbese cara ao HTML correspondente (sección 19). Os
+ficheiros locais ligados (código de partida, PDF, ZIP) inclúense no paquete.
+
+## 18. Outros elementos
+
+### 18.1 Listas
+
+- Liña baleira antes da lista (sección 11.1).
+- Sublistas sangradas ata o texto do elemento pai (dous espazos tras `-`, tres tras
+  `1.`); máximo dous niveis.
+- Listas numeradas para pasos con orde; viñetas para o resto.
+
+### 18.2 Listas de definición
+
+Para glosarios, parámetros ou propiedades:
 
 ```markdown
 `app/`
-:   Directorio principal da aplicación. Contén modelos, controladores e providers.
+:   Directorio principal da aplicación.
 
 `routes/`
-:   Definición de todas as rutas da aplicación. Os ficheiros principais son
-    `web.php` e `api.php`.
-
-`resources/views/`
-:   Vistas Blade. Os ficheiros teñen extensión `.blade.php`.
+:   Definición das rutas. Os ficheiros principais son `web.php` e `api.php`.
 ```
 
-Pódese usar tamén para documentar parámetros dunha función ou columnas dunha táboa:
+### 18.3 Énfase e código en liña
+
+- **Negra** para termos clave; *cursiva* para títulos de obras e termos noutra lingua;
+  `código en liña` para funcións, variables, ficheiros e comandos.
+- **Non poñas barras invertidas no código en liña do texto corrido** (`\n`, `\t`, `\\`):
+  no PDF saen mal (por exemplo, `\{}n`). Describe o carácter («un salto de liña») ou usa un
+  bloque de código. Nos bloques de código non hai problema.
+
+### 18.4 Citas
+
+As citas (`>`) úsanse para texto citado, non para avisos, que van en callouts. Lembra que
+unha cita que empeza por certos emojis convértese en callout (sección 12.2).
+
+### 18.5 Emojis
+
+No PDF convértense en iconas vectoriais só estes emojis: ⚠️ 💡 📘 ❌ ✅ ✓ 🔴 🐛 🖥️ 🌐 ▶️
+⏹ 📝 🔒 🔑 📂 📁 🚀 ⚙️ 🎯 💻 ✏️ 🏆 ⛔. Outros poden non verse no PDF. Usa como máximo
+un por parágrafo e non os uses como substituto de callouts.
+
+### 18.6 Notas ao pé
 
 ```markdown
-`$perPage`
-:   Número de resultados por páxina. Defecto: `15`.
+Laravel usa Eloquent[^eloquent] como capa de acceso a datos.
 
-`$columns`
-:   Array de columnas a seleccionar. Defecto: `['*']` (todas).
+[^eloquent]: Eloquent implementa o patrón Active Record.
 ```
 
----
+### 18.7 Ecuacións
 
-## 8. Referencias cruzadas
-
-md2pdf resolve de forma propia referencias a **figuras e táboas** en LuaLaTeX e HTML, sen depender de `pandoc-crossref`. DOCX non resolve actualmente estas referencias.
-
-### Figuras
-
-```markdown
-![Ciclo de vida dunha petición HTTP](imaxes/request-lifecycle.png){#fig:lifecycle}
-
-Como se mostra na @fig:lifecycle, a petición pasa polo kernel...
-```
-
-### Táboas
-
-```markdown
-| Código | Significado |
-|--------|-------------|
-| 200 | OK |
-| 404 | Non atopado |
-
-: Códigos HTTP máis comúns {#tbl:http-codes}
-
-A @tbl:http-codes resume os códigos máis frecuentes.
-```
-
-Admítense `@fig:...` para figuras e `@tbl:...` ou `@tab:...` para táboas. A inicial maiúscula (`@Fig:...`, `@Tbl:...`) produce «Figura»/«Táboa» en vez de «figura»/«táboa». En HTML as referencias son ligazóns internas clicables.
-
-As referencias `@sec:`, `@eq:` e `@lst:` **non se resolven automaticamente** no pipeline actual. Se necesitas mencionar unha sección ou unha listaxe, faino polo seu nome no texto.
-
----
-
-## 9. Ecuacións matemáticas
-
-Renderízanse con STIX Two Math, ben emparellada con Source Serif 4.
-
-### En liña
-
-```markdown
-A complexidade do algoritmo é $O(n \log n)$ no caso promedio.
-```
-
-### En display (bloque centrado)
+En liña, `$O(n \log n)$`; en bloque:
 
 ```markdown
 $$
@@ -536,261 +687,103 @@ $$
 $$
 ```
 
-### Con referencia cruzada
+As ecuacións non se poden referenciar: non engadas `{#eq:…}` (aparece como texto) nin
+`@eq:…`. Refírete a elas no texto («a fórmula da media anterior»).
 
-```markdown
-$$
-P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}
-$$ {#eq:bayes}
+## 19. Moodle e paquetes IMS
 
-O teorema de Bayes (@eq:bayes) aplícase aquí do seguinte modo...
-```
-
----
-
-## 10. Listas
-
-### Con viñetas
-
-```markdown
-As vantaxes principais son:
-
-- Separación de responsabilidades clara
-- Testabilidade de cada capa por separado
-- Reutilización do modelo en múltiples vistas
-```
-
-### Numeradas
-
-```markdown
-Para instalar Laravel:
-
-1. Instalar Composer globalmente
-2. Executar `composer create-project laravel/laravel proxecto`
-3. Configurar o ficheiro `.env`
-4. Executar `php artisan key:generate`
-```
-
-### Encaixadas (máximo 2 niveis recomendados)
-
-```markdown
-- Rutas
-    - Web (`routes/web.php`)
-    - API (`routes/api.php`)
-- Controladores
-    - Resource controllers
-    - Invokable controllers
-```
-
----
-
-## 11. Énfase e formato en liña
-
-```markdown
-**negra** para termos clave ou conceptos importantes
-*cursiva* para títulos de documentos, termos en lingua estranxeira
-`código en liña` para nomes de funcións, variables, ficheiros, comandos
-```
-
-O `código en liña` renderízase en azul discreto en LuaLaTeX para distinguirse
-visualmente do texto sen romper o fluxo de lectura.
-
-### Barras invertidas en código en liña (LuaLaTeX)
-
-As secuencias con barra invertida como `\n`, `\t`, `\r`, `\\` dentro de código
-en liña (acentos graves) no **texto corrido** renderízanse incorrectamente en
-LuaLaTeX. A barra invertida dentro de `\texttt{}` interprétase como inicio
-de comando LaTeX, producindo saídas coma `\{}n` ou caracteres inesperados.
-
-Dentro de **bloques de código fenced** (`` ``` ``) non hai problema porque usan
-escaping completo.
-
-**Solución** — evitar barras invertidas en código en liña dentro da prosa.
-Describir o carácter con palabras ou usar un bloque de código:
-
-```markdown
-❌ Problemático:
-Se a cadea non inclúe `\n`, as saídas quedan pegadas.
-
-✅ Correcto — describir con palabras:
-Se a cadea non inclúe un salto de liña, as saídas quedan pegadas.
-
-✅ Correcto — usar bloque de código:
-Se a cadea non inclúe o carácter de escape:
-
-    \n
-
-as saídas quedan pegadas.
-```
-
-Isto afecta unicamente ao motor LuaLaTeX; DOCX non ten este problema.
-
----
-
-## 12. Blockquotes
-
-Os blockquotes normais (sen tipo de callout) renderízanse como caixas con borde
-lateral azul, distintas dos callouts tipados:
-
-```markdown
-> "Convention over configuration" é o principio central de Rails,
-> adoptado tamén por Laravel no seu enfoque de estrutura de proxecto.
-```
-
-Úsaos para citas textuais, non para avisos (que van en callouts).
-
----
-
-## 13. Emojis nas cabeceiras e texto
-
-Os emojis no texto corrido convértense automaticamente en iconas vectoriais
-(FontAwesome 5) en LuaLaTeX, polo que se ven perfectamente en calquera zoom:
-
-| Emoji | Uso recomendado |
-|-------|----------------|
-| ⚠️ | Aviso en texto corrido |
-| 💡 | Consello rápido sen caixa |
-| ✅ | Resultado correcto, validación |
-| ❌ | Resultado incorrecto, erro |
-| 📝 | Nota rápida |
-| 🔑 | Concepto clave, autenticación |
-| 🚀 | Posta en marcha, deploy |
-| ⚙️ | Configuración |
-| 💻 | Ambiente local, terminal |
-
-Non os uses en exceso; un por parágrafo como máximo.
-
----
-
-## 14. Notas ao pé
-
-```markdown
-Laravel usa Eloquent ORM[^eloquent] como capa de abstracción da base de datos.
-
-[^eloquent]: Eloquent implementa o patrón Active Record, onde cada modelo
-    corresponde a unha táboa e cada instancia a unha fila.
-```
-
----
-
-## 15. Robustez do pipeline e diagnóstico de erros
-
-O preprocesador de `md2pdf` corrixe automaticamente os problemas estruturais máis
-frecuentes antes de chamar a Pandoc. Non é necesario facer ningunha revisión manual
-para que a compilación funcione, pero é útil entender que se corrixe e que non, para
-interpretar os avisos en stderr e diagnosticar fallos en casos extremos.
-
-### O que o pipeline corrixe automaticamente
-
-**Front matter YAML.**
-Se o ficheiro comeza cun bloque `---`…`---`, o preprocesador extrae os metadatos
-(`module`, `subject`, `activity`, `school`, `author`, `course`, `keywords`) e elimina
-o bloque completo antes de pasalo a Pandoc. Sen esta eliminación, as liñas YAML
-aparecerían como texto plano no corpo do PDF.
-
-**Bloques de código sen linguaxe.**
-Cando o preprocesador detecta un `` ``` `` de apertura sen linguaxe, substituíao por
-`` ```text `` e emite un aviso en stderr:
-
-```
-⚠  Auto-fixado: bloque de código sen linguaxe → ```text
-```
-
-Non causa fallo de compilación, pero o aviso indica que o ficheiro fonte non está
-ben escrito. A boa práctica é especificar sempre a linguaxe explicitamente.
-
-**Callouts sen liña baleira tras a apertura.**
-Pandoc require unha liña baleira entre `:::tipo` e o primeiro contido para recoñecer
-o bloque como div. O preprocesador insírea automaticamente en todos os callouts que a
-omitan, tanto nos convertidos desde `> [!TYPE]` como nos escritos directamente no `.md`.
-
-**Separadores `---`.**
-Eliminados en todo o documento (incluíndo dentro de callouts) antes de chegar a Pandoc.
-
-### O que o pipeline NON pode corrixir
-
-**Bloque de código aberto e nunca pechado.** Se falta o `` ``` `` de peche, o resto
-do documento é interpretado como contido do bloque. O lint avisa antes da compilación,
-pero o ficheiro faría fallar LaTeX con `File ended while scanning`.
-
-**`:::` de peche ausente.** Un callout sen `:::` de peche produce LaTeX malformado.
-O lint detecta e informa da liña onde abriu.
-
-**Múltiples cabeceiras `#` de nivel 1.** O primeiro `#` convértese no título do PDF;
-os seguintes producen un segundo título no corpo do documento. O lint avisa de todos.
-
-**Imaxes moi grandes ou PDF vectoriais sen `{width=...}`.** LuaLaTeX cólgase
-indefinidamente (sen erro nin mensaxe) ao intentar calcular o tamaño da imaxe.
-Afecta a PNG/JPG de máis de ~800 px de ancho e a calquera PDF vectorial sen
-dimensións intrínsecas. A solución é engadir `{width=100%}` ou redimensionar a
-imaxe. Ver a sección 6 (Imaxes e figuras) para os detalles.
-
-**Barras invertidas en código en liña no texto corrido.** Secuencias como `\n`,
-`\t` ou `\\` dentro de acentos graves na prosa renderízanse incorrectamente
-(por exemplo `\{}n`) porque LuaLaTeX interpreta a barra invertida en `\texttt{}`
-como inicio de comando. A solución é describir o carácter con palabras ou usar
-un bloque de código fenced. Ver a sección 11 para os detalles.
-
-### Validación proactiva con `--check` e `--strict`
-
-O flag `--check` executa o lint sen compilar e informa de todos os problemas:
+Para unha actividade individual abonda co HTML autocontido (`-e html`). Para unha unidade
+ou conxunto de actividades:
 
 ```bash
-md2pdf documento.md --check
+md2pdf U1/ --ims U1-moodle.zip --ims-title "UD1. Introdución á programación"
 ```
 
-O flag `--strict` combínase con `--check` e trata as advertencias como erros
-(exit code `1`), útil en scripts de xeración automática onde prefires un fallo
-limpo a un PDF mal formado:
+O que afecta á redacción:
+
+- **Orde:** ao pasar un directorio, os ficheiros ordénanse de forma natural (`U1A2` antes
+  que `U1A10`). Nomea os ficheiros para que esa orde sexa a da unidade.
+- **Título de cada elemento da navegación:** `activity` → primeiro `#` → nome do ficheiro.
+  Dálle a cada documento un `activity` curto e distintivo.
+- **Ligazóns entre documentos:** relativas ao `.md` (sección 17.4). Unha ligazón a un `.md`
+  non incluído no paquete produce un aviso e, con `--strict`, impide xerar o ZIP.
+- **Recursos ligados:** cópianse ao cartafol `recursos/` do paquete. Se o ficheiro non
+  existe, avísase e, con `--strict`, non se xera o ZIP.
+- Cada HTML é autocontido: CSS, imaxes e diagramas van incrustados.
+- Non escribas instrucións que dependan dunha páxina física ou da posición na pantalla.
+
+---
+
+# Parte III. Validación e entrega
+
+## 20. Validación automática e `--strict`
+
+En cada conversión, md2pdf comproba o Markdown e informa en stderr de:
+
+- marca BOM ao inicio do ficheiro;
+- front matter sen pechar ou que chega ata un `---` do corpo;
+- bloques de código sen linguaxe ou sen pechar;
+- callouts sen liña baleira tras a apertura, sen pechar ou con `:::` de peche soltos;
+- máis dunha cabeceira `#`.
+
+Ademais: erros de renderizado de diagramas; en HTML, IDs duplicados, ligazóns internas
+rotas, referencias `@fig:`/`@tbl:` sen destino e imaxes sen texto alternativo; en IMS,
+ligazóns a Markdown non incluídos e recursos inexistentes.
+
+Sen opcións, estes problemas son avisos e a conversión continúa (os diagramas fallidos
+quedan como código). Con `--strict`, calquera deles aborta a conversión cun código de
+saída distinto de cero. Os avisos de tamaño de texto dos diagramas non abortan.
 
 ```bash
-md2pdf documento.md --check --strict
+md2pdf documento.md --strict
+md2pdf documento.md -e html --strict
 ```
 
-Sen `--check` (comportamento por defecto), os problemas detectados móstranse como
-avisos en stderr pero a compilación continúa igualmente.
+Non hai modo de só comprobar sen converter.
 
-### Erros LaTeX e o que indican
+## 21. Erros de LaTeX e causa probable
 
-Se a compilación falla a pesar do preprocesador (ficheiros importados doutras
-ferramentas, edición manual post-procesamento, etc.), a mensaxe de LaTeX orienta
-a busca:
+Se a compilación do PDF falla a pesar das comprobacións:
 
-| Mensaxe LaTeX | Causa probable en md2pdf |
+| Mensaxe LaTeX | Causa probable |
 |---|---|
-| `Extra }, or forgotten $` | Callout sen pechador `:::` correspondente |
-| `Undefined control sequence` | Bloque de código non pechado que "tragou" un callout ou cabeceira |
-| `Missing $ inserted` | Carácter especial LaTeX (`_`, `^`, `$`, `&`) en texto corrido fóra de `$...$` |
+| `Extra }, or forgotten $` | Callout sen `:::` de peche |
+| `Undefined control sequence` | Bloque de código sen pechar que «tragou» un callout ou cabeceira |
+| `Missing $ inserted` | Carácter especial (`_`, `^`, `$`, `&`) fóra de código ou fórmula |
 | `File ended while scanning` | Bloque de código aberto que nunca se pecha |
-| `Paragraph ended before \@makecol` | Callout malformado; combinación de bloque non pechado e div a medio procesar |
-| *(LuaLaTeX cólgase sen erro)* | Imaxe moi grande (>800 px) ou PDF vectorial sen `{width=...}`; ver sección 6 |
+| `Paragraph ended before \@makecol` | Callout malformado xunto cun bloque sen pechar |
+| LuaLaTeX non remata, sen erro | Imaxe grande ou PDF vectorial sen `{width=...}` (sección 16.2) |
 
----
+## 22. Lista de comprobación antes de entregar
 
-## Resumo de prioridades
+Contido e pedagoxía:
 
-Cando redactes un documento técnico con este sistema:
+- [ ] A progresión respecta os prerrequisitos e a planificación da unidade.
+- [ ] Non hai repeticións sen función pedagóxica nin contidos adiantados en exceso.
+- [ ] Non se inventaron correspondencias con RA/CA.
+- [ ] Os exemplos son mínimos, coherentes e, cando corresponda, executables.
+- [ ] Cada táboa ou diagrama é a representación máis clara do que mostra.
+- [ ] Os callouts teñen función semántica; `warning` e `danger`, xustificados.
+- [ ] Os materiais do alumnado non conteñen solucións.
 
-1. **Pon sempre `activity`** no front matter — identifica a actividade en todas as páxinas
-2. **Usa callouts** para información importante, non texto en negra illada
-3. **Especifica sempre a linguaxe** nos bloques de código (inclúe `text` para saídas)
-4. **Usa `hl=`** para resaltar liñas que mencionas no texto
-5. **Usa diagramas Mermaid** para fluxos, secuencias e relacións — máis lexibles que ASCII art en `text`
-6. **Usa referencias cruzadas** (`@fig:`, `@tbl:`) en vez de "a imaxe de abaixo"
-7. **Non numeres** cabeceiras nin crees TOC manuais
-8. **Un só `#`** ao inicio como título; o resto desde `##`
-9. **Engade `{width=100%}`** a imaxes grandes (>800 px) ou PDF vectoriais para evitar que LuaLaTeX se colgue
-10. **Evita barras invertidas en código en liña** na prosa (describe con palabras ou usa un bloque de código)
+Sintaxe:
 
+- [ ] Front matter con valores dunha liña; `activity` cando o proxecto o use.
+- [ ] Un só `#`; cabeceiras sen numerar e sen empezar por número; ningunha contén «Reto»
+      sen querer.
+- [ ] Sen `---`, `[TOC]` nin índices manuais.
+- [ ] Liña baleira antes de cada lista, táboa, cabeceira, cita e bloque.
+- [ ] Todos os bloques de código teñen linguaxe; `hl=` só nas liñas comentadas.
+- [ ] Callouts con nomes ingleses e liña baleira tras a apertura.
+- [ ] Todos os diagramas e imaxes informativas teñen pé; as decorativas, `{.decorative}`.
+- [ ] Imaxes grandes ou PDF con `{width=...}`.
+- [ ] Referencias con `@fig:`/`@tbl:` e ligazóns internas; nada de `@sec:`, `@eq:`, `@lst:`
+      nin posicións («abaixo», «á dereita»).
+- [ ] Sen barras invertidas no código en liña da prosa.
+- [ ] Ligazóns externas con `https://`; ligazóns entre actividades relativas ao `.md`.
 
-## Empaquetado IMS para Moodle
+Verificación:
 
-- CLI: `md2pdf <inputs> --ims paquete.zip [--ims-title "Título"]`.
-- Non é un motor: reutiliza `engine="html"` para cada Markdown.
-- Implementación: `md2pdf/ims.py`.
-- O ZIP leva `imsmanifest.xml` na raíz e un HTML autocontido por recurso.
-- IMS Content Packaging 1.1.4, recursos `type="webcontent"`.
-- A orde dos `item` coincide coa orde de `collect_files()`.
-- Título de cada item: `activity` → `title` → primeiro H1 → stem.
-- Ligazóns relativas a `.md` incluídos reescríbense a `.html`; con `--strict`, ligazóns a Markdown locais non incluídos fan fallar o empaquetado.
-- `--watch` e `-o` non aplican en modo IMS.
+- [ ] Executar `md2pdf` e revisar todos os avisos.
+- [ ] Para a entrega final, `--strict` (e `-e html --strict` se se publica en Moodle).
+- [ ] Revisar visualmente as figuras: a validación non garante que sexan lexibles.

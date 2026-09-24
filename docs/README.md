@@ -79,7 +79,7 @@ O **título** extráese automaticamente do primeiro `# Heading` do documento. O 
 
 Os campos de metadatos extráense por orde de prioridade:
 
-1. **Ficheiro `metadata.yaml`** no mesmo directorio do `.md`. O script busca primeiro `<prefixo-unidade>-metadata.yaml` (ex: `u3-metadata.yaml` para `U3A*.md`), despois `metadata.yaml` visible e finalmente `.metadata.yaml` oculto.
+1. **Ficheiro `metadata.yaml`** no mesmo directorio do `.md`. O script busca primeiro `<prefixo-unidade>-metadata.yaml` (ex: `u3-metadata.yaml` para `U3A*.md`), despois `metadata.yaml` (tamén `.yml`).
 2. **YAML front matter** no propio ficheiro `.md`, que **sobreescribe campo a campo** os valores do ficheiro externo.
 
 #### Campos recoñecidos
@@ -564,46 +564,39 @@ Os pés de figura (`![Texto](img.png)`) amósanse centrados, en fonte pequena, c
 
 ## Uso con asistentes de IA
 
-O ficheiro `md2pdf-ai-reference.md` é unha referencia compacta deseñada para pasarlle a unha IA (Claude, ChatGPT, etc.) no prompt do sistema ou ao inicio dunha conversa, de xeito que xere Markdown directamente compatible con md2pdf sen necesidade de correccións posteriores.
+O ficheiro `docs/md2pdf-ai-reference.md` é a referencia única para pasarlle a unha IA (Claude, ChatGPT, etc.) no prompt do sistema ou ao inicio dunha conversa, de xeito que xere materiais docentes en Markdown directamente compatibles con md2pdf. Reúne nun só documento:
+
+- **Parte I. Criterios pedagóxicos e editoriais:** secuencia de aprendizaxe, estrutura das actividades, terminoloxía, elección entre táboa, diagrama e gráfico, uso semántico dos callouts, tarefas e solucionarios, accesibilidade.
+- **Parte II. Sintaxe e convencións de md2pdf:** front matter, cabeceiras, callouts, código, diagramas (Mermaid, D2, Graphviz, Vega-Lite), táboas, figuras, referencias, ligazóns e IMS, coas diferenzas entre PDF, HTML e DOCX.
+- **Parte III. Validación e entrega:** avisos, `--strict`, erros de LaTeX e lista de comprobación final.
 
 ### Por que é necesario
 
-Os modelos de linguaxe xeran Markdown estándar que, sen contexto adicional, produce documentos perfectamente válidos pero que non aproveitan as capacidades do pipeline:
+Os modelos de linguaxe xeran Markdown de estilo GitHub que, sen contexto adicional, choca co pipeline:
 
-- Escriben `## 1. Sección` cando md2pdf numera automaticamente (duplica a numeración).
-- Crean `## Índice` con listas de ligazóns que md2pdf elimina (traballo perdido).
-- Poñen `---` entre seccións que md2pdf tamén elimina.
-- Usan bloques de código sen linguaxe (```` ``` ```` sen `php`, `bash`, etc.), o que desactiva o resaltado de sintaxe.
-- Descoñecen os callouts (`::: note`, `::: warning`…) e usan negra ou blockquotes normais en vez deles.
-- Non saben que `activity` é o campo clave do front matter para identificar a actividade en todas as páxinas.
+- Escriben listas e táboas sen liña baleira antes, que Pandoc converte en texto plano.
+- Escriben `## 1. Sección` cando md2pdf numera automaticamente, e `## Índice` ou `---` que md2pdf elimina.
+- Usan bloques de código sen linguaxe, diagramas sen pé (aviso de accesibilidade en HTML) ou referencias `@sec:`/`@eq:` que non se resolven.
+- Descoñecen os callouts (`::: note`, `::: warning`…) e o campo `activity` do front matter.
 
 ### Como usalo
 
-Inclúe o contido de `md2pdf-ai-reference.md` no prompt do sistema ou como primeiro mensaxe da conversa:
+Inclúe o contido de `docs/md2pdf-ai-reference.md` no prompt do sistema ou como primeira mensaxe da conversa, xunto coa guía da unidade ou os materiais existentes se os hai:
 
 ```
 [Contido de md2pdf-ai-reference.md]
 
-Xera un documento Markdown sobre [tema] seguindo estritamente as convencións anteriores.
+Xera a actividade [tema] seguindo estritamente a referencia anterior.
 ```
-
-Con este contexto, a IA xera documentos que:
-
-- Usan o front matter correcto (`module`, `subject`, `activity`, `school`, `course`)
-- Non numeran cabeceiras nin crean TOC manuais
-- Especifican linguaxe en todos os bloques de código
-- Usan callouts tipados (`::: note`, `::: warning`, etc.) en vez de texto en negra
-- Usan `hl=` para resaltar liñas referenciadas no texto
-- Evitan cadeas longas sen espazos en celas de táboas
 
 ### Limitacións que a IA non pode resolver por ti
 
-Aínda con a referencia, hai decisións que requiren criterio humano:
+Aínda coa referencia, hai decisións que requiren criterio docente:
 
 - **Que liñas resaltar con `hl=`** — depende de cal é o punto pedagóxico de cada bloque.
 - **Que información merece un callout e de que tipo** — `warning` vs `danger` require xuízo sobre a gravidade.
 - **Estrutura das seccións** — a xerarquía de `##`/`###` debe reflectir a lóxica do contido.
-- **Lonxitude das táboas** — o sistema avisa de roturas de páxina pero non decide onde partir.
+- **Lexibilidade das figuras** — md2pdf avisa de texto pequeno nos diagramas, pero hai que revisar visualmente o resultado.
 
 
 ## Ficheiros do proxecto
@@ -629,7 +622,6 @@ md2pdf/
 ├── md2pdf.html                Template HTML5 de Pandoc
 ├── md2pdf.css                 Deseño responsive, nocturno e impresión HTML
 ├── html.lua                   Callouts, captions e referencias HTML
-├── md2pdf-ai-reference.md     Referencia para asistentes de IA
 ├── drake-jb.theme             Tema de resaltado de sintaxe
 ├── auto-table-widths.lua      Filtro Lua para táboas e código en liña
 ├── small-table.lua            Filtro Lua para táboas pequenas (límite 6 filas)
@@ -638,6 +630,7 @@ md2pdf/
 ├── callouts-docx.lua          Filtro Lua para callouts en DOCX
 ├── hl-lines.lua               Filtro Lua para resaltado de liñas (LuaLaTeX)
 ├── install-md2pdf.py          Instalador multiplataforma
+├── docs/md2pdf-ai-reference.md  Referencia para asistentes de IA
 └── README.md                  Este ficheiro
 ```
 
@@ -812,7 +805,7 @@ keywords: "PHP, Laravel, DAW"
 course: "Curso 2025-2026"
 ```
 
-O script busca automaticamente `<prefixo>-metadata.yaml` (ex: `u3-metadata.yaml` para `U3A1.md`, `U3A2.md`...), `metadata.yaml` visible ou `.metadata.yaml` oculto.
+O script busca automaticamente `<prefixo>-metadata.yaml` (ex: `u3-metadata.yaml` para `U3A1.md`, `U3A2.md`...), ou `metadata.yaml` (tamén `.yml`).
 
 **Opción 2 — YAML front matter** no propio ficheiro `.md` (sobreescribe campos do ficheiro externo):
 
