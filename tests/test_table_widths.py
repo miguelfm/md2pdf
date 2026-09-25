@@ -92,6 +92,34 @@ class TableWidthTests(unittest.TestCase):
         for got, expected in zip(widths, (0.3, 0.1, 0.6)):
             self.assertAlmostEqual(got, expected, places=3)
 
+    def test_table_that_fits_keeps_natural_width(self):
+        # «Resto da división enteira» ten máis de 20 caracteres, pero a
+        # táboa enteira cabe sen partir en menos do 85 % da liña.
+        latex = self.render_latex('''\
+| Operador | Operación | Exemplo | Resultado |
+|:-:|---|:-:|:-:|
+| `+` | Suma | `7 + 2` | 9 |
+| `%` | Resto da división enteira | `7 % 2` | 1 |
+''')
+        self.assertIn(r'\begin{longtable}[]{@{}clcc@{}}', latex)
+        self.assertIn(r'\setlength{\LTleft}{\fill}', latex)
+
+    def test_natural_width_ignores_pandoc_relative_widths(self):
+        # Unha liña de máis de 72 caracteres fai que Pandoc dea anchos
+        # relativos; se a táboa cabe, bórranse e quedan columnas l.
+        latex = self.render_latex(
+            '| Superglobal | Contido |\n|---|---|\n'
+            '| `$_SERVER` | Datos da petición e do servidor: método, ruta, '
+            'cabeceiras |\n| `$_GET` | Valores enviados na cadea de consulta |\n')
+        self.assertIn(r'\begin{longtable}[]{@{}ll@{}}', latex)
+
+    def test_table_to_fill_keeps_full_width(self):
+        latex = self.render_latex(
+            '| Dato | Apache | Terminal |\n|---|---|---|\n'
+            '| SAPI | | |\n| memory_limit | | |\n')
+        self.assertIn(r'\real{', latex)
+        self.assertNotIn(r'\setlength{\LTleft}{\fill}', latex)
+
     def test_short_table_keeps_natural_width(self):
         latex = self.render_latex(
             '| A | B | A && B |\n|---|---|---|\n'

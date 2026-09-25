@@ -522,7 +522,8 @@ Prioridade: atributo do bloque > front matter > `metadata.yaml` > valor predeter
 - O pé (`: Texto {#tbl:id}`) vai tras a táboa, separado por unha liña baleira; permite
   citala con `@tbl:rutas`.
 - Os anchos das columnas calcúlanse polo **contido** das celas: escribe sempre os `---`
-  da mesma lonxitude. Unha táboa curta queda co seu ancho natural e centrada. Só se hai
+  da mesma lonxitude. Unha táboa que cabe sen partir liñas queda co seu ancho natural e
+  centrada; unha táboa con columnas baleiras para encher ocupa toda a liña. Só se hai
   que forzar anchos concretos, guións de lonxitude distinta fixan anchos proporcionais.
 - Evita cadeas longas sen espazos nas celas (URLs, *namespaces* completos): forzan a
   columna. Abrevia (`UserAuthenticationController`) e deixa o nome completo no texto.

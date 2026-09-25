@@ -466,6 +466,7 @@ Tema personalizado `drake-jb.theme` baseado na paleta GitHub Light con 13 cores 
 Filtro Lua (`auto-table-widths.lua`) que substitúe os anchos arbitrarios que Pandoc calcula a partir dos guións do Markdown. O filtro:
 
 - Analiza o contido real de cada cela.
+- Se todo o contido cabe sen partir liñas en como moito o 85 % da liña, a táboa queda co seu ancho natural e centrada, en vez de estirarse deixando ocos entre columnas. As táboas con algunha columna baleira no corpo (para que o alumnado a encha) ocupan sempre toda a liña.
 - Limita a lonxitude efectiva por cela a 60 caracteres (evita que código moi longo nunha columna espreme as demais).
 - Garante un ancho mínimo baseado no texto da cabeceira (as cabeceiras non deben romper liñas).
 - Garante un ancho mínimo para código monoespaciado curto (como `@deprecated`) para evitar hifenacións forzadas.
@@ -1033,7 +1034,7 @@ O filtro `auto-table-widths.lua` ten os seguintes parámetros:
 - `MAX_CELL_LEN = 60` — lonxitude máxima efectiva por cela
 - `CHAR_WIDTH = 0.013` — ancho estimado dun carácter mono (fracción da liña)
 - `MAX_MBOX_LEN = 15` — código en liña ata 8 caracteres (ou ata 15 sen `/ \ . : = ? - _`) vai nun `\mbox` indivisible; o resto rompe en `\allowbreak`/`\discretionary`
-- `NATURAL_MAX_CELL = 20` e `NATURAL_MAX_TOTAL = 0.85` — se ningunha cela pasa de 20 caracteres e o ancho estimado non chega ao 85 % da liña, non se fixan anchos: Pandoc usa columnas `l` co ancho natural e a táboa céntrase
+- `NATURAL_MAX_TOTAL = 0.85` — se todas as columnas caben sen partir liñas e a táboa ocupa como moito o 85 % da liña, non se fixan anchos: Pandoc usa columnas `l`/`c`/`r` co ancho natural e a táboa céntrase. As táboas con algunha columna sen contido no corpo (para encher) ocupan sempre toda a liña
 - `SERIF_PT`, `SANS_BOLD_PT`, `MONO_PT`, `SPACE_PT` e `STRONG_FACTOR` — anchos (pt) dos glifos e do espazo medidos en `\small` co corpo de 13 pt, para o mínimo por palabras e a simulación de liñas; `LINE_PT = 483.7` e `TABCOLSEP_PT = 6` son o `\linewidth` en A4 con marxes de 20 mm e o `\tabcolsep` das táboas. Se cambias fonte, tamaño ou papel, axústaos
 - `WORD_MARGIN = 1.03`, `OVERFLOW_PT = 8` e `LOOKAHEAD_PT = 2` — marxe sobre as palabras divisibles, invasión permitida ás que non se poden dividir e marxe de seguridade ao escoller a columna que cede espazo
 - Para fixar os anchos a man nunha táboa concreta, usa guións de lonxitude distinta na liña separadora (ver [Anchos manuais](#anchos-manuais))

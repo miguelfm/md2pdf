@@ -2,12 +2,12 @@
 local MAX_CELL_LEN = 60
 local MAX_MBOX_LEN = 15
 local BREAK_CLASS = "[,%s/%.:=%?%-_%(;]"
--- Táboas de contido curto: se ningunha cela pasa de NATURAL_MAX_CELL caracteres
--- e o ancho natural estimado non supera NATURAL_MAX_TOTAL da liña, non se fixan
--- anchos e Pandoc usa columnas l/c/r co seu ancho natural. Así unha táboa de
--- verdade ou de valores numéricos non se estira ata ocupar a liña enteira nin
--- deixa columnas estreitísimas ao lado doutras anchas.
-local NATURAL_MAX_CELL = 20
+-- Táboas que caben sen partir liñas: se o ancho natural de todas as columnas
+-- (a liña máis longa de cada unha) suma como moito NATURAL_MAX_TOTAL da liña,
+-- non se fixan anchos e Pandoc usa columnas l/c/r co seu ancho natural,
+-- centradas. Así unha táboa curta non se estira ata ocupar a liña enteira
+-- deixando ocos baleiros entre as columnas. As táboas con algunha columna sen
+-- contido no corpo son para encher e seguen ocupando toda a liña.
 local NATURAL_MAX_TOTAL = 0.85
 local CHAR_WIDTH = 0.013
 -- Ancho mínimo por palabras: ningunha columna debe ser máis estreita que a
@@ -226,6 +226,45 @@ local function count_lines(lines, width)
   end
   return n
 end
+-- Ancho natural (pt) de cada columna: a súa liña máis longa sen partir.
+local function natural_widths(rows, ncols)
+  local widths = {}
+  for i = 1, ncols do widths[i] = 0 end
+  for _, row in ipairs(rows) do
+    for i, lines in pairs(row) do
+      for _, words in ipairs(lines) do
+        local w = 0
+        for k, word in ipairs(words) do
+          w = w + word.pt + ((k > 1 and word.space) and SPACE_PT or 0)
+        end
+        if w > widths[i] then widths[i] = w end
+      end
+    end
+  end
+  return widths
+end
+-- Hai algunha columna sen ningunha cela con contido no corpo?
+local function empty_column(tbl, ncols)
+  for i = 1, ncols do
+    local filled = false
+    for _, body in ipairs(tbl.bodies) do
+      for _, row in ipairs(body.body) do
+        local cell = row.cells[i]
+        if cell and pandoc.utils.stringify(cell.contents) ~= "" then
+          filled = true
+        end
+      end
+    end
+    if not filled then return true end
+  end
+  return false
+end
+local function natural_fits(tbl, rows, ncols)
+  if empty_column(tbl, ncols) then return false end
+  local total = 2 * TABCOLSEP_PT * (ncols - 1)
+  for _, w in ipairs(natural_widths(rows, ncols)) do total = total + w end
+  return total <= NATURAL_MAX_TOTAL * LINE_PT
+end
 -- Altura estimada da táboa en liñas: en cada fila manda a cela máis alta.
 local function table_height(rows, widths, avail)
   local h = 0
@@ -438,12 +477,10 @@ function Table(tbl)
     return tbl
   end
   local max_lens, min_lens, word_pts, word_rows = analyze_cells(tbl, ncols)
-  local natural, estimado = true, 0
-  for i = 1, ncols do
-    if max_lens[i] > NATURAL_MAX_CELL then natural = false end
-    estimado = estimado + max_lens[i] * CHAR_WIDTH + 0.02
-  end
-  if natural and estimado <= NATURAL_MAX_TOTAL then
+  if natural_fits(tbl, word_rows, ncols) then
+    -- Se algunha liña do Markdown pasa de 72 caracteres, Pandoc xa lle deu
+    -- anchos relativos ás columnas (p{}); sen eles usa l/c/r naturais.
+    for _, colspec in ipairs(tbl.colspecs) do colspec[2] = nil end
     estilar_cabeceira(tbl)
     -- Unha táboa co seu ancho natural non ocupa a liña enteira, así que se
     -- centra. Faise localmente, porque o preámbulo pode ter \LTleft a cero
