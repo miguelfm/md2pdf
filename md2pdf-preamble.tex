@@ -69,11 +69,16 @@
 \setlength{\abovecaptionskip}{3pt}
 \setlength{\belowcaptionskip}{1pt}
 \AtEndEnvironment{figure}{\vspace{-8pt}}
+% Se a cabeceira vén xusto despois doutra (\if@nobreak segue activo),
+% non se reserva espazo: \Needspace forzaría un salto entre ambas.
+\makeatletter
+\newcommand{\mdpdf@headneedspace}[1]{\if@nobreak\else\Needspace{#1}\fi}
 \AtBeginDocument{%
-  \pretocmd{\section}{\Needspace{8\baselineskip}}{}{}%
-  \pretocmd{\subsection}{\Needspace{7\baselineskip}}{}{}%
-  \pretocmd{\subsubsection}{\Needspace{6\baselineskip}}{}{}%
+  \pretocmd{\section}{\mdpdf@headneedspace{8\baselineskip}}{}{}%
+  \pretocmd{\subsection}{\mdpdf@headneedspace{7\baselineskip}}{}{}%
+  \pretocmd{\subsubsection}{\mdpdf@headneedspace{6\baselineskip}}{}{}%
 }
+\makeatother
 \AfterEndPreamble{%
   \setlength{\topsep}{0.15em}%
   \setlength{\partopsep}{0pt}%
