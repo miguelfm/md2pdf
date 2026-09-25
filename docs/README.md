@@ -446,7 +446,7 @@ Xerarquía de espazado en LuaLaTeX (con `\parskip` 0.45em engadido):
 ### Protección de orfas, viúvas e cabeceiras
 
 - **Orfas e viúvas**: `\widowpenalty=3000`, `\clubpenalty=3000` e `\displaywidowpenalty=2000` desaconsellan liñas solitarias ao inicio/final de páxinas sen bloquear de maneira absoluta a composición.
-- **Cabeceiras**: `\Needspace` vía `\pretocmd` reserva 8, 7 e 6 liñas base antes de `section`, `subsection` e `subsubsection`, respectivamente.
+- **Cabeceiras**: `\Needspace` vía `\pretocmd` reserva 8, 7 e 6 liñas base antes de `section`, `subsection` e `subsubsection`, respectivamente. Se a cabeceira vai xusto despois doutra (sección + subsección), non se reserva nada: `\Needspace` forzaría o salto entre as dúas e deixaría a primeira soa ao final da páxina. Detéctase con `\if@nobreak`, que LaTeX mantén activo desde unha cabeceira ata o primeiro parágrafo; a reserva da primeira cabeceira xa protexe o conxunto.
 - **Cabeceira + táboa pequena**: cando unha táboa de ata 6 filas aparece inmediatamente despois dunha cabeceira, `small-table.lua` fai unha única reserva conxunta antes da cabeceira. Así evita que a cabeceira quede soa ao final da páxina sen aumentar globalmente as reservas 8/7/6. Se hai varias cabeceiras seguidas (sección + subsección + táboa), a reserva vai antes da primeira e suma tres liñas por cada cabeceira anterior; se fose só antes da última, o salto quedaría entre elas.
 - **Táboas pequenas independentes**: manteñen a súa propia reserva `número de filas + 5` antes do `tabular`; as táboas de 7 ou máis filas seguen como `longtable` e poden partir entre páxinas.
 
@@ -801,6 +801,9 @@ md2pdf apuntes.md --toc-depth=2
 
 # Outro estilo de resaltado
 md2pdf apuntes.md --highlight=tango
+
+# Sen aliñamento decimal nas columnas numéricas das táboas
+md2pdf apuntes.md --no-decimal-align
 
 # Modo vixilancia: recompila automaticamente ao detectar cambios
 md2pdf apuntes.md --watch

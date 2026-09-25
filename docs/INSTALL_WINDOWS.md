@@ -296,6 +296,9 @@ md2pdf apuntes.md --titlepage
 # Sen callouts (blockquotes simples)
 md2pdf apuntes.md --no-callouts
 
+# Sen aliñamento decimal nas columnas numéricas das táboas
+md2pdf apuntes.md --no-decimal-align
+
 # Varios ficheiros
 md2pdf *.md
 
