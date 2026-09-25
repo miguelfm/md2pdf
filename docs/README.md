@@ -93,6 +93,7 @@ Os campos de metadatos extráense por orde de prioridade:
 | `author` | Metadatos internos do PDF | Nome do docente; na portada úsase como alternativa a `school` se non hai centro definido |
 | `course` | Portada — bloque inferior | Curso académico (ex: "Curso 2025-2026") |
 | `keywords` | Metadatos internos do PDF | Palabras clave para buscadores |
+| `decimal-align` | Táboas do PDF | `false` desactiva o aliñamento decimal das columnas numéricas (como `--no-decimal-align`) |
 
 O campo `subtitle` acepta como alias de `activity` para compatibilidade con documentos anteriores.
 
@@ -513,6 +514,14 @@ O preámbulo e o filtro `auto-table-widths.lua` aplican automaticamente un conxu
 - **Cabeceiras en sans-serif bold con cor**: o filtro `auto-table-widths.lua` envolve cada cela de cabeceira en `\textsf{\bfseries\color{heading-section}{...}}`, usando o mesmo ton que as cabeceiras de sección (azul pizarra en día, tostado ámbar en noite, negro en impresión) e eliminando o `\textbf` que Pandoc xa inxecta para evitar dobre bold
 - **Sen liñas horizontais**: `\toprule`, `\midrule` e `\bottomrule` están suprimidos; coas cabeceiras en cor e o zebra striping as liñas son redundantes e ademais `\toprule` repetiríase incorrectamente en cada páxina de continuación de táboas longas
 - **Zebra striping**: filas alternas en `gray!6!white` para facilitar a lectura horizontal
+- **Aliñamento decimal**: nunha columna na que todas as celas son números (`9`, `-2`, `3.5`, `0,75`; as baleiras permítense) e polo menos un ten parte decimal, as unidades e o separador decimal quedan na mesma vertical. Cada cela ocupa o mesmo ancho, así que o aliñamento que marque o Markdown move o bloque enteiro: con `|:-:|` a columna queda centrada pero aliñada polo decimal. Só no PDF. Desactívase con `--no-decimal-align` ou con `decimal-align: false` no front matter ou no `metadata.yaml`
+
+```markdown
+| Operador | Operación | Exemplo | Resultado |
+|:-:|---|:-:|:-:|
+| `*` | Multiplicación | `7 * 2` | 14 |
+| `/` | División | `7 / 2` | 3.5 |
+```
 
 ### Código en liña intelixente
 
@@ -850,6 +859,7 @@ Ambas opcións son opcionais e combinables. Sen ningún dos dous, o PDF xérase 
 | `--watch` | Modo vixilancia: recompila ao detectar cambios nos Markdown/metadatos | desactivado |
 | `--strict` | Abortar se a validación previa detecta problemas | desactivado |
 | `--no-callouts` | Desactivar o filtro de callouts | activado |
+| `--no-decimal-align` | Non aliñar polo separador decimal as columnas numéricas das táboas | activado |
 | `--no-metadata` | Non cargar metadatos de `.yaml` nin front matter | cargados |
 | `--toc-depth` | Profundidade do índice | `3` |
 | `--lang` | Idioma do documento | `gl` |

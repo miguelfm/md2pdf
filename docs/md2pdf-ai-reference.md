@@ -527,6 +527,9 @@ Prioridade: atributo do bloque > front matter > `metadata.yaml` > valor predeter
 - Evita cadeas longas sen espazos nas celas (URLs, *namespaces* completos): forzan a
   columna. Abrevia (`UserAuthenticationController`) e deixa o nome completo no texto.
 - Evita celas con varios parágrafos: a táboa resume e o texto desenvolve.
+- Nunha columna só de números con algún decimal, o PDF aliña as unidades e o separador
+  decimal. Escribe só o número na cela (`3.5`, non `3.5 s` nin `` `3.5` ``) e centra a
+  columna con `|:-:|` se o queres centrado.
 - No PDF, as táboas de ata 6 filas non se parten entre páxinas; as máis longas pártense
   repetindo a cabeceira. Prefire varias táboas curtas, unha por concepto, a unha táboa
   xigante, e pon as filas máis importantes ao inicio.

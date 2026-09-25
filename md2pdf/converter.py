@@ -108,6 +108,7 @@ def convert_one(
     listings: bool = False,
     titlepage: bool = False,
     callouts: bool = True,
+    decimal_align: bool = True,
     no_metadata: bool = False,
     print_mode: bool = False,
     night_mode: bool = False,
@@ -171,6 +172,10 @@ def convert_one(
             md_meta = {**yaml_meta, **fm_meta}
         else:
             md_meta = fm_meta
+        # «decimal-align: false» no front matter ou en metadata.yaml equivale
+        # a --no-decimal-align
+        if str(md_meta.get('decimal-align', '')).lower() == 'false':
+            decimal_align = False
 
     # ── Preprocesamento ───────────────────────────────────────
     processed = preprocess_md(text, engine, callouts=callouts)
@@ -228,6 +233,7 @@ def convert_one(
             listings=listings,
             titlepage=titlepage,
             callouts=callouts,
+            decimal_align=decimal_align,
             author=md_meta.get('author'),
             keywords=md_meta.get('keywords'),
             subject=md_meta.get('subject') or None,

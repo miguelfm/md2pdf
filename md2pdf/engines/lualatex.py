@@ -257,6 +257,7 @@ def build_lualatex_cmd(
 ) -> list[str]:
     """Constrúe o comando Pandoc para LuaLaTeX con template propio."""
     night_mode: bool = kwargs.get('night_mode', False)
+    decimal_align: bool = kwargs.get('decimal_align', True)
 
     # Se o template está nun directorio de Pandoc, usar só o nome base
     template_arg = str(template)
@@ -324,6 +325,10 @@ def build_lualatex_cmd(
     lua_filter = _find_lua_filter()
     if lua_filter:
         cmd.extend(['--lua-filter', str(lua_filter)])
+        if not decimal_align:
+            # auto-table-widths.lua le a opción dos metadatos, onde tamén
+            # a pode poñer o front matter
+            cmd.extend(['--metadata', 'decimal-align=false'])
 
     small_table = _find_small_table_filter()
     if small_table:

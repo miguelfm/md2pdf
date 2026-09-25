@@ -15,7 +15,8 @@ def _extract_md_metadata(text: str) -> dict[str, str]:
     Extrae metadatos do YAML front matter dun ficheiro Markdown.
 
     Claves recoñecidas: title, author, keywords, subject, activity,
-                        module, course, school, subtitle (alias de activity).
+                        module, course, school, subtitle (alias de activity),
+                        decimal-align.
     """
     meta: dict[str, str] = {}
     m = re.match(r'^---\s*\n(.*?)\n(?:---|\.\.\.)\s*\n', text, re.DOTALL)
@@ -24,7 +25,7 @@ def _extract_md_metadata(text: str) -> dict[str, str]:
 
     yaml_block = m.group(1)
     for key in ('title', 'author', 'keywords', 'subject', 'activity',
-                'module', 'course', 'school', 'subtitle'):
+                'module', 'course', 'school', 'subtitle', 'decimal-align'):
         km = re.search(rf'^{key}:\s*(.+)$', yaml_block,
                        re.MULTILINE | re.IGNORECASE)
         if km:

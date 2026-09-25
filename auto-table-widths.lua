@@ -573,7 +573,80 @@ local function code_to_mbox(el)
   local esc = add_path_breaks(add_op_breaks(escape(text)))
   return pandoc.RawInline("latex", "\\leavevmode\\strut\\texttt{" .. esc .. "}")
 end
+-- Aliñamento decimal (só LaTeX). Nunha columna na que todas as celas do
+-- corpo son números («9», «-2», «3.5», «0,75») e polo menos un ten parte
+-- decimal, todas as celas ocupan o mesmo ancho: a parte enteira vai á
+-- dereita dun oco tan ancho coma a máis longa da columna, e a decimal á
+-- esquerda doutro coma a decimal máis longa. Así as unidades e o separador
+-- quedan na mesma vertical, e o aliñamento da columna (|:-:| centrada)
+-- move o bloque enteiro. As celas baleiras respéctanse. Desactívase con
+-- «decimal-align: false» nos metadatos ou coa opción --no-decimal-align.
+local DECIMAL_ALIGN = true
+local function read_meta(meta)
+  local v = meta["decimal-align"]
+  if v == false or (v ~= nil and type(v) ~= "boolean"
+      and pandoc.utils.stringify(v) == "false") then
+    DECIMAL_ALIGN = false
+  end
+end
+-- Parte enteira e decimal dunha cela numérica; "" se está baleira e nil se
+-- non é un número.
+local function cell_number(cell)
+  local blocks = cell.contents
+  if #blocks == 0 then return "" end
+  local b = blocks[1]
+  if #blocks > 1 or (b.t ~= "Plain" and b.t ~= "Para") then return nil end
+  if #b.content == 0 then return "" end
+  if #b.content > 1 or b.content[1].t ~= "Str" then return nil end
+  local text = b.content[1].text
+  local int, frac = text:match("^([+-]?%d+)([.,]%d+)$")
+  if int then return int, frac end
+  if text:match("^[+-]?%d+$") then return text, "" end
+  return nil
+end
+local function decimal_column(tbl, i)
+  local cells, decimal = {}, false
+  for _, body in ipairs(tbl.bodies) do
+    for _, row in ipairs(body.body) do
+      local cell = row.cells[i]
+      if not cell or cell.col_span ~= 1 then return nil end
+      local int, frac = cell_number(cell)
+      if not int then return nil end
+      if int ~= "" then
+        table.insert(cells, { cell = cell, int = int, frac = frac })
+        if frac ~= "" then decimal = true end
+      end
+    end
+  end
+  if decimal and #cells >= 2 then return cells end
+  return nil
+end
+local function align_decimals(tbl)
+  if not DECIMAL_ALIGN or not FORMAT:match("latex") then return end
+  for i = 1, #tbl.colspecs do
+    local cells = decimal_column(tbl, i)
+    if cells then
+      local int_max, frac_max = "", ""
+      for _, c in ipairs(cells) do
+        if #c.int > #int_max then int_max = c.int end
+        if #c.frac > #frac_max then frac_max = c.frac end
+      end
+      for _, c in ipairs(cells) do
+        c.cell.contents = { pandoc.Plain({ pandoc.RawInline("latex",
+          string.format("\\leavevmode\\hphantom{%s}\\llap{%s}\\rlap{%s}\\hphantom{%s}",
+            int_max, c.int, c.frac, frac_max)) }) }
+      end
+    end
+  end
+end
 return {
-  { Table = Table },
+  { Meta = read_meta },
+  -- O aliñamento decimal vai despois de calcular os anchos, que len o
+  -- texto das celas; Table modifica tbl no sitio.
+  { Table = function(tbl)
+      local result = Table(tbl)
+      align_decimals(tbl)
+      return result
+    end },
   { Code = code_to_mbox },
 }

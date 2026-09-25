@@ -84,6 +84,7 @@ def _run_conversion(files: list[Path], args, template, section_numbering: str,
             listings=args.listings,
             titlepage=args.titlepage,
             callouts=not args.no_callouts,
+            decimal_align=not args.no_decimal_align,
             no_metadata=args.no_metadata,
             print_mode=args.print_mode,
             night_mode=args.night_mode,
@@ -177,6 +178,9 @@ def main() -> None:
                         help='LuaLaTeX: usar paquete listings para código')
     parser.add_argument('--no-callouts', action='store_true',
                         help='Desactivar callouts')
+    parser.add_argument('--no-decimal-align', action='store_true',
+                        help='LuaLaTeX: non aliñar polo separador decimal as '
+                             'columnas numéricas das táboas')
     parser.add_argument('--no-metadata', action='store_true',
                         help='Non cargar metadatos de YAML nin do front matter')
     parser.add_argument('--night', action='store_true', dest='night_mode',
