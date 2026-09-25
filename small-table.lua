@@ -134,6 +134,21 @@ local function is_group_suffix(block)
     and block.text:match('^\\par\\endgroup%s*$')
 end
 
+-- Cabeceiras consecutivas (sección + subsección + táboa): a reserva ponse
+-- antes da primeira cabeceira da serie, sumando tres liñas por cada cabeceira
+-- anterior. Se se puxese só antes da última, o salto quedaría entre elas.
+local LINES_PER_EXTRA_HEADER = 3
+
+local function insert_needspace(out, needed)
+  local pos = #out + 1
+  while pos > 1 and out[pos - 1].t == 'Header' do
+    pos = pos - 1
+    needed = needed + LINES_PER_EXTRA_HEADER
+  end
+  out:insert(pos, pandoc.RawBlock('latex',
+    string.format('\\Needspace{%d\\baselineskip}', needed)))
+end
+
 function Blocks(blocks)
   local out = pandoc.List:new()
   local i = 1
@@ -149,8 +164,7 @@ function Blocks(blocks)
         local needed = nrows + 5
         local converted = convert_table(next_block, needed, false)
         if converted then
-          out:insert(pandoc.RawBlock('latex',
-            string.format('\\Needspace{%d\\baselineskip}', needed)))
+          insert_needspace(out, needed)
           out:insert(current)
           out:insert(converted)
           i = i + 2
@@ -173,8 +187,7 @@ function Blocks(blocks)
         local needed = nrows + 5
         local converted = convert_table(tbl, needed, false)
         if converted then
-          out:insert(pandoc.RawBlock('latex',
-            string.format('\\Needspace{%d\\baselineskip}', needed)))
+          insert_needspace(out, needed)
           out:insert(current)
           out:insert(next_block)
           out:insert(converted)

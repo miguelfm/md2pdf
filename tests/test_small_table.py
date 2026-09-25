@@ -50,6 +50,27 @@ class SmallTablePaginationTests(unittest.TestCase):
         between = latex[latex.index(header):latex.index(table)]
         self.assertNotIn(r'\Needspace', between)
 
+    def test_consecutive_headers_reserve_space_before_the_first(self):
+        latex = self.render_latex('''\
+## 5. Operadores
+
+### 5.1 Aritméticos
+
+| Operador | Operación | Exemplo | Resultado |
+|---|---|---|---|
+| `+` | Suma | `7 + 2` | `9` |
+| `-` | Resta | `7 - 2` | `5` |
+''')
+        # 2 filas + 5, máis 3 pola cabeceira anterior.
+        reserve = r'\Needspace{10\baselineskip}'
+        section = r'\subsection{5. Operadores}'
+        subsection = r'\subsubsection{5.1 Aritméticos}'
+        self.assertIn(reserve, latex)
+        self.assertLess(latex.index(reserve), latex.index(section))
+        between = latex[latex.index(section):latex.index(r'\begin{tabular}')]
+        self.assertNotIn(r'\Needspace', between)
+        self.assertIn(subsection, between)
+
     def test_standalone_small_table_keeps_its_own_needspace(self):
         latex = self.render_latex('''\
 Texto anterior.
