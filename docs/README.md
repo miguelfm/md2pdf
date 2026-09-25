@@ -468,6 +468,20 @@ Filtro Lua (`auto-table-widths.lua`) que substitúe os anchos arbitrarios que Pa
 - Limita a lonxitude efectiva por cela a 60 caracteres (evita que código moi longo nunha columna espreme as demais).
 - Garante un ancho mínimo baseado no texto da cabeceira (as cabeceiras non deben romper liñas).
 - Garante un ancho mínimo para código monoespaciado curto (como `@deprecated`) para evitar hifenacións forzadas.
+- Garante que cada columna colle a palabra máis longa sen espazos de calquera das súas celas (por exemplo «Enteiro» ou «Decimal»), para que LaTeX non a divida con guión. Os anchos estímanse con táboas de ancho por glifo medidas en `\small` (Source Serif 4 no corpo, Source Sans 3 negra na cabeceira, Source Code Pro no código). As palabras que TeX non pode dividir (menos de catro letras seguidas, como `CA1.8` ou unha ruta `/etc/php/8.5/cli/php.ini` escrita como texto) non se parten: só invaden o espazo entre columnas, así que só obrigan a axustar se invadirían máis de 8 pt. O código conta ata o seu primeiro punto de corte.
+- O espazo que falte sae das outras columnas punto a punto: cada vez da que menos altura engade á táboa, simulando o reparto das palabras en liñas de cada cela, e en empate da que máis lle sobra sobre o seu propio mínimo, que adoita ser a de máis texto. Como a estimación pode errar un par de puntos, cada columna valórase 2 pt máis estreita do que quedaría, para non recortar as que teñen algunha liña xusto no límite.
+- Como o mínimo pola cabeceira, o mínimo por palabras non se aplica se pasaría do 60 % da liña. Se os mínimos non caben todos, cúmprense os máis pequenos e as columnas de palabras máis longas repártense o resto: esas partirán a palabra, pero as outras non.
+
+#### Anchos manuais
+
+Se a liña separadora ten guións de lonxitude distinta, Pandoc calcula anchos relativos a partir deles e o filtro respéctaos: só aplica o estilo da cabeceira.
+
+```markdown
+| Tipo | Descrición | Exemplo |
+|------|--------------------------|------------|
+```
+
+Pandoc só calcula estes anchos cando algunha liña da táboa pasa de 72 caracteres; nas táboas estreitas non hai anchos que respectar. Ademais conta tamén os dous puntos de aliñamento como parte da columna, así que `|:---:|---|---:|` dá anchos 5:3:4 aínda que os guións sexan iguais. Para distinguir ese caso dun ancho manual, o filtro busca un número de guións *d* común a todas as columnas que explique os anchos (ancho proporcional a *d* + dous puntos, con 2 para centrado, 1 para esquerda ou dereita e 0 sen aliñamento). Se o atopa, os guións son iguais e segue o cálculo automático.
 
 ### Táboas longas
 
@@ -1010,6 +1024,9 @@ O filtro `auto-table-widths.lua` ten os seguintes parámetros:
 - `CHAR_WIDTH = 0.013` — ancho estimado dun carácter mono (fracción da liña)
 - `MAX_MBOX_LEN = 15` — código en liña ata 8 caracteres (ou ata 15 sen `/ \ . : = ? - _`) vai nun `\mbox` indivisible; o resto rompe en `\allowbreak`/`\discretionary`
 - `NATURAL_MAX_CELL = 20` e `NATURAL_MAX_TOTAL = 0.85` — se ningunha cela pasa de 20 caracteres e o ancho estimado non chega ao 85 % da liña, non se fixan anchos: Pandoc usa columnas `l` co ancho natural e a táboa céntrase
+- `SERIF_PT`, `SANS_BOLD_PT`, `MONO_PT`, `SPACE_PT` e `STRONG_FACTOR` — anchos (pt) dos glifos e do espazo medidos en `\small` co corpo de 13 pt, para o mínimo por palabras e a simulación de liñas; `LINE_PT = 483.7` e `TABCOLSEP_PT = 6` son o `\linewidth` en A4 con marxes de 20 mm e o `\tabcolsep` das táboas. Se cambias fonte, tamaño ou papel, axústaos
+- `WORD_MARGIN = 1.03`, `OVERFLOW_PT = 8` e `LOOKAHEAD_PT = 2` — marxe sobre as palabras divisibles, invasión permitida ás que non se poden dividir e marxe de seguridade ao escoller a columna que cede espazo
+- Para fixar os anchos a man nunha táboa concreta, usa guións de lonxitude distinta na liña separadora (ver [Anchos manuais](#anchos-manuais))
 
 ### Configurar admonitions automáticos
 
