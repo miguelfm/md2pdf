@@ -261,7 +261,7 @@ Véxase a @fig:grafo.
         ok, html, out = self._convert(source)
         self.assertTrue(ok)
         self.assertEqual(html.count('id="fig:grafo"'), 1)
-        self.assertRegex(html, r'style="width:[0-9.]+em"')
+        self.assertRegex(html, r'class="md2pdf-diagram" style="width:[0-9.]+em"')
         self.assertEqual(validate_html(out), [])
 
     @unittest.skipUnless(shutil.which('mmdc'), 'Mermaid CLI non instalado')

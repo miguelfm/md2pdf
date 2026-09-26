@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .base import RenderContext
-from .common import (FORMAT_BY_ENGINE, TEXTWIDTH_PT, cache_dir, content_hash,
-                     image_block, width_attr)
+from .common import (DIAGRAM_CLASS, FORMAT_BY_ENGINE, TARGET_FONT_PT, TEXTWIDTH_PT, cache_dir,
+                     content_hash, image_block, width_attr)
 from .validation import validate_output, pdf_font_warning, validation_warning
 from .renderers import RENDERERS
 
@@ -131,6 +131,8 @@ def figure_block(output, fmt, engine, font_px, options):
     attrs = []
     if options.get('id'):
         attrs.append('#' + options['id'])
+    if engine == 'html':
+        attrs.append('.' + DIAGRAM_CLASS)
     if width:
         attrs.append('width=' + width)
     if height:
@@ -221,7 +223,8 @@ def process_diagrams(text: str, engine: str, renderers=RENDERERS, *,
                     os.replace(temporary, output)
             if fmt == 'pdf' and 'height' not in options:
                 width = options.get('width') or width_attr(output, fmt, engine, font_px)
-                warning = pdf_font_warning(output, width, TEXTWIDTH_PT.get(engine, 483.7))
+                warning = pdf_font_warning(output, width, TEXTWIDTH_PT.get(engine, 483.7),
+                                           TARGET_FONT_PT)
                 if warning:
                     stats.warnings[name].append(f'diagrama #{counters[name]}: {warning}')
             replacement = figure_block(output, fmt, engine, font_px, options)

@@ -481,13 +481,14 @@ predición validada: preséntaa como tal no texto.
 
 ### 14.6 Tamaño e lexibilidade
 
-Sen `width` nin `height`, md2pdf escala cada diagrama para que o seu texto quede preto do
-tamaño das notas ao pé (uns 9,5 pt), sen superar o ancho da páxina nin uns 14 cm de alto.
-Consecuencias:
+Sen `width` nin `height`, md2pdf escala cada diagrama para que o seu texto quede ao
+tamaño das celas das táboas (11,86 pt no PDF), sen superar o ancho da páxina nin uns 20 cm
+de alto. Mide a letra real do diagrama xerado, en Source Sans 3 en Graphviz e Mermaid.
+Non escribas `fontsize` nin `fontname` no diagrama: teñen prioridade. Consecuencias:
 
 - Un diagrama moi alto (moitos niveis en vertical) ou moi ancho (moitos nodos en
   horizontal) redúcese, e o seu texto tamén.
-- Se o texto estimado queda por debaixo de 8 pt, md2pdf avisa (só no PDF e se PyMuPDF
+- Se o texto estimado queda máis dun 10 % por debaixo dese tamaño, md2pdf avisa (só no PDF e se PyMuPDF
   está instalado). O aviso non detén a conversión.
 - A solución adoita ser dividir o diagrama, acurtar etiquetas ou cambiar a orientación
   (`LR`/`TB`); reducir `width` empeora a lexibilidade.

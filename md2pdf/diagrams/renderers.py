@@ -1,4 +1,5 @@
 """Adaptadores dos CLI Mermaid, D2 e Graphviz."""
+import json
 import os
 import shutil
 import subprocess
@@ -6,6 +7,14 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from .base import RenderContext
+from .common import TARGET_FONT_PT
+
+# Source Sans 3 é a sans do documento (cabeceiras das táboas). Graphviz
+# (Pango) le «Source Sans 3» como familia «Source Sans» de 3 pt e cae noutra
+# fonte; seguida dunha coma lese enteira. En CSS o nome vai entre aspas,
+# porque un identificador non pode comezar por díxito.
+DOT_FONT = 'Source Sans 3,sans-serif'
+CSS_FONT = '"Source Sans 3", sans-serif'
 
 def _run(command: list[str], timeout: int, env=None, cwd=None) -> str:
     try:
@@ -22,14 +31,18 @@ def _run(command: list[str], timeout: int, env=None, cwd=None) -> str:
 class MermaidRenderer:
     name: str='mermaid'; languages: tuple[str,...]=('mermaid',)
     executable_names: tuple[str,...]=('mmdc','mmdc.cmd','mmdc.exe')
-    render_tag: str='v3'; font_px: float=16.0
+    render_tag: str='v4'; font_px: float=16.0
     def missing_message(self, count):
         return f'{count} diagrama(s) mermaid pero `mmdc` non está instalado. Instala con: pacman -S mermaid-cli (Arch) ou npm install -g @mermaid-js/mermaid-cli'
     def render(self, executable, context, content, output_path):
         source, config = output_path.with_suffix('.mmd'), context.cache_dir/'puppeteer-config.json'
         if not config.exists(): config.write_text('{"args":["--no-sandbox","--disable-setuid-sandbox"]}', encoding='utf-8')
+        mermaid_config = context.cache_dir/'mermaid-config.json'
+        mermaid_config.write_text(json.dumps({'fontFamily': CSS_FONT,
+            'themeVariables': {'fontFamily': CSS_FONT}}), encoding='utf-8')
         source.write_text(content, encoding='utf-8')
-        command=[executable,'-i',str(source),'-o',str(output_path),'-b','transparent','-q','--puppeteerConfigFile',str(config)]
+        command=[executable,'-i',str(source),'-o',str(output_path),'-b','transparent','-q',
+                 '--puppeteerConfigFile',str(config),'-c',str(mermaid_config)]
         if context.output_format == 'pdf': command.append('--pdfFit')
         try:
             error=_run(command, context.timeout, {**os.environ,'PUPPETEER_DISABLE_HEADLESS_WARNING':'1'}, cwd=context.source_dir)
@@ -63,11 +76,12 @@ class D2Renderer:
 class GraphvizRenderer:
     name: str='graphviz'; languages: tuple[str,...]=('dot','graphviz')
     executable_names: tuple[str,...]=('dot','dot.exe')
-    render_tag: str='v3'; font_px: float=10.0
+    render_tag: str='v4'; font_px: float=TARGET_FONT_PT
     def font_px_for(self, fmt):
-        # -Nfontsize=10 son PUNTOS. En PDF e PNG natural_size_px devolve px
-        # (pt/0.75), así que a fonte equivalente son 13,33 px; no SVG de
-        # Graphviz o viewBox xa vai en pt, polo que alí vale o valor tal cal.
+        # -Nfontsize son PUNTOS. En PDF e PNG natural_size_px devolve px
+        # (pt/0.75); no SVG de Graphviz o viewBox xa vai en pt, polo que alí
+        # vale o valor tal cal. Renderízase xa ao tamaño final: a escala é 1
+        # e as frechas e marxes non medran co texto.
         return self.font_px / 0.75 if fmt in ('pdf', 'png') else self.font_px
     def missing_message(self,count): return f'{count} diagrama(s) DOT pero `dot` non está instalado'
     def render(self, executable, context, content, output_path):
@@ -76,8 +90,9 @@ class GraphvizRenderer:
             command = [
                 executable, f'-T{context.output_format}',
                 '-Gmargin=0',
-                '-Gfontname=sans-serif', '-Nfontname=sans-serif', '-Efontname=sans-serif',
-                '-Gfontsize=11', '-Nfontsize=10', '-Efontsize=9'
+                f'-Gfontname={DOT_FONT}', f'-Nfontname={DOT_FONT}', f'-Efontname={DOT_FONT}',
+                # Un só tamaño: a xerarquía, se fai falta, márcase con negra ou cor.
+                *(f'-{kind}fontsize={TARGET_FONT_PT}' for kind in 'GNE')
             ]
             if 'layout' in context.options:
                 command.append('-K' + context.options['layout'])

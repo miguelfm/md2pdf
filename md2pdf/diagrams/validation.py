@@ -1,5 +1,6 @@
 """Validación estrutural; inspección adicional con PyMuPDF/Pillow opcionais."""
 import math
+import re
 import importlib.util
 import struct
 import zlib
@@ -101,22 +102,39 @@ def validate_output(path: Path, fmt: str) -> None:
         raise ValueError(f'saída {fmt.upper()} inválida: {error}') from error
 
 
-def pdf_font_warning(path: Path, width: str, textwidth: float) -> str | None:
-    """Estimación para ancho porcentual; non cambia o tamaño da figura."""
-    if not width.endswith('%'):
+_POINTS_PER_UNIT = {'pt': 1.0, 'px': 0.75, 'in': 72.0, 'cm': 72 / 2.54, 'mm': 72 / 25.4}
+
+
+def pdf_font_warning(path: Path, width: str, textwidth: float,
+                     target: float = 11.86) -> str | None:
+    """Avisa se a letra que máis se usa queda máis dun 10 % por debaixo do obxectivo.
+
+    Pasa cando o diagrama non cabe na liña ao tamaño obxectivo e se reduce, ou
+    cando un width manual o encolle. É unha estimación: usa o ancho de texto de
+    referencia do motor e non mide texto convertido a contornos.
+    """
+    match = re.fullmatch(r'([\d.]+)(%|pt|px|in|cm|mm)', width)
+    if not match:
         return None
+    value, unit = float(match.group(1)), match.group(2)
+    final_width = textwidth * value / 100 if unit == '%' else value * _POINTS_PER_UNIT[unit]
     try:
         import pymupdf
         with pymupdf.open(path) as document:
             page = document[0]
-            sizes = [span['size'] for block in page.get_text('dict')['blocks']
-                     for line in block.get('lines', []) for span in line['spans']
-                     if span['text'].strip()]
-            if sizes:
-                effective = min(sizes) * textwidth * float(width[:-1]) / 100 / page.rect.width
-                if effective < 8:
-                    return (f'texto estimado de {effective:.1f} pt; revisa a figura, '
-                            'aumenta width ou divide o diagrama')
+            counts: dict[float, int] = {}
+            for block in page.get_text('dict')['blocks']:
+                for line in block.get('lines', []):
+                    for span in line['spans']:
+                        size = round(span['size'], 2)
+                        counts[size] = counts.get(size, 0) + len(span['text'].strip())
+            counts = {size: n for size, n in counts.items() if n}
+            if counts and page.rect.width > 0:
+                effective = max(counts, key=counts.get) * final_width / page.rect.width
+                if effective < 0.9 * target:
+                    return (f'texto de {effective:.1f} pt (obxectivo {target:g} pt): '
+                            'o diagrama non cabe ao tamaño do texto; oriéntao en '
+                            'vertical, acurta as etiquetas, divídeo ou quita o width')
     except (ImportError, ValueError, OSError, RuntimeError):
         pass
     return None

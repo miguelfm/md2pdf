@@ -139,13 +139,33 @@ Se faltan as bibliotecas opcionais, emítese un aviso do nivel de validación.
 Non é unha garantía de representación visual perfecta: cómpre revisar o
 PDF final, especialmente figuras con fondos, estilos ou recursos externos.
 
-Consérvase o dimensionado automático existente. Con PyMuPDF, para figuras PDF
-con ancho porcentual e sen altura explícita, estímase o tamaño mínimo do texto:
-por debaixo de 8 pt emítese un aviso. Usa o ancho de texto de referencia do
-motor; pode diferir con outras marxes ou columnas. Non mide texto convertido
-a contornos nin garante lexibilidade. Os atributos width/height explícitos
-seguen tendo prioridade. Para cadeas longas, dividir o diagrama adoita ser
-máis útil que reducilo para encaixar.
+## Tamaño e fonte das etiquetas
+
+As etiquetas saen co tamaño das celas das táboas: 11,86 pt no PDF (`\small`
+cun corpo de 13 pt) e `.96rem` no HTML. Sen `width` explícito, o ancho
+calcúlase para chegar a ese tamaño:
+
+- Mídese a letra que leva máis caracteres no PDF xerado (PyMuPDF) ou nos
+  atributos `font-size` do SVG. Os renderizadores non sempre respectan o
+  tamaño pedido: `mmdc --pdfFit` encaixa o diagrama en 800 px de ancho e a
+  letra saía entre 7 e 12 pt. Sen medida (PNG, SVG de Mermaid, sen PyMuPDF)
+  úsase o tamaño nominal do renderizador.
+- Graphviz renderiza xa a 11,86 pt, cun só tamaño para gráfico, nodos e
+  arestas. Os atributos `fontsize` e `fontname` escritos no diagrama teñen
+  prioridade.
+- Fonte: Source Sans 3, a sans do documento, en Graphviz e Mermaid. D2 e
+  Vega-Lite manteñen a súa: vl-convert non atopa a Source Sans 3 (OTF) nin
+  rexistrando o cartafol.
+- O ancho non pasa da liña e a altura, de 560 pt (uns 20 cm). Se o diagrama
+  non cabe ao tamaño obxectivo, redúcese.
+
+Con PyMuPDF, se a letra final queda máis dun 10 % por debaixo do obxectivo
+(por non caber ou por un `width` manual, en % ou en unidades absolutas),
+emítese un aviso. Usa o ancho de texto de referencia do motor; pode diferir
+con outras marxes ou columnas, e non mide texto convertido a contornos. Os
+atributos width/height explícitos seguen tendo prioridade. Un fluxo
+horizontal de máis de catro nodos adoita non caber: orientalo en vertical,
+acurtar as etiquetas ou dividilo é mellor que reducilo.
 
 ```bash
 md2pdf documento.md --strict
