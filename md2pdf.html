@@ -63,6 +63,28 @@ $endfor$
 </div>
 <script>
 (function () {
+  function layoutDefinitions() {
+    document.querySelectorAll('main dl').forEach(dl => {
+      const entries = Array.from(dl.children);
+      entries.forEach(entry => {
+        entry.classList.remove('md2pdf-long-term', 'md2pdf-long-definition');
+      });
+      let longTerm = false;
+      entries.forEach(entry => {
+        if (entry.tagName === 'DT') {
+          longTerm = entry.scrollWidth > entry.clientWidth + 1;
+          entry.classList.toggle('md2pdf-long-term', longTerm);
+        } else if (entry.tagName === 'DD') {
+          entry.classList.toggle('md2pdf-long-definition', longTerm);
+        }
+      });
+    });
+  }
+  layoutDefinitions();
+  if (document.fonts) document.fonts.ready.then(layoutDefinitions);
+  window.addEventListener('resize', layoutDefinitions);
+  window.addEventListener('beforeprint', layoutDefinitions);
+
   function lineSet(spec) {
     const out = new Set();
     String(spec || '').split(',').forEach(part => {

@@ -24,6 +24,7 @@ from ..assets import (
     _find_lua_filter,
     _find_preamble,
     _find_small_table_filter,
+    _find_term_pairs_filter,
 )
 
 
@@ -317,6 +318,12 @@ def build_lualatex_cmd(
 
     if section_numbering:
         cmd.append('--number-sections')
+
+    # Primeiro normalizamos as listas de pares; logo aplicamos os filtros
+    # de táboas, callouts e código.
+    term_pairs = _find_term_pairs_filter()
+    if term_pairs:
+        cmd.extend(['--lua-filter', str(term_pairs)])
 
     # Filtros Lua (orde importante: anchos → táboas pequenas → callouts → br → hl-lines)
     # Nota: Mermaid xa NON se procesa como filtro Lua aquí: faise no preprocesado

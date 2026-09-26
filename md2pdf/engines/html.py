@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from ..assets import _find_html_css, _find_html_filter
+from ..assets import _find_html_css, _find_html_filter, _find_term_pairs_filter
 from ..config import INSTALL_DIR
 
 
@@ -45,6 +45,10 @@ def build_html_cmd(
     css = _find_html_css()
     if css:
         cmd.extend(['--css', str(css)])
+
+    term_pairs = _find_term_pairs_filter()
+    if term_pairs:
+        cmd.extend(['--lua-filter', str(term_pairs)])
 
     # Primeiro normalizamos os pés de figura herdados (imaxe seguida de
     # ``*Figura N. ...*``) á representación Figure de Pandoc. O filtro HTML

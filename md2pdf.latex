@@ -125,6 +125,20 @@ $endif$
 % \tightlist: Pandoc xera este comando para listas compactas (\begin{itemize} sen espazo)
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+% As listas de definicións comparten columna para os termos breves. O estilo
+% nextline coloca debaixo os termos que non caben, sen invadir a definición.
+% A etiqueta longa envolve na largura completa da lista; reservar labelsep
+% evita que a definición salte á mesma liña tras unha etiqueta de dúas liñas.
+\SetLabelAlign{md2pdf}{%
+  \setbox0=\hbox{#1}%
+  \ifdim\wd0>\labelwidth
+    \parbox[b]{\dimexpr\linewidth+\leftmargin-\labelsep\relax}{\RaggedRight\unhbox0}%
+  \else
+    \box0\hfil
+  \fi}
+\setlist[description]{%
+  style=nextline,align=md2pdf,labelwidth=9em,labelsep=1em,
+  leftmargin=10em,font=\normalfont\bfseries}
 
 % ── Includes do usuario (-H / header-includes) ───────────────
 $for(header-includes)$

@@ -74,6 +74,11 @@ def _find_small_table_filter() -> Path | None:
     return _find_asset('small-table.lua')
 
 
+def _find_term_pairs_filter() -> Path | None:
+    """Busca o filtro para listas de pares termo–explicación."""
+    return _find_asset('term-pairs.lua')
+
+
 def _find_callouts_filter() -> Path | None:
     """Busca o filtro Lua para callouts (tcolorbox) en PDF."""
     return _find_asset('callouts.lua')

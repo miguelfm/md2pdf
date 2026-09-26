@@ -8,6 +8,7 @@ from ..assets import (
     _find_callouts_docx_filter,
     _find_docx_reference,
     _find_lua_filter,
+    _find_term_pairs_filter,
 )
 
 
@@ -35,6 +36,10 @@ def build_docx_cmd(
         cmd.extend(['--toc', f'--toc-depth={toc_depth}'])
     if section_numbering:
         cmd.append('--number-sections')
+
+    term_pairs = _find_term_pairs_filter()
+    if term_pairs:
+        cmd.extend(['--lua-filter', str(term_pairs)])
 
     ref_doc = _find_docx_reference()
     if ref_doc:

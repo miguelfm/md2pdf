@@ -182,6 +182,33 @@ main img { max-width: 100%; height: auto; }
 img.md2pdf-diagram { font-size: .96rem; }
 ul, ol { padding-left: 1.55rem; }
 li + li { margin-top: .18rem; }
+main dl {
+display: grid;
+grid-template-columns: 9em minmax(0, 1fr);
+column-gap: 1em;
+row-gap: .35em;
+margin: .9em 0;
+}
+main dl > dt {
+grid-column: 1;
+min-width: 0;
+font-weight: 700;
+white-space: nowrap;
+}
+main dl > dd {
+grid-column: 2;
+min-width: 0;
+margin: 0;
+}
+main dl > dt.md2pdf-long-term,
+main dl > dd.md2pdf-long-definition { grid-column: 1 / -1; }
+main dl > dt.md2pdf-long-term {
+white-space: normal;
+overflow-wrap: anywhere;
+}
+main dl > dd.md2pdf-long-definition { padding-left: 1em; }
+main dl > dd > :first-child { margin-top: 0; }
+main dl > dd > :last-child { margin-bottom: 0; }
 strong { font-weight: 700; }
 hr {
 border: 0;
