@@ -55,7 +55,11 @@
 }
 % ── Espazado vertical e cabeceiras ──────────────────────────
 \usepackage{setspace}
-\setstretch{1.15}
+% Entreliña 1,45 veces o tamaño (13 pt × 1,2 × 1,2083 = 18,85 pt), o límite
+% superior do intervalo tipográfico habitual (1,2–1,45): a liña ten uns 80
+% caracteres e a Source Serif 4 ten a altura da x alta (0,475 em). As táboas
+% herdan o mesmo factor, así que texto e celas teñen a mesma proporción.
+\setstretch{1.2083}
 \RedeclareSectionCommand[beforeskip=1.6em, afterskip=0.6em]{section}
 \RedeclareSectionCommand[beforeskip=1.3em, afterskip=0.4em]{subsection}
 \RedeclareSectionCommand[beforeskip=1.0em, afterskip=0.3em]{subsubsection}
@@ -154,10 +158,14 @@
   \@ifnextchar[{\md@top@minipage@i}{\md@orig@minipage}%
 }
 \def\md@top@minipage@i[#1]{\md@orig@minipage[t]}
+% arraystretch 1.5: entre fila e fila queda media liña máis ca entre as liñas
+% dunha mesma cela (8,57 pt sobre 17,14 pt), a mesma proporción ca \parskip no
+% corpo. Con 1.2 o engadido era 0.2 liñas e as filas de varias liñas
+% confundíanse coas veciñas.
 \AtBeginEnvironment{longtable}{%
   \let\md@orig@minipage\minipage
   \let\minipage\md@top@minipage
-  \renewcommand{\arraystretch}{1.2}%
+  \renewcommand{\arraystretch}{1.5}%
   \small%
   \addfontfeatures{Numbers=Lining}%
   \setlength{\tabcolsep}{6pt}%
@@ -169,7 +177,7 @@
 \AtBeginEnvironment{tabular}{%
   \let\md@orig@minipage\minipage
   \let\minipage\md@top@minipage
-  \renewcommand{\arraystretch}{1.2}%
+  \renewcommand{\arraystretch}{1.5}%
   \small%
   \addfontfeatures{Numbers=Lining}%
   \setlength{\tabcolsep}{6pt}%
@@ -181,7 +189,7 @@
 \AtBeginEnvironment{tabularx}{%
   \let\md@orig@minipage\minipage
   \let\minipage\md@top@minipage
-  \renewcommand{\arraystretch}{1.2}%
+  \renewcommand{\arraystretch}{1.5}%
   \small%
   \addfontfeatures{Numbers=Lining}%
   \setlength{\tabcolsep}{6pt}%

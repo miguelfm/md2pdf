@@ -509,8 +509,8 @@ O único problema era que o **código en liña** (`\mbox{\texttt{...}}`) dentro 
 
 O preámbulo e o filtro `auto-table-widths.lua` aplican automaticamente un conxunto de melloras tipográficas en todas as táboas:
 
-- **Fonte reducida**: `\small` (~84% do tamaño base, ~10.95pt con 13pt base) para maior densidade lexible
-- **Padding vertical**: `\arraystretch{1.2}` — 20% de espazo extra en cada fila
+- **Fonte reducida**: `\small` (11,86 pt con 13 pt de base, medido); entreliña de 17,14 pt, 1,45 veces o tamaño, a mesma proporción ca o corpo (`\setstretch{1.2083}`)
+- **Separación entre filas**: `\arraystretch{1.5}` — entre filas queda media liña máis ca entre as liñas dunha cela (8,57 pt), a mesma proporción ca `\parskip` entre parágrafos. No HTML, a táboa herda o `line-height` do corpo (1,56; 1,52 en pantallas estreitas) e o `padding` vertical, `.37rem` (`.36rem` en pantallas estreitas), tamén é media liña
 - **Padding horizontal**: `\tabcolsep{6pt}` — espazo a cada lado das celas
 - **Cabeceiras en sans-serif bold con cor**: o filtro `auto-table-widths.lua` envolve cada cela de cabeceira en `\textsf{\bfseries\color{heading-section}{...}}`, usando o mesmo ton que as cabeceiras de sección (azul pizarra en día, tostado ámbar en noite, negro en impresión) e eliminando o `\textbf` que Pandoc xa inxecta para evitar dobre bold
 - **Sen liñas horizontais**: `\toprule`, `\midrule` e `\bottomrule` están suprimidos; coas cabeceiras en cor e o zebra striping as liñas son redundantes e ademais `\toprule` repetiríase incorrectamente en cada páxina de continuación de táboas longas
@@ -1011,7 +1011,7 @@ Editar `md2pdf-preamble.tex`. As seccións están separadas con comentarios:
 8. Imaxes e figuras (max width, captions centrados)
 9. Código en liña
 10. Fondo para bloques de código (con fvextra para rotura de liñas)
-11. Configuración de fontes en táboas (`\small`, `\arraystretch{1.2}`, `\tabcolsep{6pt}`, `\arrayrulecolor{heading-section}`, zebra striping con reset de rowcolors, supresión de `\toprule`/`\midrule`/`\bottomrule`)
+11. Configuración de fontes en táboas (`\small`, `\arraystretch{1.5}`, `\tabcolsep{6pt}`, `\arrayrulecolor{heading-section}`, zebra striping con reset de rowcolors, supresión de `\toprule`/`\midrule`/`\bottomrule`)
 12. Matemáticas (unicode-math + STIX Two Math)
 13. Cor do título do TOC
 14. **Cores de cabeceiras** (`heading-section`, `heading-subsection`, `heading-subsubsection`)

@@ -335,7 +335,6 @@ margin: 0 auto;
 border-collapse: collapse;
 border-spacing: 0;
 font-size: .96rem;
-line-height: 1.35;
 }
 table caption {
 caption-side: top;
@@ -345,7 +344,7 @@ text-align: left;
 }
 table caption .caption-label { margin-right: .35rem; }
 th, td {
-padding: .34rem .7rem;
+padding: .37rem .7rem;
 vertical-align: top;
 text-align: left;
 }
@@ -373,7 +372,7 @@ padding-top: 1.5rem;
 main h1 { font-size: 1.58rem; }
 main h2 { font-size: 1.32rem; }
 main h3 { font-size: 1.16rem; }
-th, td { padding: .32rem .5rem; }
+th, td { padding: .36rem .5rem; }
 figcaption { width: fit-content; max-width: 100%; }
 }
 @media print {
