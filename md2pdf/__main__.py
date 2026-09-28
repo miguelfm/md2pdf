@@ -90,6 +90,7 @@ def _run_conversion(files: list[Path], args, template, section_numbering: str,
             print_mode=args.print_mode,
             night_mode=args.night_mode,
             serif=args.serif,
+            inline_pill=args.inline_pill,
             plain=args.plain,
             strict=args.strict,
             debug=args.debug,
@@ -193,6 +194,8 @@ def main() -> None:
     parser.add_argument('--serif', action='store_true',
                         help='Usar fonte serif (Source Serif 4) no corpo do texto '
                              '(recomendado para documentos impresos en papel)')
+    parser.add_argument('--inline-pill', action='store_true',
+                        help='Activar fondo suave tipo píldora para o código en liña (experimental)')
     parser.add_argument('--watch', action='store_true',
                         help='Vixiar o ficheiro e recompilar automaticamente '
                              'ao detectar cambios (polling cada 1s)')

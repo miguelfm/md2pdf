@@ -149,13 +149,17 @@ def _build_print_preamble_snippet() -> str:
 % Sobreescribe as definicións de md2pdf-preamble.tex
 \definecolor{code-bg}{RGB}{255,255,255}
 \definecolor{code-border}{RGB}{180,180,180}
+\definecolor{inline-bg}{RGB}{255,255,255}
 \definecolor{inline-fg}{RGB}{0,0,0}
-% Callouts: fondo branco, borde gris
+% Callouts: fondo branco, borde gris; código en liña transparente
 \AtBeginDocument{%
   \tcbset{
     md2pdf-callout/.style={
       colback=white,
       colframe=black!55,
+    },
+    md2pdf-inline-style/.style={
+      blankest,
     }
   }%
 }
@@ -193,6 +197,7 @@ def _build_night_preamble_snippet() -> str:
         "% Sobreescribir cores de código do preámbulo\n"
         "\\definecolor{code-bg}{HTML}{EDE8DC}\n"
         "\\definecolor{code-border}{HTML}{D4C8B0}\n"
+        "\\definecolor{inline-bg}{HTML}{EDE8DC}\n"
         "\\definecolor{inline-fg}{HTML}{7A4F2E}\n"
         "% Iconas: paleta cálida sen azul nin verde\n"
         "\\renewcommand{\\iconwarning}{{\\color{night-icon-alert}\\faExclamationTriangle}}\n"
@@ -312,6 +317,8 @@ def build_lualatex_cmd(
         cmd.extend(['-H', _build_print_preamble_snippet()])
     if night_mode:
         cmd.extend(['-H', _build_night_preamble_snippet()])
+    if kwargs.get('inline_pill', False):
+        cmd.extend(['-H', _temp_tex_file(r'\mdpdfinlinepilltrue')])
 
     if listings:
         cmd.append('--listings')

@@ -113,6 +113,7 @@ def convert_one(
     print_mode: bool = False,
     night_mode: bool = False,
     serif: bool = False,
+    inline_pill: bool = False,
     front_author: bool = False,
     plain: bool = False,
     strict: bool = False,
@@ -228,6 +229,11 @@ def convert_one(
         )
         use_serif = serif or meta_serif
 
+        meta_inline_pill = (
+            str(md_meta.get('inline-pill', '')).lower() in ('true', 'yes', '1')
+        )
+        use_inline_pill = inline_pill or meta_inline_pill
+
         cmd = build_fn(
             tmp_path=tmp.name,
             output_path=str(output_path),
@@ -250,6 +256,7 @@ def convert_one(
             plain_mode=plain,
             serif=use_serif,
             serif_mode=use_serif,
+            inline_pill=use_inline_pill,
             title=md_meta.get('title'),
             activity=md_meta.get('activity'),
             source_dir=str(input_path.resolve().parent),

@@ -130,7 +130,7 @@ pdfinfo documento.pdf | grep -E "Title|Author|Keywords|Creator"
 A opción `--print` aplica unha paleta optimizada para impresión en branco e negro. En PDF afecta á composición LaTeX; en HTML aplica a mesma aparencia na pantalla e mantén ademais regras `@media print`:
 
 - **Ligazóns en negro** — tanto URLs coma ligazóns internas (en pantalla son azuis).
-- **Fondos de código eliminados** — bloques de código con fondo branco e borde gris; código en liña sen fondo de cor.
+- **Fondos de código eliminados** — bloques de código con fondo branco e borde gris; código en liña totalmente transparente (sen fondo de cor) con texto negro puro.
 - **Táboas sen filas alternas** — elimina o sombreado gris das filas pares.
 - **Callouts con fondo branco** — mantén o borde pero elimina o fondo de cor (LuaLaTeX).
 
@@ -152,7 +152,7 @@ A opción `--night` aplica ao PDF e ao HTML unha paleta de cores cálida, sen co
 - **Fondo xeral**: crema cálido `#F5F0E8`
 - **Texto**: marrón escuro `#2C1A0E` (non negro puro, menos contraste extremo)
 - **Bloques de código**: crema lixeiramente máis escuro `#EDE8DC`
-- **Código en liña**: marrón medio `#7A4F2E`
+- **Código en liña**: fondo crema cálido `#EDE8DC` (idéntico ao dos bloques de código) con texto marrón medio `#7A4F2E`
 - **Ligazóns, callouts e título do TOC**: laranxa apagado `#8B6347`
 - **Iconas** (tarefas, exercicios, avisos, etc.): redefinidas con catro tons marrón-laranxa segundo a súa función:
 
@@ -526,11 +526,18 @@ O preámbulo e o filtro `auto-table-widths.lua` aplican automaticamente un conxu
 
 ### Código en liña intelixente
 
-O filtro Lua xestiona o código en liña en LaTeX:
+O filtro Lua e o preámbulo xestionan conxuntamente o código en liña en LaTeX para garantir unha renderización limpa e uniforme:
 
-- Código **sen espazos** (≤ 35 chars) como `@deprecated`, `true`, `$variable` → envólvese en `\leavevmode\mbox{}` para mantelo indivisible e ancoralo á parte superior en celas de táboa.
-- Código **con espazos** como `// Comentario`, `$a = 5;` → rompe naturalmente nos espazos, permitíndolle encaixar en columnas estreitas.
-- Código longo (> 35 chars) → rompe normalmente.
+- **Comportamento por defecto (sen fondo):**
+  - Todo o código en liña amósase con tipografía monoespazada na cor temática axeitada (azul `#0550ae` en día, marrón `#7A4F2E` en noite, negro puro en impresión) sen caixas nin fondos de cor, asegurando total coherencia visual en calquera documento.
+- **Modo opcional tipo «píldora» (`--inline-pill`):**
+  - O fondo tipo «píldora» pódese activar coa opción de comando `--inline-pill`, engadindo `inline-pill: true` nos metadatos YAML/front matter, ou con `\mdpdfinlinepilltrue` no preámbulo LaTeX.
+  - **Cantos lixeiramente redondeados** (`1.5 pt`) e recheo lateral microscópico (`1.5 pt`).
+  - **Recheo vertical nulo** (`0 pt`, con `tcbox raise base`): non altera a entreliña dos parágrafos nin deforma o ritmo vertical.
+  - **Cores adaptadas a cada modo:** fondo gris neutro tenue `#F0F2F5` en modo día, crema cálido `#EDE8DC` en noite e transparente (`blankest`) en impresión.
+- **División e rotura de liñas intelixente:**
+  - Código curto (≤ 8 caracteres ou ≤ 15 sen separadores) como `$price`, `int`, `@deprecated`, `true` → envólvese en `\leavevmode\mbox{}` para mantelo indivisible e ancoralo á parte superior en celas de táboa.
+  - Rutas longas e comandos (`/etc/php/8.3/...`, `$a && $b`) → o filtro `auto-table-widths.lua` engade puntos de corte automáticos (`\discretionary`, `\allowbreak`). O estilo LaTeX detecta estes puntos e evita encapsular a ruta nunha caixa ríxida indivisible, garantindo que as rutas rompan con naturalidade sen desbordar a marxe dereita nin en prosa nin en táboas.
 
 **Limitación coñecida (LuaLaTeX):** as secuencias con barra invertida (`\n`, `\t`, `\\`) dentro de código en liña (acentos graves) na prosa renderízanse incorrectamente porque `\texttt{}` interpreta a barra como inicio de comando LaTeX (por exemplo, `\n` aparece como `\{}n`). Dentro de bloques de código fenced non hai problema. A solución é describir o carácter con palabras na prosa ou usar un bloque de código.
 
@@ -896,7 +903,17 @@ En vez de mesturar familias tipográficas inconexas, unificamos todo coa familia
 
 ### Por que 13pt e marxes de 20mm?
 
-A 13pt con marxes laterais de 20mm, as liñas teñen ~80-86 caracteres, que está no rango óptimo de lexibilidade tipográfica (65-85 chars/liña, segundo Bringhurst) ou lixeiramente por enriba. Marxes verticais reducidas (top 12mm, bottom 14mm) para aproveitar o espazo da páxina.
+A 13pt con marxes laterais de 20mm, o ancho total dispoñible entre marxes é de 170 mm (483.7 pt). Mantéñense as marxes en 20 mm e as verticais reducidas (top 12mm, bottom 14mm) por razóns de deseño consciente:
+
+- **Espazo íntegro para táboas e figuras:** as marxes de 20 mm permiten que táboas anchas (como as táboas de 4–5 columnas de PHP ou bases de datos), os bloques de código con indentación fonda e os diagramas técnicos aproveiten o 100 % do ancho dispoñible sen comprimir celas nin reducir imaxes.
+- **Teito de liña na prosa a 80–85 caracteres:** en lugar de aumentar as marxes xerais de páxina (o que prexudicaría o espazo de táboas e figuras), establécese un teito de liña óptimo mediante a tolerancia de corte dereito de `ragged2e`:
+  ```latex
+  \setlength{\RaggedRightRightskip}{0pt plus 3.8em}
+  ```
+  Isto permite que a prosa rompa de xeito natural arredor dos 80–85 caracteres (dentro do rango óptimo de 65–85 caracteres/liña segundo Bringhurst), sen forzar liñas longas de 90–96 caracteres.
+- **Sen cabeceiras superiores (Running headers):** descartáronse expresamente as cabeceiras correntes superiores por dous motivos prácticos:
+  1. Evitar que ao seleccionar e copiar código fonte continuo que salta de páxina se copie o título da cabeceira no portapapeis do estudante.
+  2. Evitar ruído visual e elementos repetitivos innecesarios en materiais docentes habitualmente curtos (< 30 páxinas). O pé de páxina con número centrado (`\cfoot{\pagemark}`) proporciona unha orientación limpa e discreta.
 
 ### Cifras OldStyle vs. Lining
 

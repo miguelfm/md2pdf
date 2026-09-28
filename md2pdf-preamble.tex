@@ -16,7 +16,7 @@
 }
 % ── Aliñamento á esquerda ───────────────────────────────────
 \usepackage{ragged2e}
-\setlength{\RaggedRightRightskip}{0pt plus 2.5em}
+\setlength{\RaggedRightRightskip}{0pt plus 3.8em}
 \AtBeginDocument{\RaggedRight}
 % ── Microtipografía ─────────────────────────────────────────
 \AtBeginDocument{%
@@ -115,9 +115,58 @@
   \captionsetup[table]{position=above}%
 }
 % ── Código en liña ──────────────────────────────────────────
+\definecolor{inline-bg}{HTML}{F0F2F5}
 \definecolor{inline-fg}{HTML}{0550ae}
+\tcbset{md2pdf-inline-style/.style={}}
+\newtcbox{\mdpdfinlinecode}{
+  on line,
+  arc=1.5pt,
+  outer arc=1.5pt,
+  colback=inline-bg,
+  colframe=inline-bg,
+  boxrule=0pt,
+  boxsep=0pt,
+  left=1.5pt,
+  right=1.5pt,
+  top=0pt,
+  bottom=0pt,
+  tcbox raise base,
+  md2pdf-inline-style
+}
 \let\oldtexttt\texttt
-\renewcommand{\texttt}[1]{\textcolor{inline-fg}{\oldtexttt{#1}}}
+\newif\ifmdpdfinlinepill
+\mdpdfinlinepillfalse  % Deshabilitado por defecto; activar con \mdpdfinlinepilltrue ou --inline-pill
+
+\makeatletter
+\ExplSyntaxOn
+\cs_new_protected:Npn \mdpdf_texttt:n #1
+{
+  \ifmdpdfinlinepill
+    \tl_if_in:nnTF { #1 } { \discretionary }
+    {
+      \textcolor{inline-fg}{\oldtexttt{#1}}
+    }
+    {
+      \tl_if_in:nnTF { #1 } { \allowbreak }
+      {
+        \textcolor{inline-fg}{\oldtexttt{#1}}
+      }
+      {
+        \mdpdfinlinecode{\textcolor{inline-fg}{\oldtexttt{#1}}}
+      }
+    }
+  \else
+    \textcolor{inline-fg}{\oldtexttt{#1}}
+  \fi
+}
+\RenewDocumentCommand{\texttt}{m}{
+  \mdpdf_texttt:n { #1 }
+}
+\ExplSyntaxOff
+\pdfstringdefDisableCommands{%
+  \def\texttt#1{#1}%
+}
+\makeatother
 % ── Til literal ──────────────────────────────────────────────
 \AtBeginDocument{%
   \protected\def\textasciitilde{\char126\relax}%

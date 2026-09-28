@@ -660,6 +660,10 @@ Para glosarios, parámetros ou propiedades:
 
 - **Negra** para termos clave; *cursiva* para títulos de obras e termos noutra lingua;
   `código en liña` para funcións, variables, ficheiros e comandos.
+- O código en liña amósase por defecto en tipografía monoespazada coa cor temática sen fondo.
+  Opcionalmente pódese activar o fondo tipo «píldora» con `--inline-pill` (`#F0F2F5` en día,
+  `#EDE8DC` en noite, transparente en impresión). As rutas longas (`/etc/php/...`) e expresións con
+  operadores rompen automaticamente de liña se chegan á marxe dereita.
 - **Non poñas barras invertidas no código en liña do texto corrido** (`\n`, `\t`, `\\`):
   no PDF saen mal (por exemplo, `\{}n`). Describe o carácter («un salto de liña») ou usa un
   bloque de código. Nos bloques de código non hai problema.
