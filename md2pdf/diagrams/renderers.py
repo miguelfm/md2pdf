@@ -27,25 +27,41 @@ def _run(command: list[str], timeout: int, env=None, cwd=None) -> str:
         return f'devolveu {result.returncode}: {detail[:300]}'
     return ''
 
+_mmdc_supports_pdf_fit = True
+
 @dataclass(frozen=True)
 class MermaidRenderer:
     name: str='mermaid'; languages: tuple[str,...]=('mermaid',)
     executable_names: tuple[str,...]=('mmdc','mmdc.cmd','mmdc.exe')
-    render_tag: str='v4'; font_px: float=16.0
+    render_tag: str='v5'; font_px: float=16.0
     def missing_message(self, count):
         return f'{count} diagrama(s) mermaid pero `mmdc` non está instalado. Instala con: pacman -S mermaid-cli (Arch) ou npm install -g @mermaid-js/mermaid-cli'
     def render(self, executable, context, content, output_path):
+        global _mmdc_supports_pdf_fit
         source, config = output_path.with_suffix('.mmd'), context.cache_dir/'puppeteer-config.json'
         if not config.exists(): config.write_text('{"args":["--no-sandbox","--disable-setuid-sandbox"]}', encoding='utf-8')
         mermaid_config = context.cache_dir/'mermaid-config.json'
-        mermaid_config.write_text(json.dumps({'fontFamily': CSS_FONT,
-            'themeVariables': {'fontFamily': CSS_FONT}}), encoding='utf-8')
+        mermaid_config.write_text(json.dumps({
+            'fontFamily': CSS_FONT,
+            'fontSize': 16,
+            'themeVariables': {
+                'fontFamily': CSS_FONT,
+                'fontSize': '16px',
+            }
+        }), encoding='utf-8')
         source.write_text(content, encoding='utf-8')
         command=[executable,'-i',str(source),'-o',str(output_path),'-b','transparent','-q',
                  '--puppeteerConfigFile',str(config),'-c',str(mermaid_config)]
-        if context.output_format == 'pdf': command.append('--pdfFit')
+        if context.output_format == 'pdf' and _mmdc_supports_pdf_fit:
+            command.append('--pdfFit')
         try:
-            error=_run(command, context.timeout, {**os.environ,'PUPPETEER_DISABLE_HEADLESS_WARNING':'1'}, cwd=context.source_dir)
+            env = {**os.environ, 'PUPPETEER_DISABLE_HEADLESS_WARNING': '1'}
+            error = _run(command, context.timeout, env, cwd=context.source_dir)
+            if error and '--pdfFit' in error and 'unknown option' in error:
+                _mmdc_supports_pdf_fit = False
+                if '--pdfFit' in command:
+                    command.remove('--pdfFit')
+                error = _run(command, context.timeout, env, cwd=context.source_dir)
             return f'mmdc {error}' if error else ''
         finally: source.unlink(missing_ok=True)
 
@@ -76,7 +92,7 @@ class D2Renderer:
 class GraphvizRenderer:
     name: str='graphviz'; languages: tuple[str,...]=('dot','graphviz')
     executable_names: tuple[str,...]=('dot','dot.exe')
-    render_tag: str='v4'; font_px: float=TARGET_FONT_PT
+    render_tag: str='v5'; font_px: float=TARGET_FONT_PT
     def font_px_for(self, fmt):
         # -Nfontsize son PUNTOS. En PDF e PNG natural_size_px devolve px
         # (pt/0.75); no SVG de Graphviz o viewBox xa vai en pt, polo que alí

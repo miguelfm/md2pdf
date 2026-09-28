@@ -8,10 +8,10 @@ from pathlib import Path
 FORMAT_BY_ENGINE = {'lualatex': 'pdf', 'docx': 'png', 'html': 'svg'}
 TEXTWIDTH_PT = {'lualatex': 483.7, 'docx': 468.0, 'html': 696.0}
 # HTML usa SVG para manter diagramas vectoriais nítidos e escalables.
-# As etiquetas dos diagramas levan o tamaño das táboas: \small con corpo de
-# 13 pt mide 11,86 pt. A altura máxima (560 pt, uns 20 cm) deixa sitio ao pé
-# e permite diagramas verticais, que son os que caben con letra deste tamaño.
-TARGET_FONT_PT, MAX_HEIGHT_PT, FALLBACK_WIDTH = 11.86, 560.0, '100%'
+# As etiquetas dos diagramas van a 12 pt (próximo ao corpo de 13 pt sen
+# desbordar). A altura máxima (560 pt, uns 20 cm) deixa sitio ao pé e permite
+# diagramas verticais, que son os que caben con letra deste tamaño.
+TARGET_FONT_PT, MAX_HEIGHT_PT, FALLBACK_WIDTH = 12.0, 560.0, '100%'
 # Corpo do PDF (13 pt). En HTML o ancho vai en em, non nun % do contedor:
 # cunha porcentaxe, nun móbil o diagrama encollía ata ser ilexible. As imaxes
 # levan a clase DIAGRAM_CLASS, á que o CSS lle dá o tamaño das celas das

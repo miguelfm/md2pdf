@@ -94,6 +94,7 @@ Os campos de metadatos extráense por orde de prioridade:
 | `course` | Portada — bloque inferior | Curso académico (ex: "Curso 2025-2026") |
 | `keywords` | Metadatos internos do PDF | Palabras clave para buscadores |
 | `decimal-align` | Táboas do PDF | `false` desactiva o aliñamento decimal das columnas numéricas (como `--no-decimal-align`) |
+| `terminal-blocks` | Bloques de código (PDF/HTML) | `false` desactiva o fondo diferenciado de comandos de terminal (como `--no-terminal-blocks`) |
 
 O campo `subtitle` acepta como alias de `activity` para compatibilidade con documentos anteriores.
 
@@ -286,7 +287,7 @@ flowchart LR
 
 A renderización faina o paquete `md2pdf/diagrams/` (coa API de compatibilidade `md2pdf/mermaid.py`) chamando a `mmdc` (Mermaid CLI) e substituíndo cada bloque pola imaxe xerada antes de pasar o documento a Pandoc. O formato escóllese segundo o motor:
 
-- **LuaLaTeX** → PDF vectorial con `--pdfFit` (sen marxes arredor do diagrama)
+- **LuaLaTeX** → PDF vectorial axustado ao diagrama (con `--pdfFit` en versións clásicas de `mmdc` ou con autodetección de recorte nativo en `mmdc 12.0.0+`, onde a opción foi retirada)
 - **DOCX** → PNG
 - **HTML5** → SVG vectorial embebido no ficheiro final
 
@@ -547,6 +548,19 @@ O paquete `fvextra` redefine `verbatim` para que liñas longas rompan automatica
 
 Os bloques de código que non caben nunha soa páxina **córtanse na marxe inferior e continúan na páxina seguinte**, en LuaLaTeX mediante `tcolorbox[breakable]`. O borde do bloque trunca visualmente na páxina 1 e reabre na páxina 2.
 
+### Diferenciación de bloques de código e terminal
+
+Para evitar que o alumnado confunda ordes de consola co código fonte dun programa ou aplicación web (un erro pedagóxico e técnico habitual en informática), os bloques de código que conteñen comandos de terminal (`bash`, `sh`, `shell`, `zsh`, `console`, `terminal`, `powershell`, `pwsh`, `cmd`, `bat`, `fish`) preséntanse automaticamente cun fondo e bordo sutilmente diferenciados:
+
+- **Modo día:** fondo gris/ardósia fresco `#EEF1F5` con bordo `#D0D7DE` (fronte ao `#F6F8FA` e `#E1E4E8` do código estándar).
+- **Modo nocturno (`--night`):** fondo area/tostado cálido `#E2DDD0` con bordo `#C5B99E` (fronte a `#EDE8DC` e `#D4C8B0`).
+- **Modo impresión (`--print`):** fondo gris moi sutil `#F2F2F2` cun bordo definido `#8C8C8C` (fronte ao fondo branco do código normal), garantindo a diferenza sobre papel sen gastar tóner innecesario.
+
+**Criterio de deseño limpo e prevención de erros:**
+Non se inxectan símbolos de *prompt* (`$`, `>`, `#`, `>_`) nin cabeceiras adicionais no bloque. Deste xeito asegúrase que, ao seleccionar e copiar comandos desde o PDF ou HTML para pegalos no terminal, non se copien caracteres estraños que poidan causar fallos de execución (`command not found`).
+
+Pódese desactivar coa opción `--no-terminal-blocks` na CLI ou engadindo `terminal-blocks: false` nos metadatos YAML.
+
 ### Portada e etiqueta de actividade
 
 O script xera dous modos de presentación do título, ambos construídos en LaTeX puro:
@@ -591,6 +605,26 @@ Os pés de figura (`![Texto](img.png)`) amósanse centrados, en fonte pequena, c
 - **LuaLaTeX con template propio** (por defecto): calidade tipográfica máxima, fonte a 13pt (~80-86 chars/liña), microtipografía, táboas con cabeceiras sans-serif bold e aliñamento superior, filas alternas de cor, iconas FontAwesome5 vectoriais, notas ao pé elegantes, ecuacións con STIX Two Math. Tempo de compilación ~3-5s.
 - **DOCX**: xera `.docx` (Word/LibreOffice) directamente. Non require LaTeX. Útil para entregar materiais en formato editable ou para Xefatura de Estudos. Callouts convertidos a texto con prefixo bold.
 - **HTML5**: xera un único `.html` responsive e autocontido. Mantén TOC, callouts, resaltado, `hl=`, referencias de figuras/táboas, SVG vectorial e modos nocturno/impresión mediante tecnoloxías web nativas.
+
+### Melloras pendentes (TODOs)
+
+Quedan rexistradas as seguintes melloras técnicas e pedagóxicas identificadas para futuras iteracións de `md2pdf`:
+
+1. **Mellora de listas procedementais («Paso a paso»):**
+   - Nas guías prácticas con pasos numerados (`1.`, `2.`, `3.`), engadir máis separación vertical (`itemsep=0.5em` vía `enumitem`) e resaltar os números en semibold/negra coa cor corporativa (`heading-section`).
+   - Evita que pasos con varias liñas se confundan visualmente cos pasos contiguos.
+2. **Reforzo semántico en caixas de aviso (*Callouts*):**
+   - En `callouts.lua`, xerar títulos formais en negra por defecto cando o autor non especifique un explícito (por exemplo, `⚠️ ATENCIÓN: ERRO HABITUAL`, `💡 CONSELLO PRÁCTICO`, `🎯 OBXECTIVO DA TAREFA`).
+   - Facilita a lectura rápida en diagonal antes de iniciar tarefas prácticas.
+3. **Soporte tipográfico para teclas e atallos (`<kbd>`):**
+   - Filtro Lua para procesar etiquetas `<kbd>` e renderizalas coma teclas físicas tridimensionais con cantos redondeados e bordo sutil (estilo GitHub / MDN).
+   - Diferencia claramente as accións físicas de teclado (`Ctrl + C`, `Alt + Shift + F`) do código en liña común.
+4. **Estabilización de código en liña con fondo («píldora»):**
+   - Resolver a interacción entre `\newtcbox` e os puntos de quebra intelixentes (`\discretionary`, `\allowbreak`) xerados por `auto-table-widths.lua` en rutas longas, de xeito que `--inline-pill` poida activarse por defecto con estabilidade total.
+5. **Bordes para capturas de pantalla e imaxes con fondo claro:**
+   - Crear unha contorna de figura con marco sutil mediante `tcolorbox` para evitar que imaxes con fondo branco se fundan coa páxina (a alternativa con `cfbox` vía `adjustbox` non resultaba visible no PDF).
+6. **Tratamento de barras invertidas en código en liña (`\n`, `\t`, `\\`):**
+   - Resolver o conflito polo cal `\texttt{}` interpreta as barras invertidas no texto corrido como macros LaTeX en vez de caracteres literais.
 
 
 ## Uso con asistentes de IA
@@ -871,6 +905,7 @@ Ambas opcións son opcionais e combinables. Sen ningún dos dous, o PDF xérase 
 | `--strict` | Abortar se a validación previa detecta problemas | desactivado |
 | `--no-callouts` | Desactivar o filtro de callouts | activado |
 | `--no-decimal-align` | Non aliñar polo separador decimal as columnas numéricas das táboas | activado |
+| `--no-terminal-blocks` | Desactivar o fondo diferenciado para bloques de código de terminal | activado |
 | `--no-metadata` | Non cargar metadatos de `.yaml` nin front matter | cargados |
 | `--toc-depth` | Profundidade do índice | `3` |
 | `--lang` | Idioma do documento | `gl` |
@@ -910,7 +945,13 @@ A 13pt con marxes laterais de 20mm, o ancho total dispoñible entre marxes é de
   ```latex
   \setlength{\RaggedRightRightskip}{0pt plus 3.8em}
   ```
-  Isto permite que a prosa rompa de xeito natural arredor dos 80–85 caracteres (dentro do rango óptimo de 65–85 caracteres/liña segundo Bringhurst), sen forzar liñas longas de 90–96 caracteres.
+  Isto permite que a prosa rompa de xeito natural arredor dos 80–85 caracteres (dentro do rango óptimo de 65–85 caracteres/liña segundo Bringhurst), sen forzar liñas longas de 90–96 caracteres nin fatigar a vista.
+- **Prevención de palabras soltas ao final de parágrafo (*runts*):**
+  Para evitar que a última liña dun parágrafo quede cunha única palabra illada (como *«web.»* ou *«resposta.»* ocupando menos do 10 % da liña), md2pdf limita a elasticidade do espazo final en LuaLaTeX:
+  ```latex
+  \RaggedRightParfillskip=0pt plus 0.75\textwidth
+  ```
+  Ao esixir que o espazo en branco final non supere o 75 % do ancho (`\textwidth`), TeX penaliza colas de menos do ~25 % do ancho (~15–20 caracteres) e o seu algoritmo de corte redistribúe o parágrafo de forma harmónica, facendo descender dúas ou máis palabras sen forzar cortes artificiais nin caixas ríxidas (`\mbox`/`~`). No formato HTML, este mesmo comportamento garántese co estándar nativo `text-wrap: pretty` en CSS.
 - **Sen cabeceiras superiores (Running headers):** descartáronse expresamente as cabeceiras correntes superiores por dous motivos prácticos:
   1. Evitar que ao seleccionar e copiar código fonte continuo que salta de páxina se copie o título da cabeceira no portapapeis do estudante.
   2. Evitar ruído visual e elementos repetitivos innecesarios en materiais docentes habitualmente curtos (< 30 páxinas). O pé de páxina con número centrado (`\cfoot{\pagemark}`) proporciona unha orientación limpa e discreta.

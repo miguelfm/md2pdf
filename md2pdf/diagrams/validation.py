@@ -106,7 +106,7 @@ _POINTS_PER_UNIT = {'pt': 1.0, 'px': 0.75, 'in': 72.0, 'cm': 72 / 2.54, 'mm': 72
 
 
 def pdf_font_warning(path: Path, width: str, textwidth: float,
-                     target: float = 11.86) -> str | None:
+                     target: float = 12.0) -> str | None:
     """Avisa se a letra que máis se usa queda máis dun 10 % por debaixo do obxectivo.
 
     Pasa cando o diagrama non cabe na liña ao tamaño obxectivo e se reduce, ou

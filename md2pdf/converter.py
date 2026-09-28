@@ -109,6 +109,7 @@ def convert_one(
     titlepage: bool = False,
     callouts: bool = True,
     decimal_align: bool = True,
+    terminal_blocks: bool = True,
     no_metadata: bool = False,
     print_mode: bool = False,
     night_mode: bool = False,
@@ -178,6 +179,9 @@ def convert_one(
         # a --no-decimal-align
         if str(md_meta.get('decimal-align', '')).lower() == 'false':
             decimal_align = False
+        if str(md_meta.get('terminal-blocks', '')).lower() in ('false', 'no', '0') or \
+           str(md_meta.get('terminal-style', '')).lower() in ('false', 'no', '0'):
+            terminal_blocks = False
 
     # ── Preprocesamento ───────────────────────────────────────
     processed = preprocess_md(text, engine, callouts=callouts)
@@ -248,6 +252,7 @@ def convert_one(
             titlepage=titlepage,
             callouts=callouts,
             decimal_align=decimal_align,
+            terminal_blocks=terminal_blocks,
             author=md_meta.get('author'),
             keywords=md_meta.get('keywords'),
             subject=md_meta.get('subject') or None,

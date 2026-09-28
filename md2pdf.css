@@ -11,6 +11,8 @@ color-scheme: light;
 --rule: #d9e0e7;
 --code-bg: #f6f8fa;
 --code-border: #d8dee4;
+--terminal-bg: #eef1f5;
+--terminal-border: #d0d7de;
 --inline-code: #0550ae;
 --table-stripe: #f6f8fa;
 --table-rule: #8fa3b8;
@@ -46,6 +48,8 @@ color-scheme: light;
 --rule: #d4c8b0;
 --code-bg: #ede8dc;
 --code-border: #d4c8b0;
+--terminal-bg: #e2ddd0;
+--terminal-border: #c5b99e;
 --inline-code: #7a4f2e;
 --table-stripe: #ede8dc;
 --table-rule: #b39a82;
@@ -74,6 +78,8 @@ body.print-mode {
 --link-visited: #000000;
 --code-bg: #ffffff;
 --code-border: #a0a0a0;
+--terminal-bg: #f2f2f2;
+--terminal-border: #8c8c8c;
 --inline-code: #000000;
 --table-stripe: #ffffff;
 --quote-bg: #ffffff;
@@ -98,6 +104,7 @@ font-size: 1.075rem;
 line-height: 1.56;
 font-kerning: normal;
 font-variant-ligatures: common-ligatures;
+text-wrap: pretty;
 }
 body.serif-mode {
 font-family: var(--serif);
@@ -179,7 +186,7 @@ main h4, main h5, main h6 {
 color: var(--heading-3);
 margin: 1.6rem 0 .65rem;
 }
-p { margin: .72rem 0; }
+p { margin: .72rem 0; text-wrap: pretty; }
 main img { max-width: 100%; height: auto; }
 /* O width dos diagramas vai en em da propia imaxe: 1 em = letra das táboas. */
 img.md2pdf-diagram { font-size: .96rem; }
@@ -276,6 +283,23 @@ line-height: 1.42;
 tab-size: 4;
 }
 pre code { font-size: .86rem; }
+pre.terminal,
+div.terminal pre,
+pre.bash,
+pre.sh,
+pre.shell,
+pre.zsh,
+pre.console,
+pre.powershell,
+pre.posh,
+pre.pwsh,
+pre.cmd,
+pre.bat,
+pre.batch,
+pre.fish {
+  background: var(--terminal-bg);
+  border-color: var(--terminal-border);
+}
 div.sourceCode {
 margin: 1rem 0 1.25rem;
 }

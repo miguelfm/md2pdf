@@ -86,6 +86,7 @@ def _run_conversion(files: list[Path], args, template, section_numbering: str,
             titlepage=args.titlepage,
             callouts=not args.no_callouts,
             decimal_align=not args.no_decimal_align,
+            terminal_blocks=not args.no_terminal_blocks,
             no_metadata=args.no_metadata,
             print_mode=args.print_mode,
             night_mode=args.night_mode,
@@ -184,6 +185,8 @@ def main() -> None:
     parser.add_argument('--no-decimal-align', action='store_true',
                         help='LuaLaTeX: non aliñar polo separador decimal as '
                              'columnas numéricas das táboas')
+    parser.add_argument('--no-terminal-blocks', action='store_true',
+                        help='Desactivar o fondo diferenciado para bloques de código de terminal')
     parser.add_argument('--no-metadata', action='store_true',
                         help='Non cargar metadatos de YAML nin do front matter')
     parser.add_argument('--night', action='store_true', dest='night_mode',

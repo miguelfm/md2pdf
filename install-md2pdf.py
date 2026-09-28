@@ -42,6 +42,7 @@ DATA_FILES_REQUIRED = [
     'md2pdf-preamble.tex',
     'auto-table-widths.lua',
     'term-pairs.lua',
+    'terminal-blocks.lua',
     'md2pdf.html',
     'md2pdf.css',
     'html.lua',

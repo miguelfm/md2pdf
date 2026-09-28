@@ -71,7 +71,7 @@ O formato por motor é:
 
 A caché é independente por formato, polo que a mesma fonte de diagrama pode coexistir nas tres saídas.
 
-Sen `width` explícito, o ancho do diagrama exprésase en `em`, non en porcentaxe. A imaxe leva a clase `md2pdf-diagram`, que lle dá `font-size: .96rem`, o tamaño das celas das táboas; como o `em` dun `width` é o da propia imaxe, as etiquetas quedan a ese tamaño tamén nas pantallas estreitas (no PDF, 11,86 pt). O CSS (`max-width: 100%`) só o reduce cando non cabe. Cunha porcentaxe, nun móbil o diagrama encollía co contedor ata ser ilexible. Un `width=80%` escrito no bloque respéctase tal cal.
+Sen `width` explícito, o ancho do diagrama exprésase en `em`, non en porcentaxe. A imaxe leva a clase `md2pdf-diagram`, que lle dá `font-size: .96rem`, o tamaño das celas das táboas; como o `em` dun `width` é o da propia imaxe, as etiquetas quedan a ese tamaño tamén nas pantallas estreitas (no PDF, 12 pt). O CSS (`max-width: 100%`) só o reduce cando non cabe. Cunha porcentaxe, nun móbil o diagrama encollía co contedor ata ser ilexible. Un `width=80%` escrito no bloque respéctase tal cal.
 
 ## Ficheiro autocontido
 

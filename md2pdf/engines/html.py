@@ -2,7 +2,12 @@
 
 from pathlib import Path
 
-from ..assets import _find_html_css, _find_html_filter, _find_term_pairs_filter
+from ..assets import (
+    _find_html_css,
+    _find_html_filter,
+    _find_term_pairs_filter,
+    _find_terminal_blocks_filter,
+)
 from ..config import INSTALL_DIR
 
 
@@ -57,6 +62,13 @@ def build_html_cmd(
     figure_captions = INSTALL_DIR / 'figure-captions.lua'
     if figure_captions.exists():
         cmd.extend(['--lua-filter', str(figure_captions)])
+
+    terminal_blocks: bool = kwargs.get('terminal_blocks', True)
+    terminal_filter = _find_terminal_blocks_filter()
+    if terminal_filter:
+        cmd.extend(['--lua-filter', str(terminal_filter)])
+        if not terminal_blocks:
+            cmd.extend(['--metadata', 'terminal-blocks=false'])
 
     html_filter = _find_html_filter()
     if html_filter:

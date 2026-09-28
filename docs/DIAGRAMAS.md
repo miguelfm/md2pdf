@@ -141,18 +141,17 @@ PDF final, especialmente figuras con fondos, estilos ou recursos externos.
 
 ## Tamaño e fonte das etiquetas
 
-As etiquetas saen co tamaño das celas das táboas: 11,86 pt no PDF (`\small`
-cun corpo de 13 pt) e `.96rem` no HTML. Sen `width` explícito, o ancho
-calcúlase para chegar a ese tamaño:
+As etiquetas saen cun tamaño obxectivo de 12 pt no PDF (elixido conscientemente para achegar a tipografía dos diagramas á do corpo de texto de 13 pt sen provocar desbordamentos nin verticais nin horizontais na páxina A4) e `.96rem` no HTML. Sen `width` explícito, o ancho calcúlase para chegar a ese tamaño:
 
 - Mídese a letra que leva máis caracteres no PDF xerado (PyMuPDF) ou nos
-  atributos `font-size` do SVG. Os renderizadores non sempre respectan o
-  tamaño pedido: `mmdc --pdfFit` encaixa o diagrama en 800 px de ancho e a
-  letra saía entre 7 e 12 pt. Sen medida (PNG, SVG de Mermaid, sen PyMuPDF)
-  úsase o tamaño nominal do renderizador.
-- Graphviz renderiza xa a 11,86 pt, cun só tamaño para gráfico, nodos e
+  atributos `font-size` do SVG. Sen medida (PNG, sen PyMuPDF) úsase o tamaño
+  nominal do renderizador.
+- Graphviz renderiza xa a 12 pt, cun só tamaño para gráfico, nodos e
   arestas. Os atributos `fontsize` e `fontname` escritos no diagrama teñen
   prioridade.
+- Mermaid renderiza nativamente con `fontSize: 16px` (12 pt a 96 DPI) e conta
+  con soporte automático para `mmdc 12.0.0+` (xestionando a retirada de `--pdfFit`
+  mediante fallback limpo).
 - Fonte: Source Sans 3, a sans do documento, en Graphviz e Mermaid. D2 e
   Vega-Lite manteñen a súa: vl-convert non atopa a Source Sans 3 (OTF) nin
   rexistrando o cartafol.

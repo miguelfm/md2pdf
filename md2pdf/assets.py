@@ -94,8 +94,13 @@ def _find_hl_lines_filter() -> Path | None:
     return _find_asset('hl-lines.lua')
 
 
+def _find_terminal_blocks_filter() -> Path | None:
+    """Busca o filtro Lua para bloques de terminal (terminal-blocks.lua)."""
+    return _find_asset('terminal-blocks.lua')
+
+
 def _find_br_filter() -> Path | None:
-    """Busca o filtro Lua para converter <br> a \\newline{} en LaTeX (br.lua)."""
+    """Busca o filtro Lua para converter <br> a \newline{} en LaTeX (br.lua)."""
     return _find_asset('br.lua')
 
 

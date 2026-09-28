@@ -17,7 +17,11 @@
 % ── Aliñamento á esquerda ───────────────────────────────────
 \usepackage{ragged2e}
 \setlength{\RaggedRightRightskip}{0pt plus 3.8em}
-\AtBeginDocument{\RaggedRight}
+\AtBeginDocument{%
+  % Evita palabras soltas ao final de parágrafo (runts) penalizando colas < 25%
+  \RaggedRightParfillskip=0pt plus 0.75\textwidth
+  \RaggedRight
+}
 % ── Microtipografía ─────────────────────────────────────────
 \AtBeginDocument{%
   \microtypesetup{activate={true,nocompatibility}}%
@@ -174,6 +178,8 @@
 % ── Bloques de código ───────────────────────────────────────
 \definecolor{code-bg}{HTML}{f6f8fa}
 \definecolor{code-border}{HTML}{e1e4e8}
+\definecolor{terminal-bg}{HTML}{eef1f5}
+\definecolor{terminal-border}{HTML}{d0d7de}
 \usepackage{fvextra}
 \fvset{breaklines=true, breakanywhere=true}
 \DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
@@ -194,6 +200,10 @@
 }{%
   \end{tcolorbox}%
 }
+\newenvironment{TerminalBlock}{%
+  \colorlet{code-bg}{terminal-bg}%
+  \colorlet{code-border}{terminal-border}%
+}{}
 \makeatother
 % ── Táboas ───────────────────────────────────────────────────
 \makeatletter

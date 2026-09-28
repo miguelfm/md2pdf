@@ -379,6 +379,12 @@ ligazón interna (sección 17.2).
 No PDF, os emojis dentro de bloques de código substitúense por texto (`✅` → `[OK]`,
 `⚠️` → `[!]`…). Evítaos no código salvo que formen parte do exemplo.
 
+### 13.5 Bloques de terminal e ordes de consola
+
+Para ordes e sesións de consola (`bash`, `sh`, `powershell`, `zsh`, `console`, `cmd`, etc.), indica sempre a linguaxe específica no bloque fenced (` ```bash `). `md2pdf` aplica automaticamente un fondo e bordo sutilmente diferenciados para que o alumnado distinga claramente os comandos do sistema do código fonte de aplicacións (como PHP ou Python).
+
+Non inclúas símbolos artificiais de prompt (`$`, `>`, `#`, `>_`) nin caracteres manuais ao inicio das liñas de comando salvo que sexa indispensable diferenciar entrada e saída. Isto garante que o alumnado poida copiar e pegar as ordes directamente no terminal sen provocar erros de sintaxe (`command not found`).
+
 ## 14. Diagramas e gráficos
 
 ### 14.1 Regras comúns
@@ -481,10 +487,10 @@ predición validada: preséntaa como tal no texto.
 
 ### 14.6 Tamaño e lexibilidade
 
-Sen `width` nin `height`, md2pdf escala cada diagrama para que o seu texto quede ao
-tamaño das celas das táboas (11,86 pt no PDF), sen superar o ancho da páxina nin uns 20 cm
-de alto. Mide a letra real do diagrama xerado, en Source Sans 3 en Graphviz e Mermaid.
-Non escribas `fontsize` nin `fontname` no diagrama: teñen prioridade. Consecuencias:
+Sen `width` nin `height`, md2pdf escala cada diagrama para que o seu texto quede a
+12 pt no PDF (elixido conscientemente para achegarse aos 13 pt do corpo do texto sen desbordar
+as marxes en A4) e a `.96rem` en HTML. Mide a letra real do diagrama xerado, en Source Sans 3 en
+Graphviz e Mermaid. Non escribas `fontsize` nin `fontname` no diagrama: teñen prioridade. Consecuencias:
 
 - Un diagrama moi alto (moitos niveis en vertical) ou moi ancho (moitos nodos en
   horizontal) redúcese, e o seu texto tamén.

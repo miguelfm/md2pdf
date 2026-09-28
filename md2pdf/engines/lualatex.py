@@ -20,6 +20,7 @@ from ..config import (
 from ..assets import (
     _find_callouts_filter,
     _find_hl_lines_filter,
+    _find_terminal_blocks_filter,
     _find_br_filter,
     _find_lua_filter,
     _find_preamble,
@@ -149,6 +150,8 @@ def _build_print_preamble_snippet() -> str:
 % Sobreescribe as definicións de md2pdf-preamble.tex
 \definecolor{code-bg}{RGB}{255,255,255}
 \definecolor{code-border}{RGB}{180,180,180}
+\definecolor{terminal-bg}{HTML}{F2F2F2}
+\definecolor{terminal-border}{RGB}{140,140,140}
 \definecolor{inline-bg}{RGB}{255,255,255}
 \definecolor{inline-fg}{RGB}{0,0,0}
 % Callouts: fondo branco, borde gris; código en liña transparente
@@ -197,6 +200,8 @@ def _build_night_preamble_snippet() -> str:
         "% Sobreescribir cores de código do preámbulo\n"
         "\\definecolor{code-bg}{HTML}{EDE8DC}\n"
         "\\definecolor{code-border}{HTML}{D4C8B0}\n"
+        "\\definecolor{terminal-bg}{HTML}{E2DDD0}\n"
+        "\\definecolor{terminal-border}{HTML}{C5B99E}\n"
         "\\definecolor{inline-bg}{HTML}{EDE8DC}\n"
         "\\definecolor{inline-fg}{HTML}{7A4F2E}\n"
         "% Iconas: paleta cálida sen azul nin verde\n"
@@ -265,6 +270,7 @@ def build_lualatex_cmd(
     """Constrúe o comando Pandoc para LuaLaTeX con template propio."""
     night_mode: bool = kwargs.get('night_mode', False)
     decimal_align: bool = kwargs.get('decimal_align', True)
+    terminal_blocks: bool = kwargs.get('terminal_blocks', True)
     body_font: str = 'serif' if serif or kwargs.get('body_font') == 'serif' else 'sans'
     main_font: str = _detect_font('serif') if body_font == 'serif' else _detect_font('main')
 
@@ -361,6 +367,12 @@ def build_lualatex_cmd(
     br_filter = _find_br_filter()
     if br_filter:
         cmd.extend(['--lua-filter', str(br_filter)])
+
+    terminal_filter = _find_terminal_blocks_filter()
+    if terminal_filter:
+        cmd.extend(['--lua-filter', str(terminal_filter)])
+        if not terminal_blocks:
+            cmd.extend(['--metadata', 'terminal-blocks=false'])
 
     hl_filter = _find_hl_lines_filter()
     if hl_filter:
