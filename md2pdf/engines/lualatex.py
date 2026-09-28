@@ -254,11 +254,14 @@ def build_lualatex_cmd(
     keywords: str | None = None,
     subject: str | None = None,
     print_mode: bool = False,
+    serif: bool = False,
     **kwargs,
 ) -> list[str]:
     """Constrúe o comando Pandoc para LuaLaTeX con template propio."""
     night_mode: bool = kwargs.get('night_mode', False)
     decimal_align: bool = kwargs.get('decimal_align', True)
+    body_font: str = 'serif' if serif or kwargs.get('body_font') == 'serif' else 'sans'
+    main_font: str = _detect_font('serif') if body_font == 'serif' else _detect_font('main')
 
     # Se o template está nun directorio de Pandoc, usar só o nome base
     template_arg = str(template)
@@ -278,9 +281,11 @@ def build_lualatex_cmd(
         '-V', 'babel-otherlangs=english,spanish',
         '-V', f'papersize={papersize}',
         '-V', 'fontsize=13pt',
-        '-V', f'mainfont={_detect_font("main")}',
+        '-V', f'mainfont={main_font}',
         '-V', f'sansfont={_detect_font("sans")}',
         '-V', f'monofont={_detect_font("mono")}',
+        '-V', f'bodyfont={body_font}',
+        '-M', f'body-font={body_font}',
         '-V', r'mainfontoptions=Numbers=OldStyle,Ligatures=TeX',
         '-V', r'monofontoptions=Scale=0.85,Ligatures=NoCommon',
         '-V', 'geometry=top=12mm,bottom=14mm,left=20mm,right=20mm,footskip=7mm',

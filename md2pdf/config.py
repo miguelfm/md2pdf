@@ -40,12 +40,14 @@ INSTALL_DIR: Path = Path(__file__).resolve().parent.parent
 
 
 # ── Fontes con fallback ───────────────────────────────────────
-# Adobe renomeou "Source Sans Pro" a "Source Sans 3".
-# Detectamos cal está instalada e usamos o nome correcto.
+# Por defecto o corpo do texto é sans-serif (Source Sans 3) para máxima
+# lexibilidade en pantalla e coherencia técnica con código e diagramas.
+# O modo serif (Source Serif 4) está dispoñible coa opción --serif (ideal para papel).
 FONT_CANDIDATES: dict[str, list[str]] = {
-    'main': ['Source Serif 4', 'Source Serif Pro', 'Source Serif'],
-    'sans': ['Source Sans 3', 'Source Sans Pro', 'Source Sans'],
-    'mono': ['Source Code Pro'],
+    'main':  ['Source Sans 3', 'Source Sans Pro', 'Source Sans'],
+    'serif': ['Source Serif 4', 'Source Serif Pro', 'Source Serif'],
+    'sans':  ['Source Sans 3', 'Source Sans Pro', 'Source Sans'],
+    'mono':  ['Source Code Pro'],
 }
 
 _font_cache: dict[str, str] = {}
@@ -68,7 +70,7 @@ def _detect_font(role: str) -> str:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
-    fallback = FONT_CANDIDATES.get(role, ['serif'])[0]
+    fallback = FONT_CANDIDATES.get(role, ['sans' if role != 'serif' else 'serif'])[0]
     _font_cache[role] = fallback
     return fallback
 

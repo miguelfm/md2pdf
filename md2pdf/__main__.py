@@ -27,6 +27,7 @@ Exemplos:
   md2pdf apuntes.md -e html                  # HTML5 autocontido
   md2pdf apuntes.md --listings               # LaTeX con paquete listings
   md2pdf apuntes.md --print                  # Modo impresión (sen cores)
+  md2pdf apuntes.md --serif                  # Modo serif no corpo (ideal para papel)
   md2pdf apuntes.md --night                  # Modo nocturno (paleta sepia)
   md2pdf apuntes.md -o saida.pdf
   md2pdf *.md
@@ -88,6 +89,7 @@ def _run_conversion(files: list[Path], args, template, section_numbering: str,
             no_metadata=args.no_metadata,
             print_mode=args.print_mode,
             night_mode=args.night_mode,
+            serif=args.serif,
             plain=args.plain,
             strict=args.strict,
             debug=args.debug,
@@ -188,6 +190,9 @@ def main() -> None:
     parser.add_argument('--print', action='store_true', dest='print_mode',
                         help='Modo impresión: ligazóns en negro, sen fondos '
                              '(PDF/HTML)')
+    parser.add_argument('--serif', action='store_true',
+                        help='Usar fonte serif (Source Serif 4) no corpo do texto '
+                             '(recomendado para documentos impresos en papel)')
     parser.add_argument('--watch', action='store_true',
                         help='Vixiar o ficheiro e recompilar automaticamente '
                              'ao detectar cambios (polling cada 1s)')

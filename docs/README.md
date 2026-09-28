@@ -399,9 +399,9 @@ md2pdf *.md --strict
 
 Familia tipográfica baseada na familia Source de Adobe, configurada vía variables de Pandoc:
 
-- **Source Serif 4** — corpo do texto (serif), con cifras OldStyle no texto corrido
-- **Source Sans 3** ou **Source Sans Pro** — cabeceiras e títulos (sans-serif); detección automática segundo o que estea instalado no sistema
-- **JetBrains Mono** — código fonte (monoespaciada, Scale=0.85, sen ligaduras), con fallback a Source Code Pro
+- **Source Sans 3** ou **Source Sans Pro** — corpo do texto e títulos por defecto (sans-serif); optimizada para lectura en pantalla, coherencia con código técnico e accesibilidade educativa
+- **Source Serif 4** — modo serif para o corpo do texto mediante a opción `--serif` (ou metadatos `body-font: serif`), recomendado para documentos pensados para impresión en papel
+- **Source Code Pro** / **JetBrains Mono** — código fonte (monoespaciada, Scale=0.85, sen ligaduras)
 
 Cifras Lining aplícanse automaticamente dentro de táboas mediante `\AtBeginEnvironment`.
 
@@ -470,7 +470,7 @@ Filtro Lua (`auto-table-widths.lua`) que substitúe os anchos arbitrarios que Pa
 - Limita a lonxitude efectiva por cela a 60 caracteres (evita que código moi longo nunha columna espreme as demais).
 - Garante un ancho mínimo baseado no texto da cabeceira (as cabeceiras non deben romper liñas).
 - Garante un ancho mínimo para código monoespaciado curto (como `@deprecated`) para evitar hifenacións forzadas.
-- Garante que cada columna colle a palabra máis longa sen espazos de calquera das súas celas (por exemplo «Enteiro» ou «Decimal»), para que LaTeX non a divida con guión. Os anchos estímanse con táboas de ancho por glifo medidas en `\small` (Source Serif 4 no corpo, Source Sans 3 negra na cabeceira, Source Code Pro no código). As palabras que TeX non pode dividir (menos de catro letras seguidas, como `CA1.8` ou unha ruta `/etc/php/8.5/cli/php.ini` escrita como texto) non se parten: só invaden o espazo entre columnas, así que só obrigan a axustar se invadirían máis de 8 pt. O código conta ata o seu primeiro punto de corte.
+- Garante que cada columna colle a palabra máis longa sen espazos de calquera das súas celas (por exemplo «Enteiro» ou «Decimal»), para que LaTeX non a divida con guión. Os anchos estímanse con táboas de ancho por glifo medidas en `\small` (`Source Sans 3` regular no corpo por defecto, ou `Source Serif 4` en modo `--serif`, `Source Sans 3` negra na cabeceira, `Source Code Pro` no código). As palabras que TeX non pode dividir (menos de catro letras seguidas, como `CA1.8` ou unha ruta `/etc/php/8.5/cli/php.ini` escrita como texto) non se parten: só invaden o espazo entre columnas, así que só obrigan a axustar se invadirían máis de 8 pt. O código conta ata o seu primeiro punto de corte.
 - O espazo que falte sae das outras columnas punto a punto: cada vez da que menos altura engade á táboa, simulando o reparto das palabras en liñas de cada cela, e en empate da que máis lle sobra sobre o seu propio mínimo, que adoita ser a de máis texto. Como a estimación pode errar un par de puntos, cada columna valórase 2 pt máis estreita do que quedaría, para non recortar as que teñen algunha liña xusto no límite.
 - Como o mínimo pola cabeceira, o mínimo por palabras non se aplica se pasaría do 60 % da liña. Se os mínimos non caben todos, cúmprense os máis pequenos e as columnas de palabras máis longas repártense o resto: esas partirán a palabra, pero as outras non.
 
@@ -1019,12 +1019,11 @@ Editar `md2pdf-preamble.tex`. As seccións están separadas con comentarios:
 
 ### Configurar fontes
 
-A selección de fontes realízase automaticamente en `engines/lualatex.py`. O script detecta con `_detect_font()` cal está dispoñible no sistema e usa a mellor opción:
+A selección de fontes realízase automaticamente en `config.py` e `engines/lualatex.py`. O script detecta con `_detect_font()` cal está dispoñible no sistema e usa a mellor opción:
 
-- **Sans-serif**: busca `Source Sans 3` primeiro, logo `Source Sans Pro`
-- **Monoespaciada**: busca `JetBrains Mono` primeiro, logo `Source Code Pro`
-
-Para forzar manualmente outras fontes, editar `_detect_font()` en `engines/lualatex.py`.
+- **Corpo por defecto e cabeceiras (sans-serif)**: busca `Source Sans 3` primeiro, logo `Source Sans Pro`.
+- **Modo serif para o corpo (`--serif`)**: busca `Source Serif 4` primeiro, logo `Source Serif Pro`. Activábel con `--serif` na liña de ordes ou con `body-font: serif` no YAML front matter / `metadata.yaml`.
+- **Monoespaciada**: busca `Source Code Pro` (ou `JetBrains Mono` se está instalada).
 
 ### Engadir excepcións de hifenación
 
@@ -1032,13 +1031,16 @@ Engadir palabras na sección `\hyphenation{}` de `md2pdf-preamble.tex`.
 
 ### Axustar os anchos das táboas
 
-O filtro `auto-table-widths.lua` ten os seguintes parámetros:
+O filtro `auto-table-widths.lua` detecta automaticamente a familia do corpo (`sans` por defecto, ou `serif` cando se activa `--serif` ou `body-font: serif`) e adapta os parámetros de cálculo de celas:
 
 - `MAX_CELL_LEN = 60` — lonxitude máxima efectiva por cela
 - `CHAR_WIDTH = 0.013` — ancho estimado dun carácter mono (fracción da liña)
 - `MAX_MBOX_LEN = 15` — código en liña ata 8 caracteres (ou ata 15 sen `/ \ . : = ? - _`) vai nun `\mbox` indivisible; o resto rompe en `\allowbreak`/`\discretionary`
 - `NATURAL_MAX_TOTAL = 0.85` — se todas as columnas caben sen partir liñas e a táboa ocupa como moito o 85 % da liña, non se fixan anchos: Pandoc usa columnas `l`/`c`/`r` co ancho natural e a táboa céntrase. As táboas con algunha columna sen contido no corpo (para encher) ocupan sempre toda a liña
-- `SERIF_PT`, `SANS_BOLD_PT`, `MONO_PT`, `SPACE_PT` e `STRONG_FACTOR` — anchos (pt) dos glifos e do espazo medidos en `\small` co corpo de 13 pt, para o mínimo por palabras e a simulación de liñas; `LINE_PT = 483.7` e `TABCOLSEP_PT = 6` son o `\linewidth` en A4 con marxes de 20 mm e o `\tabcolsep` das táboas. Se cambias fonte, tamaño ou papel, axústaos
+- `SANS_REGULAR_PT` e `SERIF_PT` — táboas de ancho (pt) dos glifos medidas en `\small` co corpo de 13 pt para Source Sans 3 (por defecto) e Source Serif 4 (con `--serif`), respectivamente.
+- `SANS_BOLD_PT` — anchos dos glifos en negra para as cabeceiras de táboa.
+- `SPACE_PT` (2.37 pt en sans / 2.76 pt en serif) e `OTHER_PT` (5.95 pt en sans / 6.4 pt en serif) — espazo entre palabras e ancho medio para caracteres non tabulados.
+- `LINE_PT = 483.7` e `TABCOLSEP_PT = 6` — o `\linewidth` en A4 con marxes de 20 mm e o `\tabcolsep` das táboas.
 - `WORD_MARGIN = 1.03`, `OVERFLOW_PT = 8` e `LOOKAHEAD_PT = 2` — marxe sobre as palabras divisibles, invasión permitida ás que non se poden dividir e marxe de seguridade ao escoller a columna que cede espazo
 - Para fixar os anchos a man nunha táboa concreta, usa guións de lonxitude distinta na liña separadora (ver [Anchos manuais](#anchos-manuais))
 

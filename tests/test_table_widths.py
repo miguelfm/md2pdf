@@ -62,10 +62,26 @@ class TableWidthTests(unittest.TestCase):
 | memory_limit | Valor observado en Apache | Valor observado no servidor integrado | Valor observado en CLI |
 ''')
         avail = LINE_PT - 2 * TABCOLSEP_PT * (len(widths) - 1)
-        # Os catro mínimos suman máis da liña. «memory_limit» (75.5pt) cabe
-        # enteira; as rutas de cli (120.9pt), que TeX non pode dividir, como
-        # moito invaden 8pt do espazo entre columnas; a ruta de apache2, a
-        # máis longa, é a única que se parte.
+        # Os catro mínimos suman máis da liña. En sans-serif «memory_limit»
+        # mide ~72.3pt (75.5pt en serif) e cabe enteira; as rutas de cli (120.9pt),
+        # que TeX non pode dividir, como moito invaden 8pt do espazo entre
+        # columnas; a ruta de apache2, a máis longa, é a única que se parte.
+        self.assertGreaterEqual(widths[0] * avail, 72.0)
+        self.assertGreaterEqual(widths[2] * avail, 120.9 - 8)
+        self.assertGreaterEqual(widths[3] * avail, 120.9 - 8)
+        self.assertAlmostEqual(sum(widths), 1.0, places=3)
+
+    def test_minimums_with_serif_font(self):
+        widths = self.widths('''---
+body-font: serif
+---
+| Dato | Apache con mod_php | Servidor integrado | Terminal |
+|---|---|---|---|
+| php.ini habitual en Debian | /etc/php/8.5/apache2/php.ini | /etc/php/8.5/cli/php.ini | /etc/php/8.5/cli/php.ini |
+| memory_limit | Valor observado en Apache | Valor observado no servidor integrado | Valor observado en CLI |
+''')
+        avail = LINE_PT - 2 * TABCOLSEP_PT * (len(widths) - 1)
+        # Con fonte serif («body-font: serif»), «memory_limit» mide 75.5pt
         self.assertGreaterEqual(widths[0] * avail, 75.5)
         self.assertGreaterEqual(widths[2] * avail, 120.9 - 8)
         self.assertGreaterEqual(widths[3] * avail, 120.9 - 8)

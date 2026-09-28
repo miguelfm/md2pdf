@@ -112,6 +112,7 @@ def convert_one(
     no_metadata: bool = False,
     print_mode: bool = False,
     night_mode: bool = False,
+    serif: bool = False,
     front_author: bool = False,
     plain: bool = False,
     strict: bool = False,
@@ -220,6 +221,13 @@ def convert_one(
             'html':     build_html_cmd,
         }[engine]
 
+        meta_serif = (
+            md_meta.get('serif', '').lower() in ('true', 'yes', '1')
+            or md_meta.get('body-font', '').lower() == 'serif'
+            or md_meta.get('font-body', '').lower() == 'serif'
+        )
+        use_serif = serif or meta_serif
+
         cmd = build_fn(
             tmp_path=tmp.name,
             output_path=str(output_path),
@@ -240,6 +248,8 @@ def convert_one(
             print_mode=print_mode,
             night_mode=night_mode,
             plain_mode=plain,
+            serif=use_serif,
+            serif_mode=use_serif,
             title=md_meta.get('title'),
             activity=md_meta.get('activity'),
             source_dir=str(input_path.resolve().parent),

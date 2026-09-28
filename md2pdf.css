@@ -93,11 +93,14 @@ body {
 margin: 0;
 background: var(--bg);
 color: var(--fg);
-font-family: var(--serif);
+font-family: var(--sans);
 font-size: 1.075rem;
 line-height: 1.56;
 font-kerning: normal;
 font-variant-ligatures: common-ligatures;
+}
+body.serif-mode {
+font-family: var(--serif);
 }
 .document-shell {
 width: min(calc(100% - 2.5rem), var(--content-width));

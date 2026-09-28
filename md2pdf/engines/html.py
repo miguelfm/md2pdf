@@ -24,6 +24,7 @@ def build_html_cmd(
     print_mode: bool = False,
     night_mode: bool = False,
     plain_mode: bool = False,
+    serif_mode: bool = False,
     source_dir: str | None = None,
     **kwargs,
 ) -> list[str]:
@@ -76,6 +77,8 @@ def build_html_cmd(
         cmd.extend(['-V', 'night-mode=true'])
     if plain_mode:
         cmd.extend(['-V', 'plain-mode=true'])
+    if serif_mode:
+        cmd.extend(['-V', 'serif-mode=true'])
 
     # O filtro HTML consulta esta marca para respectar --no-callouts.
     cmd.extend(['--metadata', f'md2pdf-callouts={str(callouts).lower()}'])

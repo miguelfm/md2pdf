@@ -12,12 +12,27 @@ local NATURAL_MAX_TOTAL = 0.85
 local CHAR_WIDTH = 0.013
 -- Ancho mínimo por palabras: ningunha columna debe ser máis estreita que a
 -- palabra máis longa sen espazos das súas celas, ou LaTeX divídea con guión.
--- Anchos (pt) medidos en \small co corpo de 13 pt: Source Serif 4 no corpo
--- e Source Sans 3 negra na cabeceira. As letras con til miden o mesmo ca sen
--- ela; o resto de caracteres conta OTHER_PT. A Source Code Pro, coa escala
--- MatchLowercase que lle pon md2pdf.latex, dá MONO_PT por carácter. O
--- espazo entre palabras mide SPACE_PT; con texto aliñado á esquerda TeX case
--- nunca o encolle, e prefire levar a palabra á liña seguinte.
+-- Anchos (pt) medidos en \small co corpo de 13 pt: Source Sans 3 (ou
+-- Source Serif 4 en modo serif) no corpo e Source Sans 3 negra na cabeceira.
+-- As letras con til miden o mesmo ca sen ela; o resto de caracteres conta
+-- OTHER_PT. A Source Code Pro, coa escala MatchLowercase que lle pon
+-- md2pdf.latex, dá MONO_PT por carácter. O espazo entre palabras mide SPACE_PT;
+-- con texto aliñado á esquerda TeX case nunca o encolle, e prefire levar a
+-- palabra á liña seguinte.
+local SANS_REGULAR_PT = {
+  ["a"]=5.98, ["b"]=6.56, ["c"]=5.41, ["d"]=6.58, ["e"]=5.88, ["f"]=3.46,
+  ["g"]=5.98, ["h"]=6.45, ["i"]=2.92, ["j"]=2.93, ["k"]=5.87, ["l"]=3.02,
+  ["m"]=9.83, ["n"]=6.49, ["o"]=6.43, ["p"]=6.58, ["q"]=6.58, ["r"]=4.12,
+  ["s"]=4.97, ["t"]=4.01, ["u"]=6.45, ["v"]=5.54, ["w"]=8.53, ["x"]=5.29,
+  ["y"]=5.54, ["z"]=5.04, ["A"]=6.45, ["B"]=6.97, ["C"]=6.77, ["D"]=7.29,
+  ["E"]=6.25, ["F"]=5.86, ["G"]=7.32, ["H"]=7.73, ["I"]=3.12, ["J"]=5.69,
+  ["K"]=6.87, ["L"]=5.76, ["M"]=8.62, ["N"]=7.67, ["O"]=7.88, ["P"]=6.71,
+  ["Q"]=7.88, ["R"]=6.75, ["S"]=6.33, ["T"]=6.36, ["U"]=7.65, ["V"]=6.11,
+  ["W"]=9.32, ["X"]=6.08, ["Y"]=5.65, ["Z"]=6.39, ["0"]=5.89, ["1"]=5.89,
+  ["2"]=5.89, ["3"]=5.89, ["4"]=5.89, ["5"]=5.89, ["6"]=5.89, ["7"]=5.89,
+  ["8"]=5.89, ["9"]=5.89, ["."]=2.95, [","]=2.95, [";"]=2.95, [":"]=2.95,
+  ["-"]=3.69, ["_"]=5.93, ["("]=3.59, [")"]=3.59, ["/"]=4.15, ["'"]=2.95,
+}
 local SERIF_PT = {
   ["a"]=6.04, ["b"]=6.84, ["c"]=5.79, ["d"]=6.73, ["e"]=6.05, ["f"]=4.20,
   ["g"]=6.14, ["h"]=7.13, ["i"]=3.54, ["j"]=3.29, ["k"]=6.49, ["l"]=3.54,
@@ -46,8 +61,9 @@ local SANS_BOLD_PT = {
   ["8"]=6.26, ["9"]=6.26, ["."]=3.56, [","]=3.56, [";"]=3.56, [":"]=3.56,
   ["-"]=3.94, ["_"]=5.93, ["("]=4.08, [")"]=4.08, ["/"]=4.02, ["'"]=3.56,
 }
-local OTHER_PT = 6.4
-local SPACE_PT = 2.76
+local BODY_FONT = "sans"
+local OTHER_PT = 5.95
+local SPACE_PT = 2.37
 local MONO_PT = 6.96
 local STRONG_FACTOR = 1.08
 local WORD_MARGIN = 1.03
@@ -344,9 +360,10 @@ local function analyze_cells(tbl, ncols)
     process_rows(tbl.head.rows)
     process_words(tbl.head.rows, SANS_BOLD_PT)
   end
+  local body_font_map = (BODY_FONT == "serif") and SERIF_PT or SANS_REGULAR_PT
   for _, body in ipairs(tbl.bodies) do
     process_rows(body.body)
-    process_words(body.body, SERIF_PT)
+    process_words(body.body, body_font_map)
   end
   return max_lens, min_lens, word_pts, word_rows
 end
@@ -624,6 +641,26 @@ local function read_meta(meta)
   if v == false or (v ~= nil and type(v) ~= "boolean"
       and pandoc.utils.stringify(v) == "false") then
     DECIMAL_ALIGN = false
+  end
+  local bf = meta["body-font"] or meta["font-body"] or meta["mainfont"]
+  if bf then
+    local s = pandoc.utils.stringify(bf):lower()
+    if s:find("serif") then
+      BODY_FONT = "serif"
+    elseif s:find("sans") then
+      BODY_FONT = "sans"
+    end
+  end
+  if meta["serif"] == true or (meta["serif"] ~= nil
+      and pandoc.utils.stringify(meta["serif"]):lower() == "true") then
+    BODY_FONT = "serif"
+  end
+  if BODY_FONT == "serif" then
+    OTHER_PT = 6.4
+    SPACE_PT = 2.76
+  else
+    OTHER_PT = 5.95
+    SPACE_PT = 2.37
   end
 end
 -- Parte enteira e decimal dunha cela numérica; "" se está baleira e nil se
