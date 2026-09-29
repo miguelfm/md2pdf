@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from ..assets import (
+    _find_compact_code_filter,
     _find_html_css,
     _find_html_filter,
     _find_term_pairs_filter,
@@ -69,6 +70,10 @@ def build_html_cmd(
         cmd.extend(['--lua-filter', str(terminal_filter)])
         if not terminal_blocks:
             cmd.extend(['--metadata', 'terminal-blocks=false'])
+
+    compact_filter = _find_compact_code_filter()
+    if compact_filter:
+        cmd.extend(['--lua-filter', str(compact_filter)])
 
     html_filter = _find_html_filter()
     if html_filter:

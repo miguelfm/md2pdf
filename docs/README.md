@@ -95,6 +95,7 @@ Os campos de metadatos extráense por orde de prioridade:
 | `keywords` | Metadatos internos do PDF | Palabras clave para buscadores |
 | `decimal-align` | Táboas do PDF | `false` desactiva o aliñamento decimal das columnas numéricas (como `--no-decimal-align`) |
 | `terminal-blocks` | Bloques de código (PDF/HTML) | `false` desactiva o fondo diferenciado de comandos de terminal (como `--no-terminal-blocks`) |
+| `code-compact-threshold` | Bloques de código (PDF/HTML) | Limiar de liñas (ex: `25`) para compactar automaticamente bloques longos (por defecto `0`: desactivado) |
 
 O campo `subtitle` acepta como alias de `activity` para compatibilidade con documentos anteriores.
 
@@ -560,6 +561,48 @@ Para evitar que o alumnado confunda ordes de consola co código fonte dun progra
 Non se inxectan símbolos de *prompt* (`$`, `>`, `#`, `>_`) nin cabeceiras adicionais no bloque. Deste xeito asegúrase que, ao seleccionar e copiar comandos desde o PDF ou HTML para pegalos no terminal, non se copien caracteres estraños que poidan causar fallos de execución (`command not found`).
 
 Pódese desactivar coa opción `--no-terminal-blocks` na CLI ou engadindo `terminal-blocks: false` nos metadatos YAML.
+
+### Bloques de código compactos para listados longos
+
+Por defecto, os bloques de código utilizan a **configuración pedagóxica recomendada**: letra de **10,8 pt** con interliñado folgado de **15,4 pt (1,43×)** e capacidade de ~71 columnas por liña. Esta proporción ofrece máximo confort visual e evita a fatiga cognitiva na asimilación de novas linguaxes e sintaxes.
+
+Porén, para **listados longos** (clases completas, ficheiros de configuración extensos ou saídas de terminal volumosas), `md2pdf` permite activar un formato máis compacto que reduce a altura vertical nun 16% e amplía a capacidade horizontal a **~77 columnas** (evitando partidas de liña `↪` prematuras) sen resultar visualmente asfixiante:
+
+* **Tamaño compacto:** 10,0 pt con interliñado equilibrado de 13,0 pt (ratio 1,30×).
+
+#### Activación manual por bloque
+
+Pódese activar engadindo a clase `.compact` (ou `.compacto`) ou o atributo `compact=true`:
+
+````markdown
+```python {.compact}
+class RepositorioAlumnos:
+    def __init__(self, conexion):
+        self.conexion = conexion
+    # código longo aquí...
+```
+````
+
+Tamén é compatible con bloques de terminal e con resaltado de liñas:
+````markdown
+```bash {.compact hl="1"}
+docker run -d --name db -p 5432:5432 postgres:16
+docker logs -f db
+```
+````
+
+#### Limiar automático opcional
+
+Se nun documento ou curso prefires que calquera bloque que supere certo número de liñas se faga compacto de xeito automático sen ter que marcalo a man, podes indicar o limiar no front matter YAML ou en `metadata.yaml`:
+
+```yaml
+---
+title: "Tema 2: Acceso a datos"
+code-compact-threshold: 25
+---
+```
+
+Calquera bloque de código con 25 liñas ou máis compactarase automaticamente; os bloques curtos manterán a configuración pedagóxica estándar.
 
 ### Portada e etiqueta de actividade
 

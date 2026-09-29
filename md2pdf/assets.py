@@ -99,6 +99,11 @@ def _find_terminal_blocks_filter() -> Path | None:
     return _find_asset('terminal-blocks.lua')
 
 
+def _find_compact_code_filter() -> Path | None:
+    """Busca o filtro Lua para bloques de código compactos (compact-code.lua)."""
+    return _find_asset('compact-code.lua')
+
+
 def _find_br_filter() -> Path | None:
     """Busca o filtro Lua para converter <br> a \newline{} en LaTeX (br.lua)."""
     return _find_asset('br.lua')

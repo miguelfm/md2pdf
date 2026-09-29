@@ -300,6 +300,16 @@ pre.fish {
   background: var(--terminal-bg);
   border-color: var(--terminal-border);
 }
+pre.compact,
+div.compact pre,
+div.sourceCode pre.compact {
+  line-height: 1.30;
+}
+pre.compact code,
+div.compact pre code,
+div.sourceCode pre.compact code {
+  font-size: .80rem;
+}
 div.sourceCode {
 margin: 1rem 0 1.25rem;
 }

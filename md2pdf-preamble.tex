@@ -183,6 +183,8 @@
 \usepackage{fvextra}
 \fvset{breaklines=true, breakanywhere=true}
 \DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
+% Estilo de fonte por defecto: 10,8 pt (\footnotesize) con interliñado pedagóxico (15,4 pt / 1,43x)
+\tcbset{md2pdf-code-font/.style={fontupper=\footnotesize}}
 \makeatletter
 \@ifundefined{Shaded}{%
   \newenvironment{Shaded}{}{}%
@@ -192,7 +194,7 @@
 \renewenvironment{Shaded}{%
   \begin{tcolorbox}[
     colback=code-bg, colframe=code-border, boxrule=0.5pt,
-    arc=3pt, outer arc=3pt, fontupper=\footnotesize,
+    arc=3pt, outer arc=3pt, md2pdf-code-font,
     left=6pt, right=6pt, top=4pt, bottom=4pt,
     before skip=0.45em, after skip=0.7em, breakable,
     lines before break=3
@@ -200,6 +202,11 @@
 }{%
   \end{tcolorbox}%
 }
+% Bloques de código compactos (para listados longos opt-in con .compact ou limiar):
+% 10 pt con interliñado equilibrado (11 pt nominal × 1.2083 = 13,0 pt / 1,30x)
+\newenvironment{CompactBlock}{%
+  \tcbset{md2pdf-code-font/.style={fontupper=\fontsize{10pt}{11pt}\selectfont}}%
+}{}
 \newenvironment{TerminalBlock}{%
   \colorlet{code-bg}{terminal-bg}%
   \colorlet{code-border}{terminal-border}%

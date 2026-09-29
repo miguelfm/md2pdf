@@ -19,6 +19,7 @@ from ..config import (
 )
 from ..assets import (
     _find_callouts_filter,
+    _find_compact_code_filter,
     _find_hl_lines_filter,
     _find_terminal_blocks_filter,
     _find_br_filter,
@@ -373,6 +374,10 @@ def build_lualatex_cmd(
         cmd.extend(['--lua-filter', str(terminal_filter)])
         if not terminal_blocks:
             cmd.extend(['--metadata', 'terminal-blocks=false'])
+
+    compact_filter = _find_compact_code_filter()
+    if compact_filter:
+        cmd.extend(['--lua-filter', str(compact_filter)])
 
     hl_filter = _find_hl_lines_filter()
     if hl_filter:
