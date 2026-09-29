@@ -25,7 +25,6 @@ Exemplos:
   md2pdf apuntes.md                          # LuaLaTeX con template propio (por defecto)
   md2pdf apuntes.md -e docx                  # Word (.docx)
   md2pdf apuntes.md -e html                  # HTML5 autocontido
-  md2pdf apuntes.md --listings               # LaTeX con paquete listings
   md2pdf apuntes.md --print                  # Modo impresión (sen cores)
   md2pdf apuntes.md --serif                  # Modo serif no corpo (ideal para papel)
   md2pdf apuntes.md --night                  # Modo nocturno (paleta sepia)
@@ -82,7 +81,6 @@ def _run_conversion(files: list[Path], args, template, section_numbering: str,
             lang=args.lang,
             papersize=args.paper,
             highlight=args.highlight,
-            listings=args.listings,
             titlepage=args.titlepage,
             callouts=not args.no_callouts,
             decimal_align=not args.no_decimal_align,
@@ -179,7 +177,7 @@ def main() -> None:
     parser.add_argument('--titlepage', action='store_true',
                         help='Incluír portada separada (só lualatex)')
     parser.add_argument('--listings', action='store_true',
-                        help='LuaLaTeX: usar paquete listings para código')
+                        help='Obsoleta: ignórase (Pandoc 3.8 marcouna como obsoleta)')
     parser.add_argument('--no-callouts', action='store_true',
                         help='Desactivar callouts')
     parser.add_argument('--no-decimal-align', action='store_true',
@@ -241,13 +239,17 @@ def main() -> None:
         print('ERRO: -o/--output non se usa con --ims; indica o ZIP no propio '
               '--ims', file=sys.stderr)
         sys.exit(1)
+    if args.listings:
+        # O modelo nunca cargou o paquete listings e Pandoc 3.8 marcou a
+        # opción como obsoleta: acéptase só para non romper ordes existentes.
+        print('  Aviso: --listings está obsoleta e ignórase; o código usa o '
+              'resaltado de Pandoc.', file=sys.stderr)
     if package_mode and args.watch:
         print('ERRO: --watch aínda non está dispoñible no modo --ims',
               file=sys.stderr)
         sys.exit(1)
     if package_mode:
         for flag, name in [
-            (args.listings, '--listings'),
             (args.titlepage, '--titlepage'),
         ]:
             if flag:
@@ -257,7 +259,6 @@ def main() -> None:
     # ── Avisos de opcións incompatibles con DOCX ──────────────
     if not package_mode and args.engine == 'docx':
         for flag, name in [
-            (args.listings,   '--listings'),
             (args.print_mode, '--print'),
             (args.night_mode, '--night'),
             (args.titlepage,  '--titlepage'),
@@ -355,9 +356,6 @@ def main() -> None:
         print('  Aviso: --watch con múltiples ficheiros vixía todos e '
               'recompila todos ao detectar calquera cambio.', file=sys.stderr)
 
-    if args.listings and args.engine != 'lualatex':
-        print('  Aviso: --listings só ten efecto con -e lualatex, ignorado.',
-              file=sys.stderr)
 
     # ── Conversión inicial ────────────────────────────────────
     section_numbering = '' if args.no_number else '1.1.'

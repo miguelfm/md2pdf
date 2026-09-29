@@ -259,7 +259,6 @@ def build_lualatex_cmd(
     lang: str,
     papersize: str,
     highlight: str,
-    listings: bool = False,
     titlepage: bool = False,
     callouts: bool = True,
     author: str | None = None,
@@ -328,15 +327,12 @@ def build_lualatex_cmd(
     if kwargs.get('inline_pill', False):
         cmd.extend(['-H', _temp_tex_file(r'\mdpdfinlinepilltrue')])
 
-    if listings:
-        cmd.append('--listings')
-    else:
-        cmd.extend([f'{_pandoc_highlight_flag()}={highlight}'])
-        # Sintaxe Javadoc corrixida: sen ela, os tiles dos comentarios /** */
-        # saen co estilo de comentario no medio de palabras en texto normal.
-        javadoc_syntax = _find_javadoc_syntax()
-        if javadoc_syntax:
-            cmd.append(f'--syntax-definition={javadoc_syntax}')
+    cmd.extend([f'{_pandoc_highlight_flag()}={highlight}'])
+    # Sintaxe Javadoc corrixida: sen ela, os tiles dos comentarios /** */
+    # saen co estilo de comentario no medio de palabras en texto normal.
+    javadoc_syntax = _find_javadoc_syntax()
+    if javadoc_syntax:
+        cmd.append(f'--syntax-definition={javadoc_syntax}')
 
     if toc:
         cmd.extend(['--toc', f'--toc-depth={toc_depth}'])

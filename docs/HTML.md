@@ -54,7 +54,6 @@ Estas comprobacións realízanse sobre o HTML final, polo que tamén cobren elem
 ## Limitacións deliberadas
 
 - `--titlepage` non aplica: o título intégrase na páxina HTML.
-- `--listings` segue sendo exclusivo de LuaLaTeX.
 - DOCX continúa sen resolver as referencias propias `@fig:`/`@tbl:`.
 - O HTML non intenta imitar unha páxina A4 na pantalla; é responsive. `@media print` si define unha composición A4 básica para imprimir desde o navegador.
 - Os gráficos Vega-Lite son estáticos; non se conservan tooltips nin interacción.

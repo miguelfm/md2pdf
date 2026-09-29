@@ -191,7 +191,7 @@ md2pdf *.md -e docx
 **Limitacións:**
 - Sen resaltado de sintaxe (DOCX non soporta o sistema de highlighting de Pandoc)
 - As referencias propias `@fig:`/`@tbl:` de `figure-captions.lua` non se resolven en DOCX
-- `--print`, `--titlepage` e `--listings` non aplican (ignóranse con aviso)
+- `--print` e `--titlepage` non aplican (ignóranse con aviso)
 
 **Estilos personalizados (opcional):** se existe un ficheiro `reference.docx` no directorio de md2pdf, úsase como modelo de estilos (Heading 1, Normal, Source Code, etc.). Xerar un de base:
 
@@ -224,7 +224,7 @@ O motor reutiliza o mesmo preprocesamento e a mesma semántica do Markdown que L
 
 O HTML usa `md2pdf.html`, `md2pdf.css` e `html.lua`. As decisións de paxinación exclusivas de LaTeX (`needspace`, `longtable`, táboas pequenas, etc.) non se trasladan ao HTML de pantalla; para impresión úsanse propiedades CSS como `break-after: avoid-page` e `break-inside: avoid-page`.
 
-`--titlepage` non aplica a HTML: o título intégrase na propia páxina. `--listings` segue sendo exclusivo de LuaLaTeX.
+`--titlepage` non aplica a HTML: o título intégrase na propia páxina.
 
 ### Paquetes IMS para Moodle
 
@@ -891,9 +891,6 @@ md2pdf apuntes.md --no-toc
 # Sen numeración de seccións
 md2pdf apuntes.md --no-number
 
-# LaTeX con paquete listings (en vez de resaltado Pandoc)
-md2pdf apuntes.md --listings
-
 # Exportar a Word (.docx)
 md2pdf apuntes.md -e docx
 md2pdf *.md -e docx
@@ -963,7 +960,7 @@ Ambas opcións son opcionais e combinables. Sen ningún dos dous, o PDF xérase 
 | `--no-toc` | Non incluír índice de contidos | con TOC |
 | `--no-number` | Non numerar as seccións | numeradas |
 | `--titlepage` | Portada completa con xerarquía tipográfica (só PDF) | sen portada |
-| `--listings` | Usar paquete `listings` (só LuaLaTeX) | resaltado Pandoc |
+| `--listings` | Obsoleta: acéptase pero ignórase con aviso. O modelo non cargaba `listings` e Pandoc 3.8 marcou a opción como obsoleta | — |
 | `--print` | Modo impresión: sen cores, ligazóns en negro (PDF/HTML) | con cores |
 | `--night` | Modo nocturno: paleta cálida (PDF/HTML) | desactivado |
 | `--watch` | Modo vixilancia: recompila ao detectar cambios nos Markdown/metadatos | desactivado |

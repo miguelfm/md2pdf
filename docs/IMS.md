@@ -87,7 +87,7 @@ O empaquetado IMS reutiliza a saída HTML, polo que admite:
 - `--highlight`;
 - `--template` (template HTML).
 
-`--titlepage` e `--listings` non aplican ao paquete IMS. `--watch` non está implementado neste modo. `-o/--output` tampouco se usa: o destino indícase directamente en `--ims`.
+`--titlepage` non aplica ao paquete IMS. `--watch` non está implementado neste modo. `-o/--output` tampouco se usa: o destino indícase directamente en `--ims`.
 
 ## Importación en Moodle
 

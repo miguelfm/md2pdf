@@ -3,6 +3,7 @@
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -117,6 +118,22 @@ class PandocWarningTests(unittest.TestCase):
 
     def test_no_warnings(self):
         self.assertEqual(_pandoc_warnings('Output written on x.pdf\n'), [])
+
+
+@unittest.skipUnless(shutil.which('pandoc'), 'pandoc non está instalado')
+class ListingsOptionTests(unittest.TestCase):
+    def test_listings_is_accepted_with_warning(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / 'proba.md'
+            source.write_text('---\ntitle: Proba\n---\n\n# Proba\n', encoding='utf-8')
+            result = subprocess.run(
+                [sys.executable, '-m', 'md2pdf', str(source), '--listings',
+                 '-e', 'html', '-o', str(Path(tmp) / 'proba.html')],
+                capture_output=True, text=True, cwd=ROOT, timeout=180,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('--listings está obsoleta', result.stderr)
+            self.assertTrue((Path(tmp) / 'proba.html').exists())
 
 
 if __name__ == '__main__':
