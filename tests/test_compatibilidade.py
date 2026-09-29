@@ -11,6 +11,7 @@ from unittest import mock
 
 from md2pdf import config
 from md2pdf.converter import _pandoc_warnings
+from md2pdf.diagrams import renderers
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -134,6 +135,29 @@ class ListingsOptionTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('--listings está obsoleta', result.stderr)
             self.assertTrue((Path(tmp) / 'proba.html').exists())
+
+
+class MermaidPdfFitTests(unittest.TestCase):
+    def setUp(self):
+        renderers._mmdc_supports_pdf_fit.cache_clear()
+
+    tearDown = setUp
+
+    def with_help(self, text: str):
+        completed = subprocess.CompletedProcess([], 0, stdout=text, stderr='')
+        return mock.patch.object(renderers.subprocess, 'run', return_value=completed)
+
+    def test_old_mmdc_keeps_pdf_fit(self):
+        with self.with_help('  -f, --pdfFit   Scale PDF to fit chart\n'):
+            self.assertTrue(renderers._mmdc_supports_pdf_fit('mmdc'))
+
+    def test_mmdc_12_drops_pdf_fit(self):
+        with self.with_help('  --pdf-paper-format <format>   If set, output a PDF...\n'):
+            self.assertFalse(renderers._mmdc_supports_pdf_fit('mmdc'))
+
+    def test_unreadable_help_tries_pdf_fit(self):
+        with mock.patch.object(renderers.subprocess, 'run', side_effect=OSError):
+            self.assertTrue(renderers._mmdc_supports_pdf_fit('mmdc'))
 
 
 if __name__ == '__main__':

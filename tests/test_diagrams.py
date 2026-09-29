@@ -67,7 +67,10 @@ class DiagramTests(unittest.TestCase):
                 return Result()
 
             context = RenderContext(directory, 'pdf')
-            with patch('md2pdf.diagrams.renderers.subprocess.run', fake_run):
+            # mmdc anterior á 12, que aínda ten --pdfFit
+            with patch('md2pdf.diagrams.renderers._mmdc_supports_pdf_fit',
+                       return_value=True), \
+                 patch('md2pdf.diagrams.renderers.subprocess.run', fake_run):
                 error = MermaidRenderer().render('mmdc', context,
                                                   'graph LR\nA-->B', output)
             self.assertEqual(error, '')
