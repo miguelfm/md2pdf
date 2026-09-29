@@ -6,6 +6,7 @@ from ..assets import (
     _find_compact_code_filter,
     _find_html_css,
     _find_html_filter,
+    _find_javadoc_syntax,
     _find_term_pairs_filter,
     _find_terminal_blocks_filter,
 )
@@ -48,6 +49,11 @@ def build_html_cmd(
         '-V', f'lang={lang}',
         f'--highlight-style={highlight}',
     ]
+
+    # Sintaxe Javadoc corrixida (ver javadoc.xml)
+    javadoc_syntax = _find_javadoc_syntax()
+    if javadoc_syntax:
+        cmd.append(f'--syntax-definition={javadoc_syntax}')
 
     css = _find_html_css()
     if css:

@@ -463,6 +463,8 @@ Xerarquía de espazado en LuaLaTeX (con `\parskip` 0.45em engadido):
 
 Tema personalizado `drake-jb.theme` baseado na paleta GitHub Light con 13 cores diferenciables optimizadas para linguaxes web. Todas as cores cumpren **WCAG AA** (ratio de contraste ≥ 4.5:1) sobre o fondo de código `#f6f8fa`. O script detecta automaticamente o ficheiro `.theme` no directorio do script ou de traballo.
 
+`javadoc.xml` substitúe a sintaxe Javadoc incorporada en Pandoc (`--syntax-definition`, motores LuaLaTeX e HTML). A orixinal marca as palabras ASCII dos comentarios `/** */` como texto normal e deixa os tiles e a puntuación co estilo de comentario, de modo que `Saúda` saía con `ú` en cursiva e gris. A copia engade dúas regras, marcadas con `md2pdf`, para que todo o texto do Javadoc sexa comentario.
+
 ### Anchos de táboas proporcionais ao contido
 
 Filtro Lua (`auto-table-widths.lua`) que substitúe os anchos arbitrarios que Pandoc calcula a partir dos guións do Markdown. O filtro:

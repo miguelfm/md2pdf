@@ -64,6 +64,11 @@ def _find_highlight_theme() -> Path | None:
     return _find_asset('drake-jb.theme')
 
 
+def _find_javadoc_syntax() -> Path | None:
+    """Busca a definición de sintaxe Javadoc corrixida (javadoc.xml)."""
+    return _find_asset('javadoc.xml')
+
+
 def _find_lua_filter() -> Path | None:
     """Busca o filtro Lua para auto-dimensionar columnas de táboas."""
     return _find_asset('auto-table-widths.lua')

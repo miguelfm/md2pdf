@@ -21,6 +21,7 @@ from ..assets import (
     _find_callouts_filter,
     _find_compact_code_filter,
     _find_hl_lines_filter,
+    _find_javadoc_syntax,
     _find_terminal_blocks_filter,
     _find_br_filter,
     _find_lua_filter,
@@ -331,6 +332,11 @@ def build_lualatex_cmd(
         cmd.append('--listings')
     else:
         cmd.extend([f'{_pandoc_highlight_flag()}={highlight}'])
+        # Sintaxe Javadoc corrixida: sen ela, os tiles dos comentarios /** */
+        # saen co estilo de comentario no medio de palabras en texto normal.
+        javadoc_syntax = _find_javadoc_syntax()
+        if javadoc_syntax:
+            cmd.append(f'--syntax-definition={javadoc_syntax}')
 
     if toc:
         cmd.extend(['--toc', f'--toc-depth={toc_depth}'])
