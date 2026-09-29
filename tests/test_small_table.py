@@ -93,6 +93,42 @@ Texto anterior.
         self.assertIn(r'\begin{longtable}', latex)
         self.assertNotIn(r'\noindent\begin{tabular}', latex)
 
+    def test_large_table_has_continuation_header_and_footer(self):
+        rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
+        latex = self.render_latex(
+            '| Col A | Col B |\n|---|---|\n' + rows + '\n'
+        )
+        self.assertIn(r'\endfirsthead', latex)
+        self.assertIn(r'(continúa da páxina anterior)', latex)
+        self.assertIn(r'\endhead', latex)
+        self.assertIn(r'(continúa na seguinte páxina…)', latex)
+        self.assertIn(r'\endfoot', latex)
+
+    def test_large_table_protects_first_rows_from_orphan_breaks(self):
+        rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
+        latex = self.render_latex(
+            '| Col A | Col B |\n|---|---|\n' + rows + '\n'
+        )
+        # As primeiras filas e a penúltima deben rematar en \\*
+        self.assertIn(r'1 & 1 \\*', latex)
+        self.assertIn(r'2 & 2 \\*', latex)
+        self.assertIn(r'3 & 3 \\*', latex)
+        self.assertIn(r'4 & 4 \\*', latex)
+        self.assertIn(r'6 & 6 \\*', latex)
+        # A última fila remata normalmente en \\
+        self.assertIn(r'7 & 7 \\' + '\n', latex)
+
+    def test_captioned_table_has_continuation_label(self):
+        rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
+        latex = self.render_latex(
+            '| Col A | Col B |\n|---|---|\n' + rows + '\n\n: Táboa con título {#tbl:proba}\n'
+        )
+        self.assertIn(r'\caption{Táboa con título}\label{tbl:proba}', latex)
+        self.assertIn(r'(continúa da páxina anterior)', latex)
+        self.assertIn(r'\endfirsthead', latex)
+        self.assertIn(r'\endhead', latex)
+
 
 if __name__ == '__main__':
     unittest.main()
+
