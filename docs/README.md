@@ -606,6 +606,14 @@ code-compact-threshold: 25
 
 Calquera bloque de código con 25 liñas ou máis compactarase automaticamente; os bloques curtos manterán a configuración pedagóxica estándar.
 
+### Continuación en saltos de páxina (caixa aberta)
+
+Cando un bloque de código extenso rompe entre dúas páxinas, a caixa adáptase con apertura seccionada (motor `enhanced` de `tcolorbox` con `toprule at break=0pt` e `bottomrule at break=0pt`):
+- **Ao final da páxina anterior:** a caixa mantén as esquinas superiores redondeadas, pero presenta esquinas inferiores rectas e sen bordo inferior, sinalando que a estrutura foi seccionada.
+- **Ao inicio da seguinte páxina:** a caixa comeza directamente sen bordo superior e con esquinas rectas, pechándose con esquinas redondeadas e bordo estándar unicamente ao rematar o código.
+
+Deste xeito indícase de forma inequívoca que se trata do mesmo bloque continuo sen invadir as marxes físicas nin xerar franxas baleiras.
+
 ### Portada e etiqueta de actividade
 
 O script xera dous modos de presentación do título, ambos construídos en LaTeX puro:

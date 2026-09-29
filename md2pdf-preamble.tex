@@ -197,11 +197,15 @@
 }%
 \renewenvironment{Shaded}{%
   \begin{tcolorbox}[
+    enhanced,
     colback=code-bg, colframe=code-border, boxrule=0.5pt,
     arc=3pt, outer arc=3pt, md2pdf-code-font,
     left=6pt, right=6pt, top=4pt, bottom=4pt,
     before skip=0.45em, after skip=0.7em, breakable,
-    lines before break=3
+    lines before break=3,
+    % Caixa aberta no corte: esquinas rectas e sen liña de bordo no salto de páxina
+    bottomrule at break=0pt,
+    toprule at break=0pt
   ]%
 }{%
   \end{tcolorbox}%
