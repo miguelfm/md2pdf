@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 FORMAT_BY_ENGINE = {'lualatex': 'pdf', 'docx': 'png', 'html': 'svg'}
-TEXTWIDTH_PT = {'lualatex': 483.7, 'docx': 468.0, 'html': 696.0}
+TEXTWIDTH_PT = {'lualatex': 472.3, 'docx': 468.0, 'html': 696.0}
 # HTML usa SVG para manter diagramas vectoriais nítidos e escalables.
 # As etiquetas dos diagramas van a 12 pt (próximo ao corpo de 13 pt sen
 # desbordar). A altura máxima (560 pt, uns 20 cm) deixa sitio ao pé e permite

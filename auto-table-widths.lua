@@ -68,7 +68,7 @@ local MONO_PT = 6.96
 local STRONG_FACTOR = 1.08
 local WORD_MARGIN = 1.03
 -- Pandoc reparte (\linewidth - 2(n-1)\tabcolsep) entre as n columnas.
-local LINE_PT = 483.7     -- \linewidth en A4 con marxes de 20 mm
+local LINE_PT = 472.3     -- \linewidth en A4 con marxes de 22 mm
 local TABCOLSEP_PT = 6
 local estilar_cabeceira
 local function content_length(inlines)

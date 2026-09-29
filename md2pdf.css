@@ -432,7 +432,7 @@ th, td { padding: .36rem .5rem; }
 figcaption { width: fit-content; max-width: 100%; }
 }
 @media print {
-@page { size: A4; margin: 14mm 18mm 16mm; }
+@page { size: A4; margin: 14mm 22mm 16mm; }
 :root,
 body.night-mode,
 body.print-mode {

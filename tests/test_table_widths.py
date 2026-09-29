@@ -9,8 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 # Pandoc reparte (\linewidth - 2(n-1)\tabcolsep) entre as n columnas; en A4 con
-# marxes de 20 mm, \linewidth = 483.7pt e \tabcolsep = 6pt.
-LINE_PT = 483.7
+# marxes de 22 mm, \linewidth = 472.3pt e \tabcolsep = 6pt.
+LINE_PT = 472.3
 TABCOLSEP_PT = 6
 
 TIPOS_PHP = '''\

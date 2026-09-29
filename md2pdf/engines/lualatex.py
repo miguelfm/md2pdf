@@ -299,7 +299,7 @@ def build_lualatex_cmd(
         '-M', f'body-font={body_font}',
         '-V', r'mainfontoptions=Numbers=OldStyle,Ligatures=TeX',
         '-V', r'monofontoptions=Scale=0.85,Ligatures=NoCommon',
-        '-V', 'geometry=top=12mm,bottom=14mm,left=20mm,right=20mm,footskip=7mm',
+        '-V', 'geometry=top=14mm,bottom=16mm,left=22mm,right=22mm,footskip=7mm',
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=' + ('black' if print_mode else 'blue!60!black'),
         '-V', 'urlcolor=' + ('black' if print_mode else 'blue!70!black'),

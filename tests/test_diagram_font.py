@@ -59,7 +59,7 @@ class MeasuredFontTests(unittest.TestCase):
             self.assertIsNone(pdf_font_warning(path, '100%', TEXTWIDTH_PT['lualatex']))
             self.assertIsNone(pdf_font_warning(path, '91%', TEXTWIDTH_PT['lualatex']))
             self.assertIn('10.2 pt', pdf_font_warning(path, '85%', TEXTWIDTH_PT['lualatex']))
-            # Ancho absoluto: 8 cm dun PDF de 483,7 pt de ancho.
+            # Ancho absoluto: 8 cm dun PDF de 472,3 pt de ancho.
             self.assertIn('obxectivo', pdf_font_warning(path, '8cm', TEXTWIDTH_PT['lualatex']))
 
 

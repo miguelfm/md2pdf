@@ -223,7 +223,7 @@ def process_diagrams(text: str, engine: str, renderers=RENDERERS, *,
                     os.replace(temporary, output)
             if fmt == 'pdf' and 'height' not in options:
                 width = options.get('width') or width_attr(output, fmt, engine, font_px)
-                warning = pdf_font_warning(output, width, TEXTWIDTH_PT.get(engine, 483.7),
+                warning = pdf_font_warning(output, width, TEXTWIDTH_PT.get(engine, 472.3),
                                            TARGET_FONT_PT)
                 if warning:
                     stats.warnings[name].append(f'diagrama #{counters[name]}: {warning}')

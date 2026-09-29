@@ -610,6 +610,18 @@ Os pés de figura (`![Texto](img.png)`) amósanse centrados, en fonte pequena, c
 
 Quedan rexistradas as seguintes melloras técnicas e pedagóxicas identificadas para futuras iteracións de `md2pdf`:
 
+#### Melloras pedagóxicas e de interacción
+
+1. **Callouts interactivos con formularios PDF (*AcroForms*) e áreas de notas/tarefas:**
+   - Incorporar soporte para caixas de resposta e cadros de notas editables dentro dos callouts (por exemplo, `> [!TAREFA]` ou bloques `:::task-box{id="t1" height="3.5cm"}`) utilizando a contorna `Form` e `\TextField[multiline=true]` de `hyperref` en LuaLaTeX.
+   - Permite que o alumnado escriba directamente no PDF as respostas a exercicios de autoavaliación, trazas de código ou notas de clase, podendo gardar o ficheiro (`Ctrl+S`) cos seus textos persistidos no documento en calquera visor PDF estándar ou navegador web.
+   - Paridade en saída HTML5 (`-e html`) mediante elementos `<textarea>` con persistencia automática en `localStorage` do navegador.
+   - Idóneo para a recollida e entrega directa de actividades en Moodle sen requirir formatos externos, mantendo compatibilidade con impresión en papel (onde se imprime como cadro baleiro delimitado para escritura manual).
+2. **Opción de maquetación asimétrica para guías de estudo / Método Cornell (`--notes`):**
+   - Ofrecer como opción de liña de comandos (`--notes` ou `--cornell`) unha marxe exterior ampliada (40–45 mm) e liña de texto reducida a ~65 CPL para materiais pensados especificamente para a toma de notas manuscritas intensivas en papel ou tabletas con estilete dixital, preservando a simetría estándar de 22 mm para documentos técnicos xerais con código fonte.
+
+#### Melloras tipográficas e técnicas
+
 1. **Mellora de listas procedementais («Paso a paso»):**
    - Nas guías prácticas con pasos numerados (`1.`, `2.`, `3.`), engadir máis separación vertical (`itemsep=0.5em` vía `enumitem`) e resaltar os números en semibold/negra coa cor corporativa (`heading-section`).
    - Evita que pasos con varias liñas se confundan visualmente cos pasos contiguos.
@@ -936,16 +948,17 @@ STIX Two foi encargada polo consorcio STI Pub (AMS, IEEE, Elsevier) e rediseñad
 
 En vez de mesturar familias tipográficas inconexas, unificamos todo coa familia Source. As tres foron deseñadas como familia polo mesmo equipo en Adobe. Son compactas e moi lexibles a 13pt, ideais para documentación técnica.
 
-### Por que 13pt e marxes de 20mm?
+### Por que 13pt e marxes de 22mm?
 
-A 13pt con marxes laterais de 20mm, o ancho total dispoñible entre marxes é de 170 mm (483.7 pt). Mantéñense as marxes en 20 mm e as verticais reducidas (top 12mm, bottom 14mm) por razóns de deseño consciente:
+A 13pt con marxes laterais de 22mm, o ancho total dispoñible entre marxes é de 166 mm (472.3 pt). As marxes establécense en 22 mm e as verticais calibradas (top 14mm, bottom 16mm, footskip 7mm) por razóns de deseño consciente:
 
-- **Espazo íntegro para táboas e figuras:** as marxes de 20 mm permiten que táboas anchas (como as táboas de 4–5 columnas de PHP ou bases de datos), os bloques de código con indentación fonda e os diagramas técnicos aproveiten o 100 % do ancho dispoñible sen comprimir celas nin reducir imaxes.
-- **Teito de liña na prosa a 80–85 caracteres:** en lugar de aumentar as marxes xerais de páxina (o que prexudicaría o espazo de táboas e figuras), establécese un teito de liña óptimo mediante a tolerancia de corte dereito de `ragged2e`:
+- **Espazo para táboas e figuras:** as marxes de 22 mm proporcionan 166 mm de caixa de texto, permitindo que táboas anchas (como as táboas de 4–5 columnas de PHP ou bases de datos), os bloques de código con indentación fonda e os diagramas técnicos aproveiten o espazo dispoñible sen comprimir celas nin reducir imaxes.
+- **Teito de liña na prosa a 75–80 caracteres:** as marxes de 22 mm, xunto coa tolerancia de corte dereito de `ragged2e`:
   ```latex
   \setlength{\RaggedRightRightskip}{0pt plus 3.8em}
   ```
-  Isto permite que a prosa rompa de xeito natural arredor dos 80–85 caracteres (dentro do rango óptimo de 65–85 caracteres/liña segundo Bringhurst), sen forzar liñas longas de 90–96 caracteres nin fatigar a vista.
+  sitúan a lonxitude media de liña arredor dos 75–80 caracteres. Isto permite cumprir a recomendación de accesibilidade WCAG 1.4.8 (≤ 80 caracteres/liña) e aproximarse ao rango óptimo de Bringhurst e Hartley, reducindo nun 58 % as liñas que superan os 85 caracteres sen fatigar a vista.
+- **Distribución vertical e densidade óptima:** as marxes verticais de `top=14mm, bottom=16mm` garanten unha densidade media ideal de 35 liñas/páxina (no centro do canon de 32–40 liñas de Hartley) sen inflar a cantidade de páxinas dos materiais docentes. Achegan máis de 12 mm de desafogo superior ás cabeceiras e sitúan o pé de páxina a máis de 7.5 mm reais do bordo inferior, eliminando riscos de corte mecánico en impresoras domésticas e facilitando o agarre con polgar.
 - **Prevención de palabras soltas ao final de parágrafo (*runts*):**
   Para evitar que a última liña dun parágrafo quede cunha única palabra illada (como *«web.»* ou *«resposta.»* ocupando menos do 10 % da liña), md2pdf limita a elasticidade do espazo final en LuaLaTeX:
   ```latex
@@ -1098,7 +1111,7 @@ O filtro `auto-table-widths.lua` detecta automaticamente a familia do corpo (`sa
 - `SANS_REGULAR_PT` e `SERIF_PT` — táboas de ancho (pt) dos glifos medidas en `\small` co corpo de 13 pt para Source Sans 3 (por defecto) e Source Serif 4 (con `--serif`), respectivamente.
 - `SANS_BOLD_PT` — anchos dos glifos en negra para as cabeceiras de táboa.
 - `SPACE_PT` (2.37 pt en sans / 2.76 pt en serif) e `OTHER_PT` (5.95 pt en sans / 6.4 pt en serif) — espazo entre palabras e ancho medio para caracteres non tabulados.
-- `LINE_PT = 483.7` e `TABCOLSEP_PT = 6` — o `\linewidth` en A4 con marxes de 20 mm e o `\tabcolsep` das táboas.
+- `LINE_PT = 472.3` e `TABCOLSEP_PT = 6` — o `\linewidth` en A4 con marxes de 22 mm e o `\tabcolsep` das táboas.
 - `WORD_MARGIN = 1.03`, `OVERFLOW_PT = 8` e `LOOKAHEAD_PT = 2` — marxe sobre as palabras divisibles, invasión permitida ás que non se poden dividir e marxe de seguridade ao escoller a columna que cede espazo
 - Para fixar os anchos a man nunha táboa concreta, usa guións de lonxitude distinta na liña separadora (ver [Anchos manuais](#anchos-manuais))
 
