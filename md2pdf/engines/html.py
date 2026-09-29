@@ -10,7 +10,7 @@ from ..assets import (
     _find_term_pairs_filter,
     _find_terminal_blocks_filter,
 )
-from ..config import INSTALL_DIR
+from ..config import INSTALL_DIR, _pandoc_highlight_flag, _pandoc_math_flag
 
 
 def build_html_cmd(
@@ -44,10 +44,10 @@ def build_html_cmd(
         '--embed-resources',
         '--section-divs',
         '--shift-heading-level-by=-1',
-        '--mathml',
+        _pandoc_math_flag('mathml'),
         f'--template={template}',
         '-V', f'lang={lang}',
-        f'--highlight-style={highlight}',
+        f'{_pandoc_highlight_flag()}={highlight}',
     ]
 
     # Sintaxe Javadoc corrixida (ver javadoc.xml)

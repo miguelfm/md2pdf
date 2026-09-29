@@ -134,9 +134,39 @@ def _to_polyglossia(lang: str) -> str:
 
 # ── Pandoc ────────────────────────────────────────────────────
 
+_pandoc_version_cache: tuple[int, ...] | None = None
+
+
+def _pandoc_version() -> tuple[int, ...]:
+    """Versión de Pandoc instalada, p. ex. (3, 11). (0,) se non se pode ler."""
+    global _pandoc_version_cache
+    if _pandoc_version_cache is None:
+        try:
+            first = subprocess.run(
+                ['pandoc', '--version'], capture_output=True, text=True, timeout=10,
+            ).stdout.splitlines()[0]
+            _pandoc_version_cache = tuple(
+                int(part) for part in first.split()[1].split('.') if part.isdigit()
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired, IndexError, ValueError):
+            _pandoc_version_cache = (0,)
+    return _pandoc_version_cache
+
+
 def _pandoc_highlight_flag() -> str:
-    """Devolve o flag para o estilo de resaltado de Pandoc."""
+    """Opción de resaltado: --syntax-highlighting desde Pandoc 3.8, que marca
+    --highlight-style como obsoleta."""
+    if _pandoc_version() >= (3, 8):
+        return '--syntax-highlighting'
     return '--highlight-style'
+
+
+def _pandoc_math_flag(method: str) -> str:
+    """Opción de matemáticas: --math-method=<método> desde Pandoc 3.11, que marca
+    --mathml, --mathjax, --katex… como obsoletas."""
+    if _pandoc_version() >= (3, 11):
+        return f'--math-method={method}'
+    return f'--{method}'
 
 
 def _pandoc_template_dirs() -> list[Path]:
