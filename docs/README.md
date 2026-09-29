@@ -725,7 +725,22 @@ Quedan rexistradas as seguintes melloras técnicas e pedagóxicas identificadas 
 
 #### Melloras pedagóxicas e de interacción
 
-1. **Opción de maquetación asimétrica para guías de estudo / Método Cornell (`--notes`):**
+1. **Listas de comprobación e tarefas marcables interactivas (`- [ ]` / `\CheckBox`):**
+   - Integrar a sintaxe de listas de tarefas estándar (`- [ ] Paso pendente`, `- [x] Paso realizado`) coa infraestrutura de formularios AcroForms en LuaLaTeX mediante `\CheckBox`.
+   - Permite que o alumnado marque os fitos ou requisitos cumpridos nunha práctica de laboratorio (*checklist* de pre-entrega) e garde o estado directamente no PDF (`Ctrl+S`).
+   - Paridade en HTML5 mediante elementos `<input type="checkbox">` interactivos con persistencia en `localStorage` e representación limpa en DOCX (`☐`/`☑`).
+   - Implementación moi sinxela, robusta e con soporte universal en todos os visores PDF e navegadores web.
+2. **Ficheiros e código de inicio incrustados no PDF (*Embedded Files* / `embedfile`):**
+   - Permitir a incrustación directa de código fonte, scripts de proba, esquemas `.sql` ou conxuntos de datos dentro do propio documento PDF mediante `embedfile` ou `attachfile2` (p. ex., mediante ligazóns de tipo `[Descargar código](attachment:src/inicio.py)`).
+   - O documento faise 100% autónomo e autocontido para prácticas de laboratorio, garantindo que o alumnado teña os ficheiros de partida aínda sen conexión a Internet nin risco de ligazóns externas rotas.
+   - Paridade en HTML5 convertendo o anexo en descarga local embebida vía data URI base64.
+   - Ampla compatibilidade nativa en visores PDF (Adobe Reader, Okular, Evince, Firefox e Chrome, que contan con panel de anexos integrado) e soporte por liña de ordes en Zathura (`:attachments`).
+3. **Bloques de solución e pistas graduadas colapsables (*Scaffolding* / OCG / `<details>`):**
+   - Incorporar callouts especiais para autoavaliación e axuda guiada (por exemplo, `::: {.solution hidden=true}` ou `::: hint`) para exercicios prácticos.
+   - En HTML5 mediante a etiqueta semántica nativa `<details><summary>Amosar solución</summary>...</details>`.
+   - En LuaLaTeX (PDF) mediante capas OCG (*Optional Content Groups* con `ocgx2`) con botón interactivo para desvelar a resposta, con degradación elegante a bloque delimitado estándar para visores minimalistas sen soporte de capas por clic.
+   - Evita o *spoiler* visual involuntario nos exercicios de autoavaliación e permite construír itinerarios de aprendizaxe guiados con pistas graduadas.
+4. **Opción de maquetación asimétrica para guías de estudo / Método Cornell (`--notes`):**
    - Ofrecer como opción de liña de comandos (`--notes` ou `--cornell`) unha marxe exterior ampliada (40–45 mm) e liña de texto reducida a ~65 CPL para materiais pensados especificamente para a toma de notas manuscritas intensivas en papel ou tabletas con estilete dixital, preservando a simetría estándar de 22 mm para documentos técnicos xerais con código fonte.
 
 #### Melloras tipográficas e técnicas
