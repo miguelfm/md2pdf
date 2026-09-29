@@ -98,6 +98,10 @@ CALLOUT_BLOCKQUOTE_TYPES: dict[str, str] = {
     'DANGER':   'danger',
     'PERIGO':   'perigo',
     'INFO':     'info',
+    'TASK':     'task',
+    'TAREFA':   'task',
+    'TASK-BOX': 'task-box',
+    'TASKBOX':  'taskbox',
 }
 
 # Emojis ao inicio dun blockquote que indican un callout.
@@ -109,6 +113,7 @@ CALLOUT_EMOJI_MAP: list[tuple[str, str]] = [
     ('📘',  'info'),
     ('📝',  'note'),
     ('⛔',  'danger'),
+    ('🎯',  'task'),
 ]
 
 

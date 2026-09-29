@@ -22,6 +22,11 @@ local CALL_OUTS = {
   danger = { label = 'Crítico', kind = 'danger' },
   perigo = { label = 'Crítico', kind = 'danger' },
   info = { label = 'Info', kind = 'info' },
+  task = { label = 'Tarefa', kind = 'task', is_task = true },
+  tarefa = { label = 'Tarefa', kind = 'task', is_task = true },
+  taskbox = { label = 'Tarefa', kind = 'task', is_task = true },
+  ['task-box'] = { label = 'Tarefa', kind = 'task', is_task = true },
+  ['task_box'] = { label = 'Tarefa', kind = 'task', is_task = true },
 }
 
 local figure_no = 0
@@ -60,7 +65,7 @@ local function transform_callout(div)
   callout_no = callout_no + 1
   div.classes:insert('callout')
   div.classes:insert('callout-' .. style.kind)
-  div.attributes['role'] = 'note'
+  div.attributes['role'] = style.is_task and 'region' or 'note'
 
   local title_id
   if div.identifier and div.identifier ~= '' then
@@ -75,6 +80,28 @@ local function transform_callout(div)
     pandoc.Attr(title_id, { 'callout-title' })
   )
   div.content:insert(1, title)
+
+  if style.is_task then
+    local raw_id = (div.identifier and div.identifier ~= '') and div.identifier
+                   or (div.attributes['id'] and div.attributes['id'] ~= '' and div.attributes['id'])
+    if not raw_id then
+      raw_id = 'task-' .. tostring(callout_no)
+    end
+    local field_id = raw_id:gsub('_', '-'):gsub('[^%w%-]', '-')
+    local input_id = field_id .. '-input'
+    local height = div.attributes['height'] or '7em'
+    if height:match('^%d+$') then
+      height = height .. 'px'
+    end
+    local placeholder = div.attributes['placeholder'] or 'Escribe aquí a túa resposta...'
+    placeholder = placeholder:gsub('"', '&quot;')
+    local snippet = string.format(
+      '<div class="task-box-wrapper"><textarea class="task-box-input" id="%s" data-task-id="%s" style="height: %s;" placeholder="%s"></textarea></div>',
+      input_id, field_id, height, placeholder
+    )
+    div.content:insert(pandoc.RawBlock('html', snippet))
+  end
+
   return div
 end
 

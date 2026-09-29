@@ -75,7 +75,29 @@ local CALLOUT_STYLES = {
                   backdef  = '\\definecolor{calloutInfoBack}{RGB}{205,232,237}',
                   framedef = '\\definecolor{calloutInfoFrame}{RGB}{20,110,130}',
                   colback  = 'calloutInfoBack',  colframe = 'calloutInfoFrame' },
+    task      = { label = 'Tarefa',   colorname = 'calloutTaskFrame',
+                  backdef  = '\\definecolor{calloutTaskBack}{RGB}{238,242,255}',
+                  framedef = '\\definecolor{calloutTaskFrame}{RGB}{67,56,202}',
+                  colback  = 'calloutTaskBack',  colframe = 'calloutTaskFrame',
+                  is_task  = true },
+    tarefa    = { label = 'Tarefa',   colorname = 'calloutTaskFrame',
+                  backdef  = '\\definecolor{calloutTaskBack}{RGB}{238,242,255}',
+                  framedef = '\\definecolor{calloutTaskFrame}{RGB}{67,56,202}',
+                  colback  = 'calloutTaskBack',  colframe = 'calloutTaskFrame',
+                  is_task  = true },
+    taskbox   = { label = 'Tarefa',   colorname = 'calloutTaskFrame',
+                  backdef  = '\\definecolor{calloutTaskBack}{RGB}{238,242,255}',
+                  framedef = '\\definecolor{calloutTaskFrame}{RGB}{67,56,202}',
+                  colback  = 'calloutTaskBack',  colframe = 'calloutTaskFrame',
+                  is_task  = true },
+    task_box  = { label = 'Tarefa',   colorname = 'calloutTaskFrame',
+                  backdef  = '\\definecolor{calloutTaskBack}{RGB}{238,242,255}',
+                  framedef = '\\definecolor{calloutTaskFrame}{RGB}{67,56,202}',
+                  colback  = 'calloutTaskBack',  colframe = 'calloutTaskFrame',
+                  is_task  = true },
 }
+
+local task_counter = 0
 
 -- Normaliza o nome da clase para o lookup: atención/Atención → atencion.
 -- string.lower só coñece ASCII e %a non recoñece os bytes UTF-8 de «ó»,
@@ -119,6 +141,33 @@ function Div(el)
             for _, b in ipairs(el.content) do
                 table.insert(blocks, b)
             end
+
+            if style.is_task then
+                local raw_id = (el.identifier and el.identifier ~= '') and el.identifier
+                                or (el.attributes['id'] and el.attributes['id'] ~= '' and el.attributes['id'])
+                if not raw_id then
+                    task_counter = task_counter + 1
+                    raw_id = 'task' .. tostring(task_counter)
+                end
+                local field_id = raw_id:gsub('_', '-'):gsub('[^%w%-]', '-')
+
+                local height = el.attributes['height'] or '3.5cm'
+                if height:match('^%d+$') then
+                    height = height .. 'pt'
+                elseif not height:match('^[0-9%.]+[a-zA-Z]+$') then
+                    height = '3.5cm'
+                end
+
+                local form_tex = string.format(
+                    '\\par\\vspace{0.4em}\\noindent\\begin{Form}%%\n' ..
+                    '\\TextField[name=%s,multiline=true,width=\\linewidth,height=%s,' ..
+                    'bordercolor={\\mdpdftaskborder},backgroundcolor={\\mdpdftaskbg},charsize=10.5pt]{}%%\n' ..
+                    '\\end{Form}',
+                    field_id, height
+                )
+                table.insert(blocks, pandoc.RawBlock('latex', form_tex))
+            end
+
             table.insert(blocks, after)
             return blocks
         end

@@ -158,6 +158,8 @@ def _build_print_preamble_snippet() -> str:
 \definecolor{inline-fg}{RGB}{0,0,0}
 \definecolor{heading-section}{RGB}{0,0,0}
 % Callouts: fondo branco, borde gris; código en liña transparente
+\renewcommand{\mdpdftaskborder}{0.55 0.55 0.55}
+\renewcommand{\mdpdftaskbg}{1 1 1}
 \AtBeginDocument{%
   \tcbset{
     md2pdf-callout/.style={
@@ -235,6 +237,9 @@ def _build_night_preamble_snippet() -> str:
         "  \\hypersetup{linkcolor=night-link,urlcolor=night-link,citecolor=night-link}%\n"
         "  \\tcbset{md2pdf-callout/.style={colback=night-code-bg,colframe=night-link}}%\n"
         "}\n"
+        "% Formularios e caixas de tarefas\n"
+        "\\renewcommand{\\mdpdftaskborder}{0.83 0.78 0.69}\n"
+        "\\renewcommand{\\mdpdftaskbg}{0.93 0.91 0.86}\n"
         "% Sobrescribir cores configurables do preámbulo\n"
         "\\renewcommand{\\toctitlecolor}{night-link}\n"
         "\\renewcommand{\\titlebodycolor}{night-link}\n"

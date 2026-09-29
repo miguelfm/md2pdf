@@ -11,14 +11,20 @@
 -- e descomenta a liña de CustomStyle abaixo.
 
 local CALLOUT_LABELS = {
-    note     = "📝 Nota:",
-    tip      = "💡 Consello:",
-    warning  = "⚠️ Atención:",
-    danger   = "⛔ Perigo:",
-    info     = "ℹ️ Información:",
+    note       = "📝 Nota:",
+    tip        = "💡 Consello:",
+    warning    = "⚠️ Atención:",
+    danger     = "⛔ Perigo:",
+    info       = "ℹ️ Información:",
+    task       = "🎯 Tarefa:",
+    tarefa     = "🎯 Tarefa:",
+    taskbox    = "🎯 Tarefa:",
+    ["task-box"] = "🎯 Tarefa:",
+    ["task_box"] = "🎯 Tarefa:",
     -- Aliases en galego
-    consello = "💡 Consello:",
-    perigo   = "⛔ Perigo:",
+    consello   = "💡 Consello:",
+    perigo     = "⛔ Perigo:",
+    atencion   = "⚠️ Atención:",
 }
 
 function Div(el)
@@ -32,6 +38,10 @@ function Div(el)
             local blocks = { header }
             for _, block in ipairs(el.content) do
                 table.insert(blocks, block)
+            end
+            local is_task = (cls == 'task' or cls == 'tarefa' or cls == 'taskbox' or cls == 'task-box' or cls == 'task_box')
+            if is_task then
+                table.insert(blocks, pandoc.Para({ pandoc.Emph({ pandoc.Str("[Espazo para a resposta da tarefa]") }) }))
             end
             -- Separador visual despois do callout (liña baleira implícita)
             return blocks

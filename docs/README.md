@@ -57,6 +57,32 @@ Tipos dispoñibles (en inglés ou galego):
 | `warning` | `atención`, `atencion` | Laranxa | Precaución |
 | `danger` | `perigo` | Vermello | Erros críticos |
 | `info` | — | Cian | Datos técnicos |
+| `task` | `tarefa`, `task-box`, `taskbox` | Índigo | Tarefa interactiva con formulario PDF (AcroForms) e cadro editable |
+
+### Callouts interactivos con formularios PDF (AcroForms) e persistencia HTML
+
+Para actividades prácticas, entregables e autoavaliacións, `md2pdf` soporta callouts interactivos de tipo tarefa (`task`, `tarefa`, `task-box`):
+
+Sintaxe básica con blockquote:
+
+```markdown
+> [!TASK] Exercicio 1: Configuración de rede
+> Indica a máscara de subrede e a porta de enlace correspondentes.
+```
+
+Ou especificando identificador e altura personalizada con fenced divs:
+
+```markdown
+::: {.task id="ex1" height="4cm" placeholder="Escribe aquí a túa resposta..."}
+
+**Tarefa 1:** Explica a diferenza entre TCP e UDP.
+:::
+```
+
+**Comportamento segundo o formato:**
+- **LuaLaTeX (PDF):** Xera un formulario interactivo PDF estándar (*AcroForm*) con `\TextField[multiline=true]`. O alumnado pode escribir, editar e gardar (`Ctrl+S`) as súas respostas directamente dentro do documento PDF utilizando calquera visor PDF estándar (Evince, Okular, Acrobat Reader, Chrome, Firefox, Edge, etc.) sen depender de aplicacións externas.
+- **HTML5 (`-e html`):** Xera un elemento `<textarea class="task-box-input">` con persistencia automática en `localStorage` do navegador para que o texto non se perda ao recargar a páxina ou pechar a pestana. En modo impresión (`@media print` ou `--print`), renderízase cun marco punteado limpo preparado para a escritura manuscrita.
+- **DOCX (`-e docx`):** Converte o bloque con cabeceira en negra (`🎯 Tarefa:`) e un espazo delimitado de resposta.
 
 ### Admonitions automáticos en cabeceiras
 
@@ -699,12 +725,7 @@ Quedan rexistradas as seguintes melloras técnicas e pedagóxicas identificadas 
 
 #### Melloras pedagóxicas e de interacción
 
-1. **Callouts interactivos con formularios PDF (*AcroForms*) e áreas de notas/tarefas:**
-   - Incorporar soporte para caixas de resposta e cadros de notas editables dentro dos callouts (por exemplo, `> [!TAREFA]` ou bloques `:::task-box{id="t1" height="3.5cm"}`) utilizando a contorna `Form` e `\TextField[multiline=true]` de `hyperref` en LuaLaTeX.
-   - Permite que o alumnado escriba directamente no PDF as respostas a exercicios de autoavaliación, trazas de código ou notas de clase, podendo gardar o ficheiro (`Ctrl+S`) cos seus textos persistidos no documento en calquera visor PDF estándar ou navegador web.
-   - Paridade en saída HTML5 (`-e html`) mediante elementos `<textarea>` con persistencia automática en `localStorage` do navegador.
-   - Idóneo para a recollida e entrega directa de actividades en Moodle sen requirir formatos externos, mantendo compatibilidade con impresión en papel (onde se imprime como cadro baleiro delimitado para escritura manual).
-2. **Opción de maquetación asimétrica para guías de estudo / Método Cornell (`--notes`):**
+1. **Opción de maquetación asimétrica para guías de estudo / Método Cornell (`--notes`):**
    - Ofrecer como opción de liña de comandos (`--notes` ou `--cornell`) unha marxe exterior ampliada (40–45 mm) e liña de texto reducida a ~65 CPL para materiais pensados especificamente para a toma de notas manuscritas intensivas en papel ou tabletas con estilete dixital, preservando a simetría estándar de 22 mm para documentos técnicos xerais con código fonte.
 
 #### Melloras tipográficas e técnicas

@@ -113,7 +113,7 @@ def _convert_callout_blockquotes(lines: list[str]) -> list[str]:
     """
     result   = []
     i        = 0
-    re_start = re.compile(r'^>\s*\[!([\w\u00C0-\u024F]+)\]\s*$')
+    re_start = re.compile(r'^>\s*\[!([\w\u00C0-\u024F-]+)\](?:\s+(.*?))?\s*$')
 
     def _detect_emoji_callout(line: str) -> tuple[str | None, str | None]:
         content = line.lstrip('> ').lstrip()
@@ -125,12 +125,15 @@ def _convert_callout_blockquotes(lines: list[str]) -> list[str]:
     while i < len(lines):
         line = lines[i]
 
-        # Formato 1: > [!TYPE]
+        # Formato 1: > [!TYPE] ou > [!TYPE] Título opcional
         m = re_start.match(line)
         if m:
             div_cls = CALLOUT_BLOCKQUOTE_TYPES.get(m.group(1).upper())
             if div_cls:
+                opt_title = m.group(2)
                 content = []
+                if opt_title and opt_title.strip():
+                    content.extend([f'**{opt_title.strip()}**', ''])
                 i += 1
                 while i < len(lines) and lines[i].startswith('>'):
                     content.append(lines[i][1:].lstrip())
@@ -198,6 +201,9 @@ def _preprocess_md(text: str, engine: str = 'lualatex',
       - NON toca o contido dentro de bloques de código
     """
     text = _strip_front_matter(text)
+
+    # Normalizar fenced divs con atributos directos tipo '::: task-box{...}' a '::: {.task-box ...}'
+    text = re.sub(r'^:::\s+([\w-]+)\s*\{([^}]+)\}', r'::: {.\1 \2}', text, flags=re.MULTILINE)
 
     if callouts:
         text = '\n'.join(_convert_callout_blockquotes(text.splitlines()))
@@ -306,7 +312,7 @@ def _preprocess_md(text: str, engine: str = 'lualatex',
 
     # Post-pass: garantir liña baleira tras aperturas de callout :::tipo
     # escritas directamente no .md (non xeradas polo conversor)
-    re_callout_open = re.compile(r'^:::\s*\w')
+    re_callout_open = re.compile(r'^:::\s*(?:\{[ \t]*[.#]?[\w-]+|[\w-]+)')
     final: list[str] = []
     for idx, ln in enumerate(result):
         final.append(ln)

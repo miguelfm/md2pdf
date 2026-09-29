@@ -126,6 +126,25 @@ $endfor$
       if (wanted.has(index + 1)) line.classList.add('md2pdf-hl-line');
     });
   });
+
+  // Persistencia de cadros de tarefas interactivas en localStorage
+  try {
+    const docKey = window.location.pathname || 'default';
+    document.querySelectorAll('textarea.task-box-input').forEach(ta => {
+      const taskId = ta.dataset.taskId;
+      if (!taskId) return;
+      const storageKey = 'md2pdf_task_' + encodeURIComponent(docKey) + '_' + taskId;
+      const saved = localStorage.getItem(storageKey);
+      if (saved !== null) {
+        ta.value = saved;
+      }
+      ta.addEventListener('input', () => {
+        try {
+          localStorage.setItem(storageKey, ta.value);
+        } catch (_) {}
+      });
+    });
+  } catch (_) {}
 })();
 </script>
 </body>

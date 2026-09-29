@@ -26,6 +26,7 @@ Mantéñense, adaptadas a tecnoloxías web nativas:
 - índice automático compacto e centrado;
 - numeración de seccións mediante `--number-sections` de Pandoc (sen lóxica propia duplicada);
 - callouts `note`, `tip`, `warning`, `danger` e `info`;
+- callouts interactivos de tarefas (`task`, `tarefa`, `task-box`) con caixas `<textarea>` e persistencia automática en `localStorage` por documento e tarefa;
 - resaltado sintáctico;
 - `hl="1,3,5-7"` para destacar liñas concretas de código;
 - bloques de terminal (`bash`, `sh`, `.terminal`...) con fondo e bordo sutilmente diferenciados en día, noite e impresión;

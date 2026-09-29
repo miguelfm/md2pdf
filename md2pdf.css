@@ -29,6 +29,11 @@ color-scheme: light;
 --callout-danger-border: #c01e1e;
 --callout-info-bg: #cde8ed;
 --callout-info-border: #146e82;
+--callout-task-bg: #eef2ff;
+--callout-task-border: #4338ca;
+--task-input-bg: #ffffff;
+--task-input-border: #c7d2fe;
+--task-input-focus: #4338ca;
 --content-width: 58rem;
 --toc-width: 42rem;
 --sans: "Source Sans 3", "Source Sans Pro", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -66,6 +71,11 @@ color-scheme: light;
 --callout-danger-border: #a0522d;
 --callout-info-bg: #eee3d7;
 --callout-info-border: #8b6347;
+--callout-task-bg: #eee3d7;
+--callout-task-border: #8b6347;
+--task-input-bg: #ede8dc;
+--task-input-border: #d4c8b0;
+--task-input-focus: #8b6347;
 }
 body.print-mode {
 --bg: #ffffff;
@@ -88,6 +98,11 @@ body.print-mode {
 --callout-warning-bg: #ffffff;
 --callout-danger-bg: #ffffff;
 --callout-info-bg: #ffffff;
+--callout-task-bg: #ffffff;
+--callout-task-border: #555555;
+--task-input-bg: #ffffff;
+--task-input-border: #888888;
+--task-input-focus: #000000;
 }
 * { box-sizing: border-box; }
 html {
@@ -368,6 +383,31 @@ font-weight: 750;
 .callout-danger > .callout-title { color: var(--callout-danger-border); }
 .callout-info { background: var(--callout-info-bg); border-color: var(--callout-info-border); }
 .callout-info > .callout-title { color: var(--callout-info-border); }
+.callout-task { background: var(--callout-task-bg); border-color: var(--callout-task-border); }
+.callout-task > .callout-title { color: var(--callout-task-border); }
+.task-box-wrapper {
+  margin-top: .65rem;
+  margin-bottom: .2rem;
+}
+.task-box-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--sans);
+  font-size: .95rem;
+  line-height: 1.45;
+  color: var(--fg);
+  background-color: var(--task-input-bg);
+  border: 1px solid var(--task-input-border);
+  border-radius: .25rem;
+  padding: .5rem .65rem;
+  resize: vertical;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.task-box-input:focus {
+  outline: none;
+  border-color: var(--task-input-focus);
+  box-shadow: 0 0 0 2px rgba(67, 56, 202, .18);
+}
 figure {
 margin: 1.55rem auto 1.7rem;
 text-align: center;
@@ -476,6 +516,7 @@ body.print-mode {
 --callout-warning-bg: #ffffff;
 --callout-danger-bg: #ffffff;
 --callout-info-bg: #ffffff;
+--callout-task-bg: #ffffff;
 }
 html { font-size: 11pt; }
 body { line-height: 1.36; }
@@ -487,4 +528,9 @@ h1, h2, h3, h4, h5, h6 { break-after: avoid-page; }
 figure, table, .callout, pre { break-inside: avoid-page; }
 .table-wrapper { overflow: visible; }
 .callout { background: #fff !important; }
+.task-box-input {
+  border: 1px dashed #777777 !important;
+  background: transparent !important;
+  resize: none !important;
+}
 }

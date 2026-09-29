@@ -150,6 +150,7 @@ Cada tipo de callout ten unha función:
 | `warning` | Risco de erro frecuente ou comportamento sorprendente |
 | `danger` | Erro grave, perda de datos, seguridade ou acción difícil de reverter |
 | `info` | Contexto técnico que amplía pero non interrompe o fío principal |
+| `task` | Tarefa ou exercicio práctico interactivo con cadro de resposta editable |
 
 Non convertas cada dato interesante nun callout. Varios callouts seguidos indican que parte
 dese contido debe volver ao texto normal. Reserva `warning` e `danger` para situacións que
@@ -320,18 +321,35 @@ Tipos e aliases:
 | `warning` | `atención`, `atencion` | Atención | Non |
 | `danger` | `perigo` | Crítico | Si |
 | `info` | — | Info | — |
+| `task` | `tarefa`, `task-box` | Tarefa | Si |
 
 Un alias non recoñecido en DOCX sae como texto normal, sen etiqueta. Por iso convén usar
 sempre os nomes ingleses.
 
-### 12.2 Sintaxe alternativa e conversións automáticas
+### 12.2 Callouts interactivos de tarefa (`task`)
+
+Os callouts de tipo `task` (`tarefa`, `task-box`, `taskbox`) xeran áreas de resposta editables para o alumnado:
+- **PDF (LuaLaTeX):** Campo interactivo de formulario PDF estándar (*AcroForm*) con `\TextField[multiline=true]`. Permite escribir, editar e gardar (`Ctrl+S`) as respostas no propio PDF con calquera visor estándar.
+- **HTML5:** Elemento `<textarea class="task-box-input">` con gardado e persistencia automática en `localStorage` do navegador. En impresión preséntase como cadro delimitado limpo para escritura manual.
+- **DOCX:** Encabezado `🎯 Tarefa:` en negra cun marcador de espazo de resposta.
+
+Pódense engadir atributos como `id`, `height` (ex: `4cm`, `7em`, `120px`) e `placeholder`:
+
+```markdown
+::: {.task id="ex1" height="4cm" placeholder="Escribe aquí a túa resposta..."}
+
+Explica a vantaxe principal de usar índices nunha base de datos relacional.
+:::
+```
+
+### 12.3 Sintaxe alternativa e conversións automáticas
 
 Tamén se converten a callout:
 
 - A sintaxe de GitHub/Obsidian: `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!DANGER]`,
-  `> [!INFO]` (e os alias galegos en maiúsculas).
+  `> [!INFO]`, `> [!TASK]`, `> [!TAREFA]` (e os alias galegos en maiúsculas).
 - **Unha cita que empece por certos emojis:** `> ⚠️ …` → `warning`, `> 💡 …` → `tip`,
-  `> 📘 …` → `info`, `> 📝 …` → `note`, `> ⛔ …` → `danger`.
+  `> 📘 …` → `info`, `> 📝 …` → `note`, `> ⛔ …` → `danger`, `> 🎯 …` → `task`.
 
 Prefire a sintaxe `:::`. Non empeces unha cita textual por un destes emojis se non queres
 un callout.
