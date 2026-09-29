@@ -627,7 +627,7 @@ O espazo en branco superior (~28% da altura da páxina) é o elemento de deseño
 
 ### Cabeceiras limpas
 
-Sen texto nin liñas separadoras nas cabeceiras de páxina, só número de páxina centrado no pé. Configurado vía `\AfterEndPreamble` con KOMA-Script (`\clearpairofpagestyles`).
+Sen texto nin liñas separadoras nas cabeceiras de páxina; número de páxina na esquina inferior, desprazado á marxe exterior (á dereita en páxinas impares/simples, á esquerda en pares). Configurado vía `\AfterEndPreamble` con KOMA-Script (`\clearpairofpagestyles`, `\rofoot`, `\lefoot`).
 
 ### Imaxes e figuras
 
@@ -1010,7 +1010,7 @@ A 13pt con marxes laterais de 22mm, o ancho total dispoñible entre marxes é de
   Ao esixir que o espazo en branco final non supere o 75 % do ancho (`\textwidth`), TeX penaliza colas de menos do ~25 % do ancho (~15–20 caracteres) e o seu algoritmo de corte redistribúe o parágrafo de forma harmónica, facendo descender dúas ou máis palabras sen forzar cortes artificiais nin caixas ríxidas (`\mbox`/`~`). No formato HTML, este mesmo comportamento garántese co estándar nativo `text-wrap: pretty` en CSS.
 - **Sen cabeceiras superiores (Running headers):** descartáronse expresamente as cabeceiras correntes superiores por dous motivos prácticos:
   1. Evitar que ao seleccionar e copiar código fonte continuo que salta de páxina se copie o título da cabeceira no portapapeis do estudante.
-  2. Evitar ruído visual e elementos repetitivos innecesarios en materiais docentes habitualmente curtos (< 30 páxinas). O pé de páxina con número centrado (`\cfoot{\pagemark}`) proporciona unha orientación limpa e discreta.
+  2. Evitar ruído visual e elementos repetitivos innecesarios en materiais docentes habitualmente curtos (< 30 páxinas). O número de páxina sitúase na marxe da esquina inferior (`\rofoot`, `\lefoot` con desprazamento cara fóra de 12 mm, a 10 mm do bordo da folla e 7,6 mm da base), despexando totalmente a caixa de texto e os bloques de código que parten entre páxinas sen interferir coa área de impresión nin coa suxeición manual do documento.
 
 ### Cifras OldStyle vs. Lining
 

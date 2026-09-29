@@ -11,7 +11,11 @@
 \AfterEndPreamble{%
   \KOMAoptions{headsepline=false,footsepline=false}%
   \clearpairofpagestyles
-  \cfoot{\pagemark}%
+  % Número de páxina na esquina inferior dereita, fóra da caixa de texto (na marxe):
+  % 12 mm desprazado cara fóra sitúa o número a 10 mm do bordo do papel (marxe de 22 mm)
+  % e a 7,6 mm do bordo inferior, garantindo seguridade en impresión e despexando o código.
+  \rofoot[\rlap{\makebox[12mm][r]{\pagemark}}]{\rlap{\makebox[12mm][r]{\pagemark}}}%
+  \lefoot[\llap{\makebox[12mm][l]{\pagemark}}]{\llap{\makebox[12mm][l]{\pagemark}}}%
   \pagestyle{scrheadings}%
 }
 % ── Aliñamento á esquerda ───────────────────────────────────
