@@ -156,6 +156,7 @@ def _build_print_preamble_snippet() -> str:
 \definecolor{terminal-border}{RGB}{140,140,140}
 \definecolor{inline-bg}{RGB}{255,255,255}
 \definecolor{inline-fg}{RGB}{0,0,0}
+\definecolor{heading-section}{RGB}{0,0,0}
 % Callouts: fondo branco, borde gris; código en liña transparente
 \AtBeginDocument{%
   \tcbset{

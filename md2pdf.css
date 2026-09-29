@@ -192,6 +192,17 @@ main img { max-width: 100%; height: auto; }
 img.md2pdf-diagram { font-size: .96rem; }
 ul, ol { padding-left: 1.55rem; }
 li + li { margin-top: .18rem; }
+ol > li + li { margin-top: .5em; }
+ol ol > li + li { margin-top: .25em; }
+ol > li::marker {
+  font-weight: 700;
+  color: var(--heading-1);
+}
+.footnotes ol > li + li { margin-top: .2rem; }
+.footnotes ol > li::marker {
+  font-weight: 600;
+  color: var(--muted);
+}
 main dl {
 display: grid;
 grid-template-columns: 9em minmax(0, 1fr);

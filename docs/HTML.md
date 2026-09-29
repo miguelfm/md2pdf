@@ -28,13 +28,15 @@ Mantéñense, adaptadas a tecnoloxías web nativas:
 - callouts `note`, `tip`, `warning`, `danger` e `info`;
 - resaltado sintáctico;
 - `hl="1,3,5-7"` para destacar liñas concretas de código;
+- bloques de terminal (`bash`, `sh`, `.terminal`...) con fondo e bordo sutilmente diferenciados en día, noite e impresión;
+- bloques de código compactos (`.compact` ou limiar `code-compact-threshold`);
 - figuras e táboas numeradas;
 - compatibilidade cos pés de figura herdados do pipeline PDF (`*Figura N. ...*`), normalizados antes do filtro HTML para evitar numeración duplicada;
 - referencias `@fig:` e `@tbl:`/`@tab:` como ligazóns internas;
 - Mermaid, D2, Graphviz e Vega-Lite como SVG;
 - notas ao pé;
 - ecuacións mediante MathML;
-- `--night`, `--print`, `--plain`, `--no-toc`, `--no-number`, `--watch` e `--strict`.
+- `--night`, `--print`, `--plain`, `--no-terminal-blocks`, `--no-toc`, `--no-number`, `--watch` e `--strict`.
 
 As regras exclusivas de paxinación LaTeX (`needspace`, `longtable`, `small-table.lua`, etc.) non se executan no HTML de pantalla. Para impresión úsanse regras CSS de salto de páxina.
 

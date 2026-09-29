@@ -385,6 +385,21 @@ Para ordes e sesións de consola (`bash`, `sh`, `powershell`, `zsh`, `console`, 
 
 Non inclúas símbolos artificiais de prompt (`$`, `>`, `#`, `>_`) nin caracteres manuais ao inicio das liñas de comando salvo que sexa indispensable diferenciar entrada e saída. Isto garante que o alumnado poida copiar e pegar as ordes directamente no terminal sen provocar erros de sintaxe (`command not found`).
 
+### 13.6 Bloques de código compactos para listados longos
+
+Para listados longos (clases completas, ficheiros de configuración extensos ou saídas de consola volumosas), engade a clase `{.compact}` (ou `.compacto`):
+
+````markdown
+```python {.compact}
+class RepositorioAlumnos:
+    def __init__(self, conexion):
+        self.conexion = conexion
+    # listado longo...
+```
+````
+
+Isto activa unha tipografía máis compacta (10 pt con interliñado de 13 pt) que amplía a capacidade horizontal a ~77 columnas e reduce a altura vertical, evitando quebras de liña `↪` innecesarias. Tamén é combinable con resaltado (`{.compact hl="3,5"}`) ou configurábel globalmente mediante o metadato `code-compact-threshold: 25` no front matter.
+
 ## 14. Diagramas e gráficos
 
 ### 14.1 Regras comúns
@@ -650,7 +665,10 @@ ficheiros locais ligados (código de partida, PDF, ZIP) inclúense no paquete.
 - Liña baleira antes da lista (sección 11.1).
 - Sublistas sangradas ata o texto do elemento pai (dous espazos tras `-`, tres tras
   `1.`); máximo dous niveis.
-- Listas numeradas para pasos con orde; viñetas para o resto.
+- Listas numeradas para pasos con orde («Paso a paso»): `md2pdf` resalta automaticamente
+  os números en negra coa cor corporativa (`heading-section`) e engade separación vertical
+  adicional (`itemsep=0.5em`) para que pasos de varias liñas non se confundan cos contiguos.
+- Viñetas para o resto de enumeracións sen orde estrita, que manteñen espazamento compacto.
 
 ### 18.2 Listas de definición
 
@@ -791,7 +809,7 @@ Sintaxe:
       sen querer.
 - [ ] Sen `---`, `[TOC]` nin índices manuais.
 - [ ] Liña baleira antes de cada lista, táboa, cabeceira, cita e bloque.
-- [ ] Todos os bloques de código teñen linguaxe; `hl=` só nas liñas comentadas.
+- [ ] Todos os bloques de código teñen linguaxe; `hl=` só nas liñas comentadas; `{.compact}` se o listado é longo.
 - [ ] Callouts con nomes ingleses e liña baleira tras a apertura.
 - [ ] Todos os diagramas e imaxes informativas teñen pé; as decorativas, `{.decorative}`.
 - [ ] Imaxes grandes ou PDF con `{width=...}`.

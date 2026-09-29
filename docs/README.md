@@ -437,7 +437,7 @@ Baseado nos principios de Bringhurst (*The Elements of Typographic Style*) e Mü
 
 - **Parskip** (0.45em): ~50% do interliñado, para separar parágrafos sen indentación.
 - **Cabeceiras**: espazo antes ≥ 2× espazo despois (principio de proximidade de Gestalt — a cabeceira está máis preto do contido que introduce que do anterior).
-- **Listas**: `topsep` 0.1em (espazo antes/despois da lista ≈ parskip), `itemsep` 0.25em entre ítems.
+- **Listas**: `topsep` 0.1em (espazo antes/despois da lista ≈ parskip), `itemsep` 0.25em entre ítems de viñeta ordinarios e `0.5em` nas listas procedementais numeradas (`enumerate`).
 - **Bloques de código**: `after skip` (0.7em) > `before skip` (0.45em) porque o borde inferior crea unha fronteira visual ríxida.
 - **Blockquotes**: `after skip` (0.6em) > `before skip` (0.45em) polo mesmo motivo.
 
@@ -448,6 +448,15 @@ Xerarquía de espazado en LuaLaTeX (con `\parskip` 0.45em engadido):
 | Section | 1.2em | 0.4em | ~1.65em | ~0.85em | ~1.9× |
 | Subsection | 1.0em | 0.3em | ~1.45em | ~0.75em | ~1.9× |
 | Subsubsection | 0.8em | 0.3em | ~1.25em | ~0.75em | ~1.7× |
+
+### Listas procedementais («Paso a paso»)
+
+Nas guías prácticas, titoriais e documentación técnica con pasos numerados (`1.`, `2.`, `3.`), `md2pdf` optimiza a lexibilidade do fluxo de traballo:
+
+- **Resaltado en negra coa cor corporativa (`heading-section`):** os números e marcadores (`1.`, `2.`, `a.`, `b.`) destacan visualmente sobre o texto da instrución, permitindo ao estudante situarse instantaneamente na secuencia sen perder o fío.
+- **Separación vertical ampliada (`itemsep=0.5em`):** engade un desafogo vertical entre pasos sucesivos, evitando que pasos con dúas ou máis liñas de texto se confundan visualmente cos pasos contiguos. As sublistas anidadas aplican `itemsep=0.25em`.
+- **Listas de viñetas compactas:** as listas non numeradas ordinarias (`<ul>` / `itemize`) conservan o seu interliñado compacto para listas breves de características ou conceptos.
+- **Paridade multiformato e modos visuais:** configurado en LuaLaTeX mediante `enumitem` (cunha xestión de `\tightlist` consciente do tipo de lista) e en HTML5 con pseudo-elementos `::marker` e espazamento relativo, adaptando automaticamente as cores tanto ao modo nocturno (`--night`, onde os números adoptan o ton cálido `#6B3A1F`) coma ao modo impresión (`--print`, negro puro `#000000`).
 
 ### Protección de orfas, viúvas e cabeceiras
 
@@ -700,20 +709,17 @@ Quedan rexistradas as seguintes melloras técnicas e pedagóxicas identificadas 
 
 #### Melloras tipográficas e técnicas
 
-1. **Mellora de listas procedementais («Paso a paso»):**
-   - Nas guías prácticas con pasos numerados (`1.`, `2.`, `3.`), engadir máis separación vertical (`itemsep=0.5em` vía `enumitem`) e resaltar os números en semibold/negra coa cor corporativa (`heading-section`).
-   - Evita que pasos con varias liñas se confundan visualmente cos pasos contiguos.
-2. **Reforzo semántico en caixas de aviso (*Callouts*):**
+1. **Reforzo semántico en caixas de aviso (*Callouts*):**
    - En `callouts.lua`, xerar títulos formais en negra por defecto cando o autor non especifique un explícito (por exemplo, `⚠️ ATENCIÓN: ERRO HABITUAL`, `💡 CONSELLO PRÁCTICO`, `🎯 OBXECTIVO DA TAREFA`).
    - Facilita a lectura rápida en diagonal antes de iniciar tarefas prácticas.
-3. **Soporte tipográfico para teclas e atallos (`<kbd>`):**
+2. **Soporte tipográfico para teclas e atallos (`<kbd>`):**
    - Filtro Lua para procesar etiquetas `<kbd>` e renderizalas coma teclas físicas tridimensionais con cantos redondeados e bordo sutil (estilo GitHub / MDN).
    - Diferencia claramente as accións físicas de teclado (`Ctrl + C`, `Alt + Shift + F`) do código en liña común.
-4. **Estabilización de código en liña con fondo («píldora»):**
+3. **Estabilización de código en liña con fondo («píldora»):**
    - Resolver a interacción entre `\newtcbox` e os puntos de quebra intelixentes (`\discretionary`, `\allowbreak`) xerados por `auto-table-widths.lua` en rutas longas, de xeito que `--inline-pill` poida activarse por defecto con estabilidade total.
-5. **Bordes para capturas de pantalla e imaxes con fondo claro:**
+4. **Bordes para capturas de pantalla e imaxes con fondo claro:**
    - Crear unha contorna de figura con marco sutil mediante `tcolorbox` para evitar que imaxes con fondo branco se fundan coa páxina (a alternativa con `cfbox` vía `adjustbox` non resultaba visible no PDF).
-6. **Tratamento de barras invertidas en código en liña (`\n`, `\t`, `\\`):**
+5. **Tratamento de barras invertidas en código en liña (`\n`, `\t`, `\\`):**
    - Resolver o conflito polo cal `\texttt{}` interpreta as barras invertidas no texto corrido como macros LaTeX en vez de caracteres literais.
 
 

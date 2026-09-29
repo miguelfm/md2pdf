@@ -97,6 +97,33 @@
   \setlength{\itemsep}{0.3em}%
   \setlength{\parsep}{0.2em}%
 }
+% ── Listas e pasos procedementais ───────────────────────────
+% Resalta os números en negra coa cor corporativa (heading-section)
+% e engade separación vertical entre pasos (itemsep=0.5em) para evitar que
+% pasos con varias liñas se confundan visualmente cos pasos contiguos.
+\setlist[enumerate,1]{%
+  font=\bfseries\color{heading-section},%
+  topsep=0.35em,%
+  itemsep=0.5em,%
+  parsep=0.15em%
+}
+\setlist[enumerate,2]{%
+  font=\bfseries\color{heading-section},%
+  topsep=0.25em,%
+  itemsep=0.25em,%
+  parsep=0.1em%
+}
+\makeatletter
+\def\tightlist{%
+  \ifnum\@enumdepth=1\relax
+    \setlength{\itemsep}{0.5em}%
+  \else\ifnum\@enumdepth>1\relax
+    \setlength{\itemsep}{0.25em}%
+  \else
+    \setlength{\itemsep}{0pt}%
+  \fi\fi
+  \setlength{\parskip}{0pt}}
+\makeatother
 % ── Blockquotes ─────────────────────────────────────────────
 \usepackage{tcolorbox}
 \tcbuselibrary{breakable,skins}
