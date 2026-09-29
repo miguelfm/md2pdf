@@ -150,8 +150,8 @@ As etiquetas saen cun tamaño obxectivo de 12 pt no PDF (elixido conscientemente
   arestas. Os atributos `fontsize` e `fontname` escritos no diagrama teñen
   prioridade.
 - Mermaid renderiza nativamente con `fontSize: 16px` (12 pt a 96 DPI) e conta
-  con soporte automático para `mmdc 12.0.0+` (xestionando a retirada de `--pdfFit`
-  mediante fallback limpo).
+  funciona con `mmdc 12.0.0+`, que retirou `--pdfFit`: md2pdf consulta
+  `mmdc --help` unha vez e só engade a opción ás versións que a teñen.
 - Fonte: Source Sans 3, a sans do documento, en Graphviz e Mermaid. D2 e
   Vega-Lite manteñen a súa: vl-convert non atopa a Source Sans 3 (OTF) nin
   rexistrando o cartafol.

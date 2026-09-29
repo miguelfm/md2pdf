@@ -288,7 +288,7 @@ flowchart LR
 
 A renderización faina o paquete `md2pdf/diagrams/` (coa API de compatibilidade `md2pdf/mermaid.py`) chamando a `mmdc` (Mermaid CLI) e substituíndo cada bloque pola imaxe xerada antes de pasar o documento a Pandoc. O formato escóllese segundo o motor:
 
-- **LuaLaTeX** → PDF vectorial axustado ao diagrama (con `--pdfFit` en versións clásicas de `mmdc` ou con autodetección de recorte nativo en `mmdc 12.0.0+`, onde a opción foi retirada)
+- **LuaLaTeX** → PDF vectorial axustado ao diagrama. `mmdc` 12 xa o axusta por defecto e retirou `--pdfFit`; md2pdf consulta `mmdc --help` unha vez e só engade a opción ás versións que a teñen
 - **DOCX** → PNG
 - **HTML5** → SVG vectorial embebido no ficheiro final
 
@@ -357,6 +357,8 @@ $$\int_a^b f(x)\,dx = F(b) - F(a)$$
 
 As ecuacións en bloque represéntanse coa numeración e o comportamento propios de LaTeX/Pandoc, pero md2pdf non resolve actualmente referencias `@eq:`.
 
+No motor HTML as ecuacións saen en MathML: con `--math-method=mathml` desde Pandoc 3.11, que marcou `--mathml` como obsoleta, e con `--mathml` en versións anteriores.
+
 ### Referencias cruzadas
 
 md2pdf resolve referencias de **figuras e táboas** sen depender de `pandoc-crossref`: `figure-captions.lua` faino en LuaLaTeX e `html.lua` en HTML5.
@@ -396,6 +398,8 @@ Por defecto estes problemas móstranse como avisos e a conversión continúa. Co
 md2pdf apuntes.md --strict
 md2pdf *.md --strict
 ```
+
+Despois de cada conversión amósanse tamén os avisos `[WARNING]` de Pandoc (opcións obsoletas, recursos que non atopa…), sen repetir e ata dez. Non deteñen a conversión nin dependen de `--strict`.
 
 ### Tipografía profesional
 
@@ -462,6 +466,8 @@ Xerarquía de espazado en LuaLaTeX (con `\parskip` 0.45em engadido):
 ### Resaltado de sintaxe
 
 Tema personalizado `drake-jb.theme` baseado na paleta GitHub Light con 13 cores diferenciables optimizadas para linguaxes web. Todas as cores cumpren **WCAG AA** (ratio de contraste ≥ 4.5:1) sobre o fondo de código `#f6f8fa`. O script detecta automaticamente o ficheiro `.theme` no directorio do script ou de traballo.
+
+O tema pásase con `--syntax-highlighting` desde Pandoc 3.8, que marcou `--highlight-style` como obsoleta; con versións anteriores úsase a opción antiga. md2pdf le a versión con `pandoc --version` unha vez por execución.
 
 `javadoc.xml` substitúe a sintaxe Javadoc incorporada en Pandoc (`--syntax-definition`, motores LuaLaTeX e HTML). A orixinal marca as palabras ASCII dos comentarios `/** */` como texto normal e deixa os tiles e a puntuación co estilo de comentario, de modo que `Saúda` saía con `ú` en cursiva e gris. A copia engade dúas regras, marcadas con `md2pdf`, para que todo o texto do Javadoc sexa comentario.
 
@@ -753,12 +759,14 @@ md2pdf/
 ├── md2pdf.css                 Deseño responsive, nocturno e impresión HTML
 ├── html.lua                   Callouts, captions e referencias HTML
 ├── drake-jb.theme             Tema de resaltado de sintaxe
+├── javadoc.xml                Sintaxe Javadoc corrixida (tiles nos comentarios /** */)
 ├── auto-table-widths.lua      Filtro Lua para táboas e código en liña
 ├── small-table.lua            Filtro Lua para táboas pequenas (límite 6 filas)
 ├── br.lua                     Filtro Lua para <br> en celas de táboa
 ├── callouts.lua               Filtro Lua para callouts/admonitions (LuaLaTeX)
 ├── callouts-docx.lua          Filtro Lua para callouts en DOCX
 ├── hl-lines.lua               Filtro Lua para resaltado de liñas (LuaLaTeX)
+├── compact-code.lua           Filtro Lua para bloques de código compactos
 ├── install-md2pdf.py          Instalador multiplataforma
 ├── docs/md2pdf-ai-reference.md  Referencia para asistentes de IA
 └── README.md                  Este ficheiro
@@ -781,6 +789,8 @@ sudo apt install pandoc
 # Windows
 winget install JohnMacFarlane.Pandoc
 ```
+
+Recoméndase Pandoc 3.8 ou posterior. Con versións anteriores md2pdf usa as opcións antigas (`--highlight-style`, `--mathml`), que Pandoc 3.8 e 3.11 marcaron como obsoletas.
 
 **Motor LuaLaTeX** (por defecto):
 
@@ -985,6 +995,8 @@ Typora exporta PDF mediante o motor do navegador (Chromium), que ten limitación
 ### Por que LuaLaTeX como motor por defecto?
 
 LuaLaTeX produce a mellor calidade tipográfica dispoñible. O paquete usa un **template e preámbulo propios** construídos sobre KOMA-Script (`scrartcl`), o que ofrece control total sobre o resultado visual: táboas con cores alternas, cabeceiras con cor, xestión de ligazóns, notas elegantes, e sen as limitacións ou dependencias externas dun template de terceiros.
+
+O tamaño de letra pásase á clase como `fontsize=13pt`. Coa forma curta `13pt`, KOMA-Script trata o documento como antigo e cambia a compatibilidade a `version=first`, un modo ao que os seus autores non dan soporte.
 
 ### Por que se retirou o motor Typst?
 
