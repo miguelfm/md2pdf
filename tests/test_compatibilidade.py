@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 from md2pdf import config
+from md2pdf.converter import _pandoc_warnings
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -99,6 +100,23 @@ class PandocFlagTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn('Deprecated', result.stderr)
+
+
+class PandocWarningTests(unittest.TestCase):
+    def test_collects_unique_warnings(self):
+        stderr = (
+            '[WARNING] Deprecated: --highlight-style. Use --syntax-highlighting instead.\n'
+            'This is LuaHBTeX, Version 1.24.0\n'
+            '[WARNING] Could not fetch resource imaxe.png\n'
+            '[WARNING] Could not fetch resource imaxe.png\n'
+        )
+        self.assertEqual(_pandoc_warnings(stderr), [
+            'Deprecated: --highlight-style. Use --syntax-highlighting instead.',
+            'Could not fetch resource imaxe.png',
+        ])
+
+    def test_no_warnings(self):
+        self.assertEqual(_pandoc_warnings('Output written on x.pdf\n'), [])
 
 
 if __name__ == '__main__':

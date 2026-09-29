@@ -76,6 +76,17 @@ def _extract_latex_errors(stderr: str) -> list[str]:
     return relevant or lines[-20:]
 
 
+def _pandoc_warnings(stderr: str) -> list[str]:
+    """Avisos [WARNING] de Pandoc, sen repetir e na orde en que aparecen."""
+    warnings: list[str] = []
+    for line in stderr.splitlines():
+        if line.startswith('[WARNING]'):
+            text = line.removeprefix('[WARNING]').strip()
+            if text not in warnings:
+                warnings.append(text)
+    return warnings
+
+
 def _report_diagram(name: str, new_count: int, cached_count: int,
                     errors: list[str]) -> None:
     """Imprime o resumo do procesado dun tipo de diagrama."""
@@ -407,6 +418,15 @@ def convert_one(
                 for line in stderr.strip().splitlines()[:15]:
                     print(f'    {line}', file=sys.stderr)
             return False
+
+        # Sen isto, os avisos de Pandoc (opcións obsoletas, recursos que non
+        # atopa...) perdíanse cando a conversión remataba ben.
+        pandoc_warnings = _pandoc_warnings(result.stderr or '')
+        for warning in pandoc_warnings[:10]:
+            print(f'    ⚠  Pandoc: {warning}', file=sys.stderr)
+        if len(pandoc_warnings) > 10:
+            print(f'    ⚠  Pandoc: {len(pandoc_warnings) - 10} avisos máis',
+                  file=sys.stderr)
 
         # ── Validación da saída HTML ───────────────────────────
         if engine == 'html':
