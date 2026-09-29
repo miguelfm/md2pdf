@@ -18,7 +18,9 @@
 
 % ── Clase base ───────────────────────────────────────────────
 \documentclass[
-  $if(fontsize)$$fontsize$,$endif$
+  % fontsize= e non só «13pt»: KOMA-Script le a opción curta como documento
+  % antigo e cambia a compatibilidade a version=first.
+  $if(fontsize)$fontsize=$fontsize$,$endif$
   $if(papersize)$$papersize$paper,$endif$
   parskip=half-
 ]{scrartcl}
