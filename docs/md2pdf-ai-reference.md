@@ -539,8 +539,10 @@ Prioridade: atributo do bloque > front matter > `metadata.yaml` > valor predeter
   decimal. Escribe só o número na cela (`3.5`, non `3.5 s` nin `` `3.5` ``) e centra a
   columna con `|:-:|` se o queres centrado.
 - No PDF, as táboas de ata 6 filas non se parten entre páxinas; as máis longas pártense
-  repetindo a cabeceira. Prefire varias táboas curtas, unha por concepto, a unha táboa
-  xigante, e pon as filas máis importantes ao inicio.
+  repetindo a cabeceira e engadindo indicadores de continuidade automáticos
+  (*«continúa na seguinte páxina…»* / *«continúa da páxina anterior»*). As primeiras
+  4 filas e a penúltima protéxense contra orfas. Prefire varias táboas curtas, unha
+  por concepto, a unha táboa xigante, e pon as filas máis importantes ao inicio.
 - Salto de liña dentro dunha cela: `<br>` (PDF e HTML; DOCX ignórao). Non uses barra
   invertida nin dobre espazo.
 

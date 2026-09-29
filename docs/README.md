@@ -455,6 +455,7 @@ Xerarquía de espazado en LuaLaTeX (con `\parskip` 0.45em engadido):
 - **Cabeceiras**: `\Needspace` vía `\pretocmd` reserva 8, 7 e 6 liñas base antes de `section`, `subsection` e `subsubsection`, respectivamente. Se a cabeceira vai xusto despois doutra (sección + subsección), non se reserva nada: `\Needspace` forzaría o salto entre as dúas e deixaría a primeira soa ao final da páxina. Detéctase con `\if@nobreak`, que LaTeX mantén activo desde unha cabeceira ata o primeiro parágrafo; a reserva da primeira cabeceira xa protexe o conxunto.
 - **Cabeceira + táboa pequena**: cando unha táboa de ata 6 filas aparece inmediatamente despois dunha cabeceira, `small-table.lua` fai unha única reserva conxunta antes da cabeceira. Así evita que a cabeceira quede soa ao final da páxina sen aumentar globalmente as reservas 8/7/6. Se hai varias cabeceiras seguidas (sección + subsección + táboa), a reserva vai antes da primeira e suma tres liñas por cada cabeceira anterior; se fose só antes da última, o salto quedaría entre elas.
 - **Táboas pequenas independentes**: manteñen a súa propia reserva `número de filas + 5` antes do `tabular`; as táboas de 7 ou máis filas seguen como `longtable` e poden partir entre páxinas.
+- **Filas orfas e viúvas en táboas longas**: `small-table.lua` protexe as primeiras 4 filas e a penúltima fila con `\\*` (fila inseparable da seguinte), evitando tanto cortes prematuros que amosen só 1-3 filas de datos na primeira páxina como filas viúvas illadas na última. Véxase [Táboas longas](#táboas-longas) para máis detalles.
 
 ### Hifenación multilingüe
 
@@ -498,6 +499,24 @@ Pandoc só calcula estes anchos cando algunha liña da táboa pasa de 72 caracte
 ### Táboas longas
 
 As táboas que non caben nunha soa páxina continúan automaticamente na seguinte con a cabeceira repetida. Pandoc xera `longtable` con `\endhead`, polo que a repetición de cabeceira é nativa.
+
+O filtro `small-table.lua` aplica dúas melloras esenciais ás táboas longas (> 6 filas) para mellorar a lectura en documentos paxinados:
+
+#### Cabeceiras e pés de continuidade
+
+Cando unha táboa longa rompe entre páxinas, o filtro inxecta automaticamente indicadores discretos de continuidade:
+
+- **Ao final da páxina anterior:** un pé en gris e cursiva: *«(continúa na seguinte páxina…)»*
+- **Ao inicio da seguinte páxina:** un aviso antes dos nomes de columna: *«(continúa da páxina anterior)»*
+
+Os textos adáptanse ao idioma do documento (`--lang`): galego por defecto, castelán (`es`) e inglés (`en`).
+
+#### Protección contra filas orfas e viúvas en táboas
+
+Para evitar cortes prematuros que deixen poucas filas antes ou despois dun salto de páxina, o filtro protexe automaticamente:
+
+- **As primeiras 4 filas** do corpo (despois da cabeceira) con `\\*`, que impide que LaTeX corte a táboa antes de amosar polo menos 4 filas de datos.
+- **A penúltima fila** (en táboas de 6 ou máis filas) tamén con `\\*`, para evitar que a última fila quede soa na páxina seguinte (viúva).
 
 O preámbulo corrixe un problema de `\rowcolors`: usa un contador de estado global que non se resetea entre táboas. Sen a corrección, as cores de filas alternas desincronízanse entre táboas consecutivas. O reset en `\AtBeginEnvironment{longtable}` garante que cada táboa comeza co patrón correcto (fila 1 = cabeceira sen cor, fila 2 = gris, fila 3 = branco...).
 
@@ -761,12 +780,15 @@ md2pdf/
 ├── drake-jb.theme             Tema de resaltado de sintaxe
 ├── javadoc.xml                Sintaxe Javadoc corrixida (tiles nos comentarios /** */)
 ├── auto-table-widths.lua      Filtro Lua para táboas e código en liña
-├── small-table.lua            Filtro Lua para táboas pequenas (límite 6 filas)
+├── small-table.lua            Filtro Lua: táboas pequenas (tabular + Needspace), continuidade e orfas en longtable
 ├── br.lua                     Filtro Lua para <br> en celas de táboa
 ├── callouts.lua               Filtro Lua para callouts/admonitions (LuaLaTeX)
 ├── callouts-docx.lua          Filtro Lua para callouts en DOCX
 ├── hl-lines.lua               Filtro Lua para resaltado de liñas (LuaLaTeX)
 ├── compact-code.lua           Filtro Lua para bloques de código compactos
+├── terminal-blocks.lua        Filtro Lua para fondo diferenciado de terminal
+├── term-pairs.lua             Filtro Lua para pares de terminal/código
+├── figure-captions.lua        Filtro Lua para pés de figura e referencias
 ├── install-md2pdf.py          Instalador multiplataforma
 ├── docs/md2pdf-ai-reference.md  Referencia para asistentes de IA
 └── README.md                  Este ficheiro
@@ -840,12 +862,16 @@ python install-md2pdf.py
 ~/.local/share/md2pdf/html.lua                      ← semántica HTML
 ~/.local/share/md2pdf/drake-jb.theme               ← cores de resaltado
 ~/.local/share/md2pdf/auto-table-widths.lua        ← filtro Lua para táboas e código en liña
-~/.local/share/md2pdf/small-table.lua              ← filtro Lua para táboas pequenas
+~/.local/share/md2pdf/small-table.lua              ← filtro Lua para paxinación de táboas
 ~/.local/share/md2pdf/br.lua                       ← filtro Lua para <br> en celas
 ~/.local/share/md2pdf/callouts.lua                 ← filtro Lua para callouts
 ~/.local/share/md2pdf/callouts-docx.lua            ← filtro Lua para callouts en DOCX
 ~/.local/share/md2pdf/hl-lines.lua                 ← filtro Lua para resaltado de liñas
 ~/.local/share/md2pdf/figure-captions.lua          ← filtro Lua para pés de figura
+~/.local/share/md2pdf/compact-code.lua             ← filtro Lua para bloques de código compactos
+~/.local/share/md2pdf/terminal-blocks.lua          ← filtro Lua para bloques de terminal
+~/.local/share/md2pdf/term-pairs.lua               ← filtro Lua para pares de terminal/código
+~/.local/share/md2pdf/javadoc.xml                  ← sintaxe Javadoc corrixida
 ~/.local/share/md2pdf/reference.docx               ← estilos DOCX, se existe
 ```
 
