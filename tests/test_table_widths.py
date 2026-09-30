@@ -23,6 +23,16 @@ TIPOS_PHP = '''\
 '''
 
 
+AMBITOS_INI = '''\
+| Ámbito | Onde se pode cambiar |
+|---|---|
+| `PHP_INI_SYSTEM` | No `php.ini` ou na configuración do servidor web |
+| `PHP_INI_PERDIR` | Tamén na configuración por directorio, pero non con `ini_set()` |
+| `PHP_INI_USER` | Desde o código con `ini_set()` ou nun ficheiro `.user.ini` |
+| `PHP_INI_ALL` | En calquera dos lugares anteriores |
+'''
+
+
 @unittest.skipUnless(shutil.which('pandoc'), 'pandoc non está instalado')
 class TableWidthTests(unittest.TestCase):
     def render_latex(self, markdown: str) -> str:
@@ -143,6 +153,20 @@ body-font: serif
         self.assertNotIn(r'\real{', latex)
         self.assertIn(r'\setlength{\LTleft}{\fill}', latex)
 
+    def test_short_identifier_is_not_split_at_underscore(self):
+        latex = self.render_latex(AMBITOS_INI)
+        self.assertIn(r'\mbox{\texttt{PHP\_INI\_SYSTEM}}', latex)
+        widths = [float(w) for w in
+                  re.findall(r'\\real\{([0-9.]+)\}', latex)]
+        avail = LINE_PT - 2 * TABCOLSEP_PT * (len(widths) - 1)
+        # Co corpo en Source Sans 3, a Source Code Pro mide 7,118pt por
+        # carácter: a columna ten que caber enteiro PHP_INI_SYSTEM.
+        self.assertGreaterEqual(widths[0] * avail, 14 * 7.118)
+
+    def test_long_identifier_can_split_at_underscore(self):
+        latex = self.render_latex('Texto `zend_exception_ignore_args` longo.\n')
+        self.assertIn(r'\_\discretionary{}{}{}', latex)
+
 
 @unittest.skipUnless(
     shutil.which('pandoc') and shutil.which('lualatex')
@@ -164,6 +188,25 @@ class TableWidthPdfTests(unittest.TestCase):
                                   capture_output=True, text=True).stdout
         for word in ('Enteiro', 'Decimal', 'Booleano'):
             self.assertIn(word, text)
+
+    def test_identifier_column_keeps_each_row_on_one_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / 'ambitos.md'
+            pdf = Path(tmp) / 'ambitos.pdf'
+            src.write_text(AMBITOS_INI, encoding='utf-8')
+            run = subprocess.run(
+                [sys.executable, '-m', 'md2pdf', '--no-toc', '-o', str(pdf),
+                 str(src)],
+                cwd=ROOT, capture_output=True, text=True,
+            )
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            bbox = subprocess.run(['pdftotext', '-bbox', str(pdf), '-'],
+                                  capture_output=True, text=True).stdout
+        y = {word: float(ymin) for ymin, word in re.findall(
+            r'yMin="([0-9.]+)"[^>]*>([^<]+)</word>', bbox)}
+        # Cada identificador vai na mesma liña ca o texto da súa fila.
+        self.assertAlmostEqual(y['PHP_INI_SYSTEM'], y['No'], delta=2)
+        self.assertAlmostEqual(y['PHP_INI_PERDIR'], y['Tamén'], delta=2)
 
 
 if __name__ == '__main__':

@@ -15,8 +15,10 @@ local CHAR_WIDTH = 0.013
 -- Anchos (pt) medidos en \small co corpo de 13 pt: Source Sans 3 (ou
 -- Source Serif 4 en modo serif) no corpo e Source Sans 3 negra na cabeceira.
 -- As letras con til miden o mesmo ca sen ela; o resto de caracteres conta
--- OTHER_PT. A Source Code Pro, coa escala MatchLowercase que lle pon
--- md2pdf.latex, dá MONO_PT por carácter. O espazo entre palabras mide SPACE_PT;
+-- OTHER_PT. A Source Code Pro dá MONO_PT por carácter; md2pdf.latex ponlle a
+-- escala MatchLowercase, que iguala a súa altura da x coa da letra do corpo,
+-- así que mide 7,12 pt co corpo en Source Sans 3 e 6,96 en Source Serif 4.
+-- O espazo entre palabras mide SPACE_PT;
 -- con texto aliñado á esquerda TeX case nunca o encolle, e prefire levar a
 -- palabra á liña seguinte.
 local SANS_REGULAR_PT = {
@@ -64,7 +66,7 @@ local SANS_BOLD_PT = {
 local BODY_FONT = "sans"
 local OTHER_PT = 5.95
 local SPACE_PT = 2.37
-local MONO_PT = 6.96
+local MONO_PT = 7.12
 local STRONG_FACTOR = 1.08
 local WORD_MARGIN = 1.03
 -- Pandoc reparte (\linewidth - 2(n-1)\tabcolsep) entre as n columnas.
@@ -101,9 +103,17 @@ local function longest_segment(text)
   if cur > maxlen then maxlen = cur end
   return maxlen
 end
+-- O código curto vai nunha caixa que non se parte. Ata MAX_MBOX_LEN
+-- caracteres só se parte se ten un punto de corte (/ \ . : = ? -); o guión
+-- baixo non conta, porque vai dentro dos identificadores (`PHP_INI_SYSTEM`,
+-- `$_SERVER`, `memory_limit`) e partilos nel dificulta lelos. O código máis
+-- longo pode partirse tamén no guión baixo.
+local function is_mbox(text)
+  local has_break = text:match("[/\\%.:=%?%-]") ~= nil
+  return (#text <= 8) or (#text <= MAX_MBOX_LEN and not has_break)
+end
 local function unbreakable_len(code_text)
-  local has_break = code_text:match("[/\\%.:=%?%-_]") ~= nil
-  if (#code_text <= 8) or (#code_text <= MAX_MBOX_LEN and not has_break) then
+  if is_mbox(code_text) then
     return #code_text
   end
   return longest_segment(code_text)
@@ -619,8 +629,7 @@ end
 local function code_to_mbox(el)
   if not FORMAT:match("latex") then return nil end
   local text = el.text
-  local has_break = text:match("[/\\%.:=%?%-_]") ~= nil
-  if (#text <= 8) or (#text <= MAX_MBOX_LEN and not has_break) then
+  if is_mbox(text) then
     return pandoc.RawInline("latex",
       "\\leavevmode\\strut\\allowbreak\\mbox{\\texttt{" .. escape(text) .. "}}")
   end
@@ -658,9 +667,11 @@ local function read_meta(meta)
   if BODY_FONT == "serif" then
     OTHER_PT = 6.4
     SPACE_PT = 2.76
+    MONO_PT = 6.96
   else
     OTHER_PT = 5.95
     SPACE_PT = 2.37
+    MONO_PT = 7.12
   end
 end
 -- Parte enteira e decimal dunha cela numérica; "" se está baleira e nil se
