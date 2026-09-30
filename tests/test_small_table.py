@@ -93,16 +93,17 @@ Texto anterior.
         self.assertIn(r'\begin{longtable}', latex)
         self.assertNotIn(r'\noindent\begin{tabular}', latex)
 
-    def test_large_table_has_continuation_header_and_footer(self):
+    def test_large_table_has_subtle_repeated_header_without_foot(self):
         rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
         latex = self.render_latex(
             '| Col A | Col B |\n|---|---|\n' + rows + '\n'
         )
         self.assertIn(r'\endfirsthead', latex)
-        self.assertIn(r'(continúa da páxina anterior)', latex)
         self.assertIn(r'\endhead', latex)
-        self.assertIn(r'(continúa na seguinte páxina…)', latex)
-        self.assertIn(r'\endfoot', latex)
+        # Non inclúe fila de pé para optimizar a distribución vertical da páxina
+        self.assertNotIn(r'\endfoot', latex)
+        # A cabeceira repetida estílase de xeito sutil
+        self.assertIn(r'\textsf{\mdseries\itshape\color{heading-section!65}{Col A}}', latex)
 
     def test_large_table_protects_first_rows_from_orphan_breaks(self):
         rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
@@ -118,15 +119,21 @@ Texto anterior.
         # A última fila remata normalmente en \\
         self.assertIn(r'7 & 7 \\' + '\n', latex)
 
-    def test_captioned_table_has_continuation_label(self):
+    def test_captioned_table_has_subtle_repeated_header(self):
         rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
         latex = self.render_latex(
             '| Col A | Col B |\n|---|---|\n' + rows + '\n\n: Táboa con título {#tbl:proba}\n'
         )
         self.assertIn(r'\caption{Táboa con título}\label{tbl:proba}', latex)
-        self.assertIn(r'(continúa da páxina anterior)', latex)
         self.assertIn(r'\endfirsthead', latex)
         self.assertIn(r'\endhead', latex)
+        self.assertNotIn(r'\endfoot', latex)
+        # Non engade filas nin lendas adicionais de continuación
+        self.assertNotIn(r'\caption[]', latex)
+        self.assertNotIn(r'continua', latex.lower())
+        self.assertNotIn(r'continúa', latex.lower())
+        # A cabeceira repetida vai con estilo sutil
+        self.assertIn(r'\textsf{\mdseries\itshape\color{heading-section!65}{Col A}}', latex)
 
 
 if __name__ == '__main__':

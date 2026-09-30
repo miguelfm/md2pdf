@@ -7,10 +7,10 @@
 --      - Estratexia A (evitar orfas e viúvas): as primeiras 4 filas e a
 --        penúltima fila protéxense con \\* para impedir cortes prematuros
 --        (1-3 filas) na primeira páxina ou deixar 1 soa fila na última.
---      - Estratexia B (cabeceiras e pés de continuidade): se a táboa continúa
---        na seguinte páxina, a primeira páxina inclúe un pé discreto
---        «(continúa na seguinte páxina…)» e as páxinas seguintes amosan
---        «(continúa da páxina anterior)» antes dos nomes de columna.
+--      - Estratexia B (cabeceira repetida sutil): se a táboa continúa
+--        na seguinte páxina, a cabeceira de columnas repítese de maneira
+--        sutil (cursiva, peso normal e tonalidade suave de cor), sen engadir
+--        filas adicionais de texto nin pés de páxina que saturen a páxina.
 --
 -- PROBLEMA ORIXINAL:
 --   longtable usa dúas pasadas para xestionar saltos de páxina.
@@ -52,18 +52,40 @@ local function count_body_rows(tbl)
   return n
 end
 
-local function get_continuation_strings(lang)
-  if lang and lang:match('^es') then
-    return "(continúa de la página anterior)", "(continúa en la siguiente página…)"
-  elseif lang and lang:match('^en') then
-    return "(continued from previous page)", "(continued on next page…)"
-  else
-    return "(continúa da páxina anterior)", "(continúa na seguinte páxina…)"
+local function make_subtle_head(head_str)
+  -- Cabeceiras con formato de auto-table-widths: cambiamos a negriña e a cor
+  -- forte de sección por peso normal, cursiva e unha tonalidade máis suave (65%).
+  local res = head_str:gsub('\\textsf{\\bfseries\\color{heading%-section}{}', '\\textsf{\\mdseries\\itshape\\color{heading-section!65}{}')
+  if res ~= head_str then
+    return res
   end
+  -- Se tiña \textbf ou \bfseries sen cor heading-section
+  res = head_str:gsub('\\textbf{', '\\textit{'):gsub('\\bfseries', '\\mdseries\\itshape')
+  if res ~= head_str then
+    return res
+  end
+  -- Cabeceira en texto plano (ex. sen auto-table-widths): estilar cela a cela
+  local out = {}
+  for line in (head_str .. '\n'):gmatch('([^\n]*)\n') do
+    if line:find('&') and (line:find('\\\\') or line:find('\\tabularnewline')) then
+      local term = line:find('\\tabularnewline') and '\\tabularnewline' or '\\\\'
+      local p = line:find(term, 1, true)
+      local row_content = line:sub(1, p - 1)
+      local row_end = line:sub(p)
+      local parts = {}
+      for cell in (row_content .. '&'):gmatch('(.-)&') do
+        local tr = cell:gsub('^%s+', ''):gsub('%s+$', '')
+        table.insert(parts, string.format('\\textsf{\\mdseries\\itshape\\color{heading-section!65}{%s}}', tr))
+      end
+      table.insert(out, table.concat(parts, ' & ') .. row_end)
+    else
+      table.insert(out, line)
+    end
+  end
+  return table.concat(out, '\n')
 end
 
 local function enhance_longtable(latex, num_cols, total_rows, lang)
-  local str_prev, str_next = get_continuation_strings(lang)
 
   local b_start, b_end = latex:find('\\begin{longtable}')
   if not b_start then return latex end
@@ -92,24 +114,22 @@ local function enhance_longtable(latex, num_cols, total_rows, lang)
   local after_endhead = rest:sub(endhead_end + 1)
 
   local new_head = ''
-  local cont_prev_line = string.format('\\multicolumn{%d}{r}{\\footnotesize\\textcolor{gray}{\\textit{%s}}} \\\\ \\addlinespace[2pt]', num_cols, str_prev)
-  local cont_next_foot = string.format('\\midrule\\noalign{}\n\\multicolumn{%d}{r}{\\footnotesize\\textcolor{gray}{\\textit{%s}}} \\\\\n\\endfoot', num_cols, str_next)
-
   local firsthead_pos, firsthead_end = head_part:find('\\endfirsthead')
   if firsthead_pos then
     -- Táboa con caption: Pandoc xa xerou \endfirsthead
     local first_part = head_part:sub(1, firsthead_pos - 1)
     local second_part = head_part:sub(firsthead_end + 1)
-    new_head = first_part .. '\\endfirsthead\n' .. cont_prev_line .. '\n' .. second_part .. '\\endhead'
+    local subtle_second = make_subtle_head(second_part)
+    new_head = first_part .. '\\endfirsthead\n' .. subtle_second .. '\\endhead'
   else
-    -- Táboa sen caption: duplicamos cabeceira co aviso de continuación
+    -- Táboa sen caption: cabeceira repetida sutil
     local trimmed_head = head_part:gsub('^%s+', ''):gsub('%s+$', '')
-    new_head = '\n' .. trimmed_head .. '\n\\endfirsthead\n' .. cont_prev_line .. '\n' .. trimmed_head .. '\n\\endhead'
+    local subtle_trimmed = make_subtle_head(trimmed_head)
+    new_head = '\n' .. trimmed_head .. '\n\\endfirsthead\n' .. subtle_trimmed .. '\n\\endhead'
   end
 
-  if not after_endhead:find('\\endfoot') then
-    new_head = new_head .. '\n' .. cont_next_foot
-  end
+  -- Non se engade \endfoot: a táboa parte limpamente sen fila de pé na páxina anterior
+  -- («continúa na seguinte páxina…»), aforrando espazo vertical e evitando cortes prematuros.
 
   -- Estratexia A: Protexer as primeiras filas con \\* (mínimo antes de romper)
   -- e a penúltima fila (evitar viúvas).

@@ -537,14 +537,12 @@ As táboas que non caben nunha soa páxina continúan automaticamente na seguint
 
 O filtro `small-table.lua` aplica dúas melloras esenciais ás táboas longas (> 6 filas) para mellorar a lectura en documentos paxinados:
 
-#### Cabeceiras e pés de continuidade
+#### Cabeceira repetida sutil
 
-Cando unha táboa longa rompe entre páxinas, o filtro inxecta automaticamente indicadores discretos de continuidade:
+Cando unha táboa longa rompe entre páxinas, o filtro xestiona a continuidade de xeito sutil e eficiente para a distribución vertical da páxina:
 
-- **Ao final da páxina anterior:** un pé en gris e cursiva: *«(continúa na seguinte páxina…)»*
-- **Ao inicio da seguinte páxina:** un aviso antes dos nomes de columna: *«(continúa da páxina anterior)»*
-
-Os textos adáptanse ao idioma do documento (`--lang`): galego por defecto, castelán (`es`) e inglés (`en`).
+- **Na páxina seguinte:** a cabeceira de columnas repítese nun estilo visualmente máis discreto (peso normal, cursiva e tonalidade suave `heading-section!65`), permitindo identificar cada columna sen recargar a páxina nin competir coa cabeceira principal.
+- **Sen filas adicionais nin pé artificial:** non se engaden filas de pé nin avisos textuais de continuación, aforrando espazo vertical, evitando cortes prematuros e mantendo o patrón de cores alternas (*zebra striping*) limpo e natural.
 
 #### Protección contra filas orfas e viúvas en táboas
 
