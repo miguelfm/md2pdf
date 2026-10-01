@@ -40,7 +40,7 @@ Se un documento do paquete enlaza outro Markdown tamén incluído:
 [Seguinte actividade](U1A2_Execucion.md#o-caso-de-java)
 ```
 
-`md2pdf` reescribe automaticamente a ligazón para que apunte ao HTML do paquete. O fragmento (`#o-caso-de-java`) é o identificador que Pandoc xera para a cabeceira `## O caso de Java`: non inclúe o número da sección.
+`md2pdf` reescribe automaticamente a ligazón para que apunte ao HTML do paquete. O fragmento (`#o-caso-de-java`) é o identificador que Pandoc xera para a cabeceira `## O caso de Java`: non inclúe o número da sección. A reescritura cambia o ficheiro de destino, pero conserva o fragmento: non transforma `#2-o-caso-de-java` en `#o-caso-de-java`. Para remisións estábeis, declara un identificador explícito na cabeceira de destino, por exemplo `## 2. O caso de Java {#o-caso-de-java}`, e usa ese identificador na ligazón.
 
 Resultado:
 

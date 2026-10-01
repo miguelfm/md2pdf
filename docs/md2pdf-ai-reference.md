@@ -17,9 +17,11 @@ Varios HTML poden empaquetarse ademais como **IMS Content Package** para Moodle 
 
 Convencións deste documento: «debe» indica unha regra; «convén» ou «preferir», un criterio
 que admite excepcións xustificadas. Os exemplos marcados con ❌ son erros que hai que evitar.
+As convencións do repositorio de destino prevalecen sobre as recomendacións xerais desta referencia. Por exemplo, `docencia` mantén títulos numerados e índices manuais nas fontes Markdown; md2pdf retíraos e xera a numeración e o índice da saída.
+
 Este ficheiro é unha referencia, non un material para converter: as súas cabeceiras `#` de
-parte e a numeración manual das seccións só serven para citalas aquí e **non deben
-imitarse** nos documentos xerados.
+parte só organizan esta referencia. Nos materiais, usa un único título de nivel 1 e
+segue as normas de numeración do repositorio de destino.
 
 ---
 
@@ -263,12 +265,12 @@ course: "Curso 2025-2026"
 keywords: "PHP, DAW, Backend"
 ```
 
-### 11.3 O que non debes escribir
+### 11.3 Construcións que transforma o preprocesador
 
 O preprocesador elimina ou altera estas construcións:
 
 - `[TOC]` e índices manuais (`## Índice` seguido dunha lista de ligazóns): o índice é
-  automático.
+  automático. Poden conservarse na fonte cando o repositorio os esixa.
 - Liñas `---` fóra do front matter e dos bloques de código: elimínanse todas, tamén dentro
   de callouts. Non uses separadores horizontais nin cabeceiras subliñadas con `---`.
 - Numeración manual: `## 1.2. Título` convértese en `## Título`. Por iso **unha cabeceira
@@ -279,7 +281,7 @@ O preprocesador elimina ou altera estas construcións:
 
 - **Un só `#` por documento**, ao inicio: é o título do documento. Todo o contido vai
   desde `##`, que é o nivel 1 da numeración.
-- As seccións numéranse automaticamente (1, 1.1, 1.1.1…); non engadas números.
+- As seccións numéranse automaticamente na saída (1, 1.1, 1.1.1…). Na fonte, segue a convención do repositorio: md2pdf admite títulos numerados e elimina esa numeración antes de converter.
 - Non saltes niveis (`##` → `####`) e non uses máis de tres niveis salvo necesidade.
 
 Algunhas palabras nas cabeceiras engaden automaticamente un emoji, en todas as saídas:
@@ -651,7 +653,26 @@ Revisa o apartado [Conversión explícita](#conversion-explicita).
 Se a cabeceira non ten `{#id}`, Pandoc xera un automaticamente: minúsculas, espazos
 convertidos en guións, sen signos de puntuación, **sen o número da sección** e
 conservando as letras acentuadas (`## Conversións de tipo` → `#conversións-de-tipo`).
-Para ligazóns que deban manterse estables, pon un `{#id}` explícito sen acentos.
+A eliminación da numeración **non reescribe os destinos das ligazóns**. Por exemplo,
+`## 1. Conversións` xera `#conversións`, mentres que unha ligazón a
+`#1-conversións` conserva ese destino e queda rota na saída. O índice manual non
+presenta ese problema porque se elimina e se xera de novo.
+
+Para remisións no corpo ou entre documentos, usa un identificador explícito na
+cabeceira e ese mesmo identificador na ligazón:
+
+```markdown
+## 1. Conversións {#conversion-explicita}
+
+Revisa [Conversións](#conversion-explicita).
+```
+
+Isto funciona tamén cunha ligazón a outro documento como
+`A5_Operadores.md#conversion-explicita`. Non cambies só o destino da ligazón:
+a cabeceira de destino debe declarar ese identificador. Para identificar seccións
+novas, prefire nomes descritivos sen numeración nin acentos. En HTML, `--strict`
+detecta destinos internos inexistentes; revisa tamén as ligazóns entre documentos
+na saída final.
 
 ### 17.3 Ligazóns externas
 
@@ -707,9 +728,10 @@ Para glosarios, parámetros ou propiedades:
   Opcionalmente pódese activar o fondo tipo «píldora» con `--inline-pill` (`#F0F2F5` en día,
   `#EDE8DC` en noite, transparente en impresión). As rutas longas (`/etc/php/...`) e expresións con
   operadores rompen automaticamente de liña se chegan á marxe dereita.
-- **Non poñas barras invertidas no código en liña do texto corrido** (`\n`, `\t`, `\\`):
-  no PDF saen mal (por exemplo, `\{}n`). Describe o carácter («un salto de liña») ou usa un
-  bloque de código. Nos bloques de código non hai problema.
+- O código en liña admite barras invertidas (`\n`, `\t`, `\\`), til, circunflexo e
+  letras acentuadas, tamén nas táboas. Escríbeos literalmente entre acentos graves;
+  o filtro escápaos para LaTeX. Non engadas escapes LaTeX á fonte Markdown.
+  Usa un bloque de código cando a lonxitude ou o contexto o fagan máis lexíbel.
 
 ### 18.4 Citas
 
@@ -822,9 +844,11 @@ Contido e pedagoxía:
 Sintaxe:
 
 - [ ] Front matter con valores dunha liña; `activity` cando o proxecto o use.
-- [ ] Un só `#`; cabeceiras sen numerar e sen empezar por número; ningunha contén «Reto»
-      sen querer.
-- [ ] Sen `---`, `[TOC]` nin índices manuais.
+- [ ] Un só `#`; numeración e índice da fonte segundo as normas do repositorio;
+      ningunha cabeceira contén «Reto» sen querer nin un número inicial que deba
+      conservarse como parte do título.
+- [ ] Sen `---` no corpo; `[TOC]` e os índices manuais, se existen, serán substituídos
+      polo índice automático da saída.
 - [ ] Liña baleira antes de cada lista, táboa, cabeceira, cita e bloque.
 - [ ] Todos os bloques de código teñen linguaxe; `hl=` só nas liñas comentadas; `{.compact}` se o listado é longo.
 - [ ] Callouts con nomes ingleses e liña baleira tras a apertura.
@@ -832,7 +856,9 @@ Sintaxe:
 - [ ] Imaxes grandes ou PDF con `{width=...}`.
 - [ ] Referencias con `@fig:`/`@tbl:` e ligazóns internas; nada de `@sec:`, `@eq:`, `@lst:`
       nin posicións («abaixo», «á dereita»).
-- [ ] Sen barras invertidas no código en liña da prosa.
+- [ ] Código en liña escrito literalmente, sen escapes LaTeX engadidos.
+- [ ] Remisións no corpo con identificadores explícitos coincidentes no destino;
+      non reutilizar as áncoras numeradas do índice manual sen declaralas.
 - [ ] Ligazóns externas con `https://`; ligazóns entre actividades relativas ao `.md`.
 
 Verificación:
