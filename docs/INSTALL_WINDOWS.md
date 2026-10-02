@@ -2,6 +2,105 @@
 
 Guía completa para instalar e configurar o contorno de conversión Markdown → PDF en Windows 11.
 
+## Instalación semiautomática (scripts do repositorio)
+
+Os scripts están en [`scripts/windows/`](../scripts/windows/). Non precisan
+que o repositorio estea nunha ruta concreta nin que o cartafol se chame `md2pdf`.
+Executa os comandos seguintes desde a raíz do repositorio clonado.
+
+Requisitos: Windows 11, PowerShell, Chocolatey instalado e conexión a internet.
+Se winget está dispoñible úsase para Pandoc e SumatraPDF; en caso contrario
+úsase Chocolatey. TeX Live instálase con Chocolatey e os seus paquetes con
+`tlmgr`. Python e Node.js instálanse se non se atopan no PATH. A instalación
+de TeX Live pode tardar bastante e ocupar varios GB.
+
+### Paso 1: software e fontes, como administrador
+
+Desde **PowerShell normal**, situado na raíz do repositorio:
+
+```powershell
+$systemScript = (Resolve-Path .\scripts\windows\01-system.ps1).Path
+Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$systemScript`""
+```
+
+Windows mostrará a solicitude de control de contas de usuario (UAC).
+Acéptaa, ou introduce as credenciais de administrador se as solicita.
+Abrirase unha nova xanela de PowerShell elevada que executará o script.
+Espera a que remate antes de iniciar o paso 2. A xanela queda aberta para
+poder ler os erros ou a mensaxe final.
+
+**Se aparece «Executa este script nun PowerShell como Administrador»**, o
+terminal non está elevado. `-ExecutionPolicy Bypass` permite executar este
+script nese proceso, pero **non concede permisos de administrador**. Usa
+o comando `Start-Process ... -Verb RunAs` anterior. Non é preciso cambiar
+a política de execución permanentemente nin desactivar UAC.
+
+Alternativa: abre «Terminal (Administrador)» desde Windows + X, entra no
+repositorio con `cd` e executa:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows\01-system.ps1
+```
+
+O script instala as dependencias e os paquetes TeX necesarios, descarga
+os ZIP das publicacións oficiais de Adobe e JetBrains e instala as fontes
+estáticas para todos os usuarios: Source Serif 4, Source Sans 3, Source Code
+Pro e JetBrains Mono. As descargas quedan en `scripts/windows/fonts/`.
+O código actual selecciona Source Code Pro para o texto monoespaciado;
+JetBrains Mono queda instalada tamén, pero non é seleccionada automaticamente.
+
+### Paso 2: configuración do usuario e probas, sen administrador
+
+Abre unha nova xanela de **PowerShell normal co teu usuario habitual**, entra
+na raíz do repositorio e executa:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows\02-user.ps1 -WithMermaid
+```
+
+Podes omitir `-WithMermaid` se non precisas diagramas Mermaid. O script:
+
+- Crea un contorno Python en `scripts/windows/.venv/` e instala PyMuPDF,
+  Pillow, PyYAML, vl-convert-python e pypdf nel.
+- Instala Mermaid CLI con npm se se especifica `-WithMermaid`.
+- Configura `PYTHONUTF8=1` e engade as rutas necesarias ao PATH do usuario
+  sen copiar o PATH do sistema nin duplicar as entradas existentes.
+- Actualiza a caché de LuaLaTeX e comproba as catro familias tipográficas.
+- Executa `install-md2pdf.py` co Python do contorno, que queda fixado no
+  lanzador `%LOCALAPPDATA%\md2pdf\md2pdf.cmd`.
+- Converte `scripts/windows/proba.md` a PDF, HTML e DOCX e comproba que o
+  PDF ten páxinas e texto extraíble.
+
+Este paso rexeita un terminal elevado para evitar configurar o usuario
+equivocado. Non borres nin movas `.venv` despois de instalar: o lanzador
+depende dese intérprete. Se moves o repositorio, repite o paso 2 na nova ruta.
+Os ficheiros descargados, o contorno e os documentos de proba están excluídos
+de Git mediante `scripts/windows/.gitignore`.
+
+### Verificación e resolución de erros
+
+Cando ambos os scripts rematen correctamente, abre outro terminal:
+
+```powershell
+md2pdf --help
+md2pdf documento.md
+```
+
+Os documentos de proba quedan en `scripts/windows/proba.pdf`, `proba.html`
+e `proba.docx`. Abre o PDF para comprobar tamén a súa aparencia.
+
+Os scripts detéñense ante erros e poden executarse de novo tras corrixilos.
+Se non se atopa un comando recentemente instalado, abre outro terminal e
+repíteo. A detección adicional de TeX Live busca `C:\texlive\*\bin\windows`;
+se usas outra ruta, engade o seu directorio de executables ao PATH.
+Se fallan as descargas, comproba a conexión, o proxy e o acceso a GitHub,
+Chocolatey e CTAN. Se o ZIP dunha publicación cambia e o script non atopa
+fontes estáticas, usa a instalación manual de fontes descrita máis abaixo.
+
+A guía manual seguinte explica cada compoñente con máis detalle. Os scripts
+non instalan D2 nin Graphviz; esas ferramentas só son necesarias se usas
+os seus respectivos bloques de diagramas.
+
 
 ## Requisitos previos
 

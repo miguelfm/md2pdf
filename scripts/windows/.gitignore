@@ -1,0 +1,6 @@
+# Downloads, local Python environment and generated smoke-test documents.
+fonts/
+.venv/
+proba.pdf
+proba.html
+proba.docx
