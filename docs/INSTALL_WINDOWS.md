@@ -431,6 +431,13 @@ Pechar e abrir un novo terminal para que teña efecto.
 
 ### "File 'xxx.sty' not found"
 
+Se falta `ragged2e.sty` (requirido polo preámbulo de md2pdf), executa nun
+PowerShell como administrador:
+
+```powershell
+tlmgr install ragged2e
+```
+
 Buscar e instalar o paquete que falta:
 
 ```powershell
