@@ -163,6 +163,15 @@ body-font: serif
         # carácter: a columna ten que caber enteiro PHP_INI_SYSTEM.
         self.assertGreaterEqual(widths[0] * avail, 14 * 7.118)
 
+    def test_short_body_expression_is_not_split(self):
+        latex = self.render_latex('O operador `$c ? $a : $b` escolle un valor.\n')
+        self.assertIn(r'\mbox{\texttt{\$c ? \$a : \$b}}', latex)
+
+    def test_table_expression_keeps_break_points(self):
+        latex = self.render_latex('| Expresión |\n|---|\n| `$c ? $a : $b` |\n')
+        self.assertNotIn(r'\mbox{\texttt{\$c', latex)
+        self.assertIn(r'?\discretionary{}{}{}', latex)
+
     def test_long_identifier_can_split_at_underscore(self):
         latex = self.render_latex('Texto `zend_exception_ignore_args` longo.\n')
         self.assertIn(r'\_\discretionary{}{}{}', latex)

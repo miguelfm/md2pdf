@@ -1,6 +1,11 @@
 -- auto-table-widths.lua
 local MAX_CELL_LEN = 60
 local MAX_MBOX_LEN = 15
+-- Fóra das táboas, o código en liña de ata BODY_MBOX_LEN caracteres non se
+-- parte nunca, aínda que leve espazos ou puntos de corte: unha expresión
+-- curta como `$c ? $a : $b` partida en dúas liñas cústalle lela a quen a
+-- está aprendendo. Na liña do corpo hai sitio para levala enteira á seguinte.
+local BODY_MBOX_LEN = 20
 local BREAK_CLASS = "[,%s/%.:=%?%-_%(;]"
 -- Táboas que caben sen partir liñas: se o ancho natural de todas as columnas
 -- (a liña máis longa de cada unha) suma como moito NATURAL_MAX_TOTAL da liña,
@@ -626,15 +631,21 @@ local function add_path_breaks(s)
   s = s:gsub("\1", "://\\discretionary{}{}{}")
   return s
 end
-local function code_to_mbox(el)
-  if not FORMAT:match("latex") then return nil end
+local function code_to_latex(el, mbox)
   local text = el.text
-  if is_mbox(text) then
+  if mbox then
     return pandoc.RawInline("latex",
       "\\leavevmode\\strut\\allowbreak\\mbox{\\texttt{" .. escape(text) .. "}}")
   end
   local esc = add_path_breaks(add_op_breaks(escape(text)))
   return pandoc.RawInline("latex", "\\leavevmode\\strut\\texttt{" .. esc .. "}")
+end
+local function table_code(el)
+  return code_to_latex(el, is_mbox(el.text))
+end
+local function body_code(el)
+  if not FORMAT:match("latex") then return nil end
+  return code_to_latex(el, #el.text <= BODY_MBOX_LEN or is_mbox(el.text))
 end
 -- Aliñamento decimal (só LaTeX). Nunha columna na que todas as celas do
 -- corpo son números («9», «-2», «3.5», «0,75») e polo menos un ten parte
@@ -733,5 +744,13 @@ return {
       align_decimals(tbl)
       return result
     end },
-  { Code = code_to_mbox },
+  -- O código das táboas segue a regra de is_mbox, coa que se calcularon os
+  -- anchos das columnas; o resto, a de body_code. En orde descendente,
+  -- devolver false despois da táboa evita que Code a percorra de novo.
+  { traverse = "topdown",
+    Table = function(tbl)
+      if not FORMAT:match("latex") then return nil end
+      return tbl:walk({ Code = table_code }), false
+    end,
+    Code = body_code },
 }
