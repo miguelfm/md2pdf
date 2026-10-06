@@ -117,17 +117,50 @@ local function is_mbox(text)
   local has_break = text:match("[/\\%.:=%?%-]") ~= nil
   return (#text <= 8) or (#text <= MAX_MBOX_LEN and not has_break)
 end
-local function unbreakable_len(code_text)
-  if is_mbox(code_text) then
-    return #code_text
+-- A mesma segmentación úsase para medir e renderizar o código das táboas.
+-- Os operadores dobres e :// mantéñense xuntos; non se engaden guións visibles.
+local WRAP_ATTR = "md2pdf-table-wrap"
+local function code_segments(text, underscores)
+  local chars, parts, cur = {}, {}, ""
+  for _, c in utf8.codes(text) do table.insert(chars, utf8.char(c)) end
+  local i = 1
+  while i <= #chars do
+    local c = chars[i]
+    cur = cur .. c
+    local cut = c:match("[,%s/\\%.:=%?%-%(;]") ~= nil
+      or (underscores and c == "_")
+    if c == ":" and chars[i + 1] == "/" and chars[i + 2] == "/" then
+      cur = cur .. "//"
+      i = i + 2
+    elseif (c == "&" or c == "|") and chars[i + 1] == c then
+      cur = cur .. c
+      i = i + 1
+      cut = true
+    end
+    if cut then table.insert(parts, cur); cur = "" end
+    i = i + 1
   end
-  return longest_segment(code_text)
+  if cur ~= "" then table.insert(parts, cur) end
+  return parts
+end
+local function code_mbox(el)
+  return not el.attributes[WRAP_ATTR] and is_mbox(el.text)
+end
+local function unbreakable_len(el)
+  if code_mbox(el) then
+    return utf8.len(el.text)
+  end
+  local maxlen = 0
+  for _, part in ipairs(code_segments(el.text, el.attributes[WRAP_ATTR] ~= "soft")) do
+    maxlen = math.max(maxlen, utf8.len((part:gsub("%s+$", ""))))
+  end
+  return maxlen
 end
 local function longest_code(inlines)
   local maxlen = 0
   for _, inline in ipairs(inlines) do
     if inline.t == "Code" then
-      local len = unbreakable_len(inline.text)
+      local len = unbreakable_len(inline)
       if len > maxlen then maxlen = len end
     end
   end
@@ -210,7 +243,7 @@ local function cell_lines(inlines, font)
         line, space = {}, false
       elseif t == "Code" then
         close()
-        local min = unbreakable_len(inline.text) * MONO_PT
+        local min = unbreakable_len(inline) * MONO_PT
         push({ pt = utf8.len(inline.text) * MONO_PT, need = min, full = min })
       elseif t == "Link" and (inline.classes:includes("uri")
           or inline.classes:includes("email")) then
@@ -505,7 +538,6 @@ function Table(tbl)
   local ncols = #tbl.colspecs
   if ncols == 0 then return tbl end
   if anchos_manuais(tbl) then
-    estilar_cabeceira(tbl)
     return tbl
   end
   local max_lens, min_lens, word_pts, word_rows = analyze_cells(tbl, ncols)
@@ -513,7 +545,6 @@ function Table(tbl)
     -- Se algunha liña do Markdown pasa de 72 caracteres, Pandoc xa lle deu
     -- anchos relativos ás columnas (p{}); sen eles usa l/c/r naturais.
     for _, colspec in ipairs(tbl.colspecs) do colspec[2] = nil end
-    estilar_cabeceira(tbl)
     -- Unha táboa co seu ancho natural non ocupa a liña enteira, así que se
     -- centra. Faise localmente, porque o preámbulo pode ter \LTleft a cero
     -- para que as táboas de ancho completo empecen na marxe.
@@ -575,7 +606,6 @@ function Table(tbl)
   end
   axustar_a_palabras(widths, min_widths, word_pts, word_rows)
   for i, colspec in ipairs(tbl.colspecs) do colspec[2] = widths[i] end
-  estilar_cabeceira(tbl)
   return tbl
 end
 
@@ -641,11 +671,70 @@ local function code_to_latex(el, mbox)
   return pandoc.RawInline("latex", "\\leavevmode\\strut\\texttt{" .. esc .. "}")
 end
 local function table_code(el)
-  return code_to_latex(el, is_mbox(el.text))
+  if code_mbox(el) then return code_to_latex(el, true) end
+  local parts = code_segments(el.text, el.attributes[WRAP_ATTR] ~= "soft")
+  local escaped = {}
+  for _, part in ipairs(parts) do table.insert(escaped, escape(part)) end
+  return pandoc.RawInline("latex", "\\leavevmode\\strut\\texttt{"
+    .. table.concat(escaped, "\\discretionary{}{}{}") .. "}")
 end
 local function body_code(el)
   if not FORMAT:match("latex") then return nil end
   return code_to_latex(el, #el.text <= BODY_MBOX_LEN or is_mbox(el.text))
+end
+-- Os anchos finais poden ser menores ca os mínimos, ou vir impostos polo
+-- autor. Relaxamos só o código que non cabe e volvemos medir a táboa coas
+-- mesmas regras. A política só avanza: protexido → separadores → guión baixo.
+local function fit_table_code(tbl, warn)
+  local avail = LINE_PT - 2 * TABCOLSEP_PT * (#tbl.colspecs - 1)
+  local changed, overflow = false, false
+  local function rows_fit(rows)
+    for _, row in ipairs(rows) do
+      local column = 1
+      for _, cell in ipairs(row.cells) do
+        local width = 0
+        for i = column, column + cell.col_span - 1 do
+          local spec = tbl.colspecs[i]
+          if not spec or type(spec[2]) ~= "number" then return end
+          width = width + spec[2] * avail
+        end
+        width = width + 2 * TABCOLSEP_PT * (cell.col_span - 1)
+        cell.contents = cell.contents:walk({ Code = function(el)
+          local len = unbreakable_len(el)
+          if len * MONO_PT > width then
+            if not warn then
+              for _, mode in ipairs({ "soft", "underscore" }) do
+                if not el.attributes[WRAP_ATTR]
+                    or el.attributes[WRAP_ATTR] == "soft" and mode == "underscore" then
+                  local old = el.attributes[WRAP_ATTR]
+                  el.attributes[WRAP_ATTR] = mode
+                  if unbreakable_len(el) < len then
+                    changed = true
+                    return el
+                  end
+                  el.attributes[WRAP_ATTR] = old
+                end
+              end
+            end
+            overflow = true
+          end
+          return el
+        end })
+        column = column + cell.col_span
+      end
+    end
+  end
+  rows_fit(tbl.head.rows)
+  for _, body in ipairs(tbl.bodies) do
+    rows_fit(body.head)
+    rows_fit(body.body)
+  end
+  rows_fit(tbl.foot.rows)
+  if warn and overflow then
+    pandoc.log.warn("Código en liña máis ancho ca a súa cela, mesmo cos cortes "
+      .. "dispoñibles. Revisa os anchos ou a estrutura da táboa.")
+  end
+  return changed
 end
 -- Aliñamento decimal (só LaTeX). Nunha columna na que todas as celas do
 -- corpo son números («9», «-2», «3.5», «0,75») e polo menos un ten parte
@@ -740,12 +829,23 @@ return {
   -- O aliñamento decimal vai despois de calcular os anchos, que len o
   -- texto das celas; Table modifica tbl no sitio.
   { Table = function(tbl)
+      local original_widths = {}
+      for i, spec in ipairs(tbl.colspecs) do original_widths[i] = spec[2] end
       local result = Table(tbl)
+      if FORMAT:match("latex") then
+        while fit_table_code(tbl, false) do
+          for i, spec in ipairs(tbl.colspecs) do spec[2] = original_widths[i] end
+          result = Table(tbl)
+        end
+        fit_table_code(tbl, true)
+      end
+      estilar_cabeceira(tbl)
       align_decimals(tbl)
       return result
     end },
-  -- O código das táboas segue a regra de is_mbox, coa que se calcularon os
-  -- anchos das columnas; o resto, a de body_code. En orde descendente,
+  -- O código das táboas segue a política coa que se calcularon os anchos,
+  -- incluídas as relaxacións por falta de sitio; o resto, a de body_code.
+  -- En orde descendente,
   -- devolver false despois da táboa evita que Code a percorra de novo.
   { traverse = "topdown",
     Table = function(tbl)

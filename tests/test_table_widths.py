@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,11 @@ AMBITOS_INI = '''\
 | `PHP_INI_ALL` | En calquera dos lugares anteriores |
 '''
 
+CROWDED_CODES = ('PHP_INI_SYSTEM', 'PHP_INI_PERDIR', 'PHP_INI_USER',
+                 'PHP_INI_ALL', 'PHP_INI_SYSTEM', 'PHP_INI_PERDIR')
+CROWDED_TABLE = ('| A | B | C | D | E | F |\n|---|---|---|---|---|---|\n| '
+                 + ' | '.join(f'`{name}`' for name in CROWDED_CODES) + ' |\n')
+
 
 @unittest.skipUnless(shutil.which('pandoc'), 'pandoc non está instalado')
 class TableWidthTests(unittest.TestCase):
@@ -57,11 +63,12 @@ class TableWidthTests(unittest.TestCase):
 
     def test_space_comes_from_columns_with_more_text(self):
         widths = self.widths(TIPOS_PHP)
-        # As columnas curtas («Nome en PHP», «Exemplo») conservan o ancho; o
-        # que gaña a primeira sae das de máis texto («Valores», «Tamaño»),
+        # As columnas curtas conservan espazo suficiente para o seu contido;
+        # o que gaña a primeira sae das de máis texto («Valores», «Tamaño»),
         # que xa parten en dúas liñas.
         self.assertAlmostEqual(widths[1], 0.1080, places=3)
-        self.assertAlmostEqual(widths[4], 0.1340, places=3)
+        avail = LINE_PT - 2 * TABCOLSEP_PT * (len(widths) - 1)
+        self.assertGreaterEqual(widths[4] * avail, len('$activo') * 7.12)
         self.assertLess(widths[2] + widths[3], 0.4160 + 0.2600)
 
     def test_minimums_that_do_not_fit_keep_the_smaller_ones(self):
@@ -176,12 +183,75 @@ body-font: serif
         latex = self.render_latex('Texto `zend_exception_ignore_args` longo.\n')
         self.assertIn(r'\_\discretionary{}{}{}', latex)
 
+    def test_manual_narrow_column_relaxes_short_identifier(self):
+        latex = self.render_latex(
+            '| Código | Descrición |\n|--|------------------|\n'
+            '| `PHP_INI_SYSTEM` | Unha descrición suficientemente longa '
+            'para que Pandoc respecte os anchos manuais da táboa |\n')
+        self.assertNotIn(r'\mbox{\texttt{PHP', latex)
+        self.assertIn(r'PHP\_\discretionary{}{}{}INI', latex)
+        widths = [float(w) for w in re.findall(r'\\real\{([0-9.]+)\}', latex)]
+        self.assertEqual(widths, [0.1, 0.9])
+
+    def test_narrow_column_prefers_spaces_to_underscores(self):
+        latex = self.render_latex(
+            '| Código | Descrición |\n|---|-----------------|\n'
+            '| `a_b c_d e_f` | Unha descrición suficientemente longa '
+            'para que Pandoc respecte os anchos manuais da táboa |\n')
+        self.assertNotIn(r'\mbox{\texttt{a', latex)
+        self.assertIn(r'a\_b \discretionary{}{}{}c\_d', latex)
+        self.assertNotIn(r'\_\discretionary', latex)
+
+    def test_crowded_automatic_columns_relax_and_recalculate(self):
+        latex = self.render_latex(CROWDED_TABLE)
+        self.assertIn(r'\_\discretionary{}{}{}', latex)
+        widths = [float(w) for w in re.findall(r'\\real\{([0-9.]+)\}', latex)]
+        self.assertAlmostEqual(sum(widths), 1, places=3)
+        self.assertGreaterEqual(min(widths) * (LINE_PT - 60), len('SYSTEM') * 7.12)
+
+    def test_indivisible_code_warns_instead_of_inventing_characters(self):
+        result = subprocess.run(
+            ['pandoc', '-f', 'markdown', '-t', 'latex',
+             f'--lua-filter={ROOT / "auto-table-widths.lua"}'],
+            input='| Código | Descrición |\n|--|------------------|\n'
+                  '| `abcdefghijklmno` | Unha descrición suficientemente longa '
+                  'para activar os anchos manuais na saída de Pandoc |\n',
+            capture_output=True, text=True, cwd=ROOT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Código en liña máis ancho ca a súa cela', result.stderr)
+        self.assertIn(r'\mbox{\texttt{abcdefghijklmno}}', result.stdout)
+
 
 @unittest.skipUnless(
     shutil.which('pandoc') and shutil.which('lualatex')
     and shutil.which('pdftotext'),
     'pandoc, lualatex ou pdftotext non están instalados')
 class TableWidthPdfTests(unittest.TestCase):
+    def test_crowded_codes_stay_inside_columns_with_and_without_pill(self):
+        for pill in (False, True):
+            with self.subTest(pill=pill), tempfile.TemporaryDirectory() as tmp:
+                src, pdf = Path(tmp) / 'crowded.md', Path(tmp) / 'crowded.pdf'
+                src.write_text(CROWDED_TABLE, encoding='utf-8')
+                cmd = [sys.executable, '-m', 'md2pdf', '--no-toc', '-o', str(pdf)]
+                if pill:
+                    cmd.append('--inline-pill')
+                run = subprocess.run(cmd + [str(src)], cwd=ROOT,
+                                     capture_output=True, text=True)
+                self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+                bbox = subprocess.run(['pdftotext', '-bbox', str(pdf), '-'],
+                                      capture_output=True, text=True, check=True)
+                words = ET.fromstring(bbox.stdout).findall('.//{*}word')
+                starts = [float(next(w for w in words if w.text == letter).get('xMin'))
+                          for letter in 'ABCDEF']
+                code_words = [w for w in words if '_' in (w.text or '')
+                              or w.text in ('SYSTEM', 'PERDIR', 'USER', 'ALL')]
+                self.assertGreater(len(code_words), len(CROWDED_CODES))
+                for word in code_words:
+                    x = float(word.get('xMin'))
+                    column = max(i for i, start in enumerate(starts) if x >= start - 1)
+                    right = starts[column + 1] if column < 5 else 533
+                    self.assertLessEqual(float(word.get('xMax')), right - 1)
+
     def test_example_table_has_no_hyphenated_words(self):
         with tempfile.TemporaryDirectory() as tmp:
             src = Path(tmp) / 'taboa.md'

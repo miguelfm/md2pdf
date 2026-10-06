@@ -729,6 +729,9 @@ Para glosarios, parámetros ou propiedades:
   `#EDE8DC` en noite, transparente en impresión). As rutas longas (`/etc/php/...`) e expresións con
   operadores rompen automaticamente de liña se chegan á marxe dereita. Fóra das táboas, o código
   de ata 20 caracteres non se parte nunca: `$c ? $a : $b` pasa enteiro á liña seguinte.
+  Nas táboas, os códigos curtos protéxense mentres caiban na cela; se non caben, permítense
+  cortes nos separadores e, como recurso secundario, no guión baixo. Os anchos manuais
+  respéctanse. Un aviso de código máis ancho ca a cela indica que debes revisar a táboa.
 - O código en liña admite barras invertidas (`\n`, `\t`, `\\`), til, circunflexo e
   letras acentuadas, tamén nas táboas. Escríbeos literalmente entre acentos graves;
   o filtro escápaos para LaTeX. Non engadas escapes LaTeX á fonte Markdown.
