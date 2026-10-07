@@ -76,6 +76,32 @@ class DiagramTests(unittest.TestCase):
             config = directory / 'puppeteer-config.json'
             self.assertIn('--no-sandbox', config.read_text())
 
+    def test_mermaid_12_retries_pdf_without_removed_option(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            output = directory / 'diagram.pdf'
+            with patch('md2pdf.diagrams.renderers._run', side_effect=[
+                    "devolveu 1: error: unknown option '--pdfFit'", '']) as run:
+                error = MermaidRenderer().render('mmdc',
+                    RenderContext(directory, 'pdf'), 'graph LR\nA-->B', output)
+            self.assertEqual(error, '')
+            self.assertEqual(run.call_count, 2)
+            first, second = run.call_args_list
+            self.assertEqual(first.args[0][:-1], second.args[0])
+            self.assertEqual(first.kwargs, second.kwargs)
+            self.assertNotIn('--pdfFit', second.args[0])
+            self.assertFalse(output.with_suffix('.mmd').exists())
+
+    def test_mermaid_does_not_retry_other_pdf_errors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            with patch('md2pdf.diagrams.renderers._run',
+                    return_value='devolveu 1: Parse error') as run:
+                error = MermaidRenderer().render('mmdc',
+                    RenderContext(directory, 'pdf'), 'invalid', directory/'out.pdf')
+            self.assertIn('Parse error', error)
+            self.assertEqual(run.call_count, 1)
+
     def test_non_pdf_mermaid_does_not_use_pdf_fit(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

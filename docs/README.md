@@ -285,7 +285,7 @@ flowchart LR
 
 A renderización faina o paquete `md2pdf/diagrams/` (coa API de compatibilidade `md2pdf/mermaid.py`) chamando a `mmdc` (Mermaid CLI) e substituíndo cada bloque pola imaxe xerada antes de pasar o documento a Pandoc. O formato escóllese segundo o motor:
 
-- **LuaLaTeX** → PDF vectorial con `--pdfFit` (sen marxes arredor do diagrama)
+- **LuaLaTeX** → PDF vectorial sen marxes arredor do diagrama: `--pdfFit` en Mermaid CLI 11 e anteriores; axuste automático en CLI 12.
 - **DOCX** → PNG
 - **HTML5** → SVG vectorial embebido no ficheiro final
 

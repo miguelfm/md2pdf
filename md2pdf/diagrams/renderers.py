@@ -22,7 +22,7 @@ def _run(command: list[str], timeout: int, env=None, cwd=None) -> str:
 class MermaidRenderer:
     name: str='mermaid'; languages: tuple[str,...]=('mermaid',)
     executable_names: tuple[str,...]=('mmdc','mmdc.cmd','mmdc.exe')
-    render_tag: str='v3'; font_px: float=16.0
+    render_tag: str='v4'; font_px: float=16.0
     def missing_message(self, count):
         return f'{count} diagrama(s) mermaid pero `mmdc` non está instalado. Instala con: pacman -S mermaid-cli (Arch) ou npm install -g @mermaid-js/mermaid-cli'
     def render(self, executable, context, content, output_path):
@@ -33,6 +33,13 @@ class MermaidRenderer:
         if context.output_format == 'pdf': command.append('--pdfFit')
         try:
             error=_run(command, context.timeout, {**os.environ,'PUPPETEER_DISABLE_HEADLESS_WARNING':'1'}, cwd=context.source_dir)
+            # CLI <=11 needs --pdfFit; CLI 12 fits PDFs by default and
+            # rejects that option. Retry only this specific option error.
+            if (context.output_format == 'pdf' and
+                    "unknown option '--pdfFit'" in error):
+                error=_run(command[:-1], context.timeout,
+                    {**os.environ,'PUPPETEER_DISABLE_HEADLESS_WARNING':'1'},
+                    cwd=context.source_dir)
             return f'mmdc {error}' if error else ''
         finally: source.unlink(missing_ok=True)
 
