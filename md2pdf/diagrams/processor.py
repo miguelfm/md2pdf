@@ -18,7 +18,13 @@ FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})([^\r\n]*)$')
 LAYOUTS = {
     'd2': {'dagre', 'elk', 'tala'},
     'graphviz': {'dot', 'neato', 'fdp', 'sfdp', 'circo', 'twopi', 'osage', 'patchwork'},
+    'mermaid': {'dagre', 'elk', 'tidy-tree'},
 }
+MERMAID_THEMES = {
+    'base', 'dark', 'default', 'forest', 'neutral',
+    'neo', 'neo-dark', 'redux', 'redux-dark', 'redux-color', 'redux-dark-color', 'null',
+}
+MERMAID_LOOKS = {'classic', 'handDrawn'}
 DIMENSION = re.compile(r'(?:\d+(?:\.\d+)?|\.\d+)(?:%|px|pt|cm|mm|in)')
 IDENTIFIER = re.compile(r'[A-Za-z][\w:.-]*')
 
@@ -101,8 +107,10 @@ def validate(name, options):
     allowed = {'width', 'height', 'caption', 'id'}
     if name in LAYOUTS:
         allowed.add('layout')
-    if name == 'd2':
+    if name in ('d2', 'mermaid'):
         allowed.add('theme')
+    if name == 'mermaid':
+        allowed.add('look')
     for key, value in options.items():
         if key not in allowed:
             raise ValueError(f'opción non admitida para {name}: {key}')
@@ -112,8 +120,13 @@ def validate(name, options):
         options[key] = value
         if key == 'layout' and value not in LAYOUTS[name]:
             raise ValueError(f'layout non admitido: {value}')
-        if key == 'theme' and not re.fullmatch(r'\d{1,4}', value):
-            raise ValueError('theme debe ser un identificador numérico de D2')
+        if key == 'theme':
+            if name == 'd2' and not re.fullmatch(r'\d{1,4}', value):
+                raise ValueError('theme debe ser un identificador numérico de D2')
+            if name == 'mermaid' and value not in MERMAID_THEMES:
+                raise ValueError(f'tema de Mermaid non admitido: {value}')
+        if key == 'look' and name == 'mermaid' and value not in MERMAID_LOOKS:
+            raise ValueError(f'look de Mermaid non admitido: {value}')
         if key in {'width', 'height'}:
             if not DIMENSION.fullmatch(value) or float(re.match(r'[\d.]+', value)[0]) <= 0:
                 raise ValueError(f'dimensión incorrecta: {key}={value}')
@@ -194,7 +207,7 @@ def process_diagrams(text: str, engine: str, renderers=RENDERERS, *,
                 if warning:
                     stats.warnings[name].append(warning)
             root = cache_dir(name)
-            render_options = {k: v for k, v in options.items() if k in {'layout', 'theme'}}
+            render_options = {k: v for k, v in options.items() if k in {'layout', 'theme', 'look'}}
             # Nova xeración de caché: saídas verificadas e identidade do lanzador.
             tag = (renderer.cache_tag() if hasattr(renderer, 'cache_tag')
                    else renderer.render_tag)

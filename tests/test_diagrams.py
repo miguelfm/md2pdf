@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -87,6 +88,35 @@ class DiagramTests(unittest.TestCase):
                 MermaidRenderer().render('mmdc', RenderContext(directory, 'svg'),
                                           'graph LR\nA-->B', output)
             self.assertNotIn('--pdfFit', run.call_args.args[0])
+
+    def test_mermaid_options_passed_to_config_and_command(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            output = directory / 'diagram.svg'
+            captured_config = {}
+
+            def fake_run(command, *args, **kwargs):
+                cfg_idx = command.index('-c') + 1
+                cfg_path = Path(command[cfg_idx])
+                self.assertTrue(cfg_path.exists())
+                captured_config.update(json.loads(cfg_path.read_text(encoding='utf-8')))
+                return ''
+
+            context = RenderContext(directory, 'svg',
+                                    options={'theme': 'forest', 'layout': 'elk', 'look': 'handDrawn'})
+            with patch('md2pdf.diagrams.renderers._run', side_effect=fake_run) as run:
+                error = MermaidRenderer().render('mmdc', context, 'flowchart TD\nA-->B', output)
+            self.assertEqual(error, '')
+            command = run.call_args.args[0]
+            self.assertIn('-t', command)
+            self.assertIn('forest', command)
+            self.assertEqual(captured_config.get('theme'), 'forest')
+            self.assertEqual(captured_config.get('layout'), 'elk')
+            self.assertEqual(captured_config.get('look'), 'handDrawn')
+            self.assertIn('Source Sans 3', captured_config.get('fontFamily', ''))
+            cfg_path = directory / 'diagram-mermaid-config.json'
+            self.assertFalse(cfg_path.exists())
+            self.assertFalse(output.with_suffix('.mmd').exists())
 
     def test_d2_and_graphviz_commands_use_requested_format(self):
         with tempfile.TemporaryDirectory() as temporary:

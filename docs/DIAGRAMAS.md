@@ -39,8 +39,7 @@ Os pés son texto literal, non Markdown enriquecido.
 - Ambas dimensións explícitas poden deformar a imaxe; úsanse só se se desexa.
 - D2: layout=dagre|elk|tala e theme=identificador-numérico.
 - Graphviz: layout=dot|neato|fdp|sfdp|circo|twopi|osage|patchwork.
-- Mermaid: mantén as opcións do renderizado anterior; non admite layout/theme
-  neste adaptador. Pódese seguir usando a configuración interna de Mermaid.
+- Mermaid: layout=dagre|elk (e tidy-tree se está dispoñible), theme=base|dark|default|forest|neutral|neo|neo-dark|redux|redux-dark|redux-color|redux-dark-color|null e look=classic|handDrawn (compatible con Mermaid CLI 12+). Tamén se pode seguir usando directivas internas (como `%%{init: ...}%%`).
 
 Un valor incorrecto conserva o bloque como código e emite un aviso.
 Non se admiten argumentos de consola arbitrarios. TALA require o seu motor
@@ -55,6 +54,10 @@ python -m pip install PyYAML
 ```yaml
 ---
 diagrams:
+  mermaid:
+    layout: elk
+    theme: forest
+    look: handDrawn
   d2:
     layout: elk
     theme: 0

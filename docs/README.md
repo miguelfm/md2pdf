@@ -318,7 +318,7 @@ A renderización faina o paquete `md2pdf/diagrams/` (coa API de compatibilidade 
 - **DOCX** → PNG
 - **HTML5** → SVG vectorial embebido no ficheiro final
 
-Soporta todos os tipos de diagrama de Mermaid: `flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`, etc.
+Soporta todos os tipos de diagrama de Mermaid: `flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`, `timeline`, `quadrantChart`, `sankey-beta`, `xychart-beta`, `usecase-beta`, `kanban`, `architecture-beta`, etc., xunto con opcións configurables de `layout` (`elk`, `dagre`), `theme` (como `neo`, `forest`, `dark`, `redux`) e `look` (`classic`, `handDrawn`).
 
 #### Caché por hash
 

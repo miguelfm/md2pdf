@@ -44,24 +44,35 @@ def _mmdc_supports_pdf_fit(executable: str) -> bool:
 class MermaidRenderer:
     name: str='mermaid'; languages: tuple[str,...]=('mermaid',)
     executable_names: tuple[str,...]=('mmdc','mmdc.cmd','mmdc.exe')
-    render_tag: str='v5'; font_px: float=16.0
+    render_tag: str='v6'; font_px: float=16.0
     def missing_message(self, count):
         return f'{count} diagrama(s) mermaid pero `mmdc` non está instalado. Instala con: pacman -S mermaid-cli (Arch) ou npm install -g @mermaid-js/mermaid-cli'
     def render(self, executable, context, content, output_path):
-        source, config = output_path.with_suffix('.mmd'), context.cache_dir/'puppeteer-config.json'
-        if not config.exists(): config.write_text('{"args":["--no-sandbox","--disable-setuid-sandbox"]}', encoding='utf-8')
-        mermaid_config = context.cache_dir/'mermaid-config.json'
-        mermaid_config.write_text(json.dumps({
+        source = output_path.with_suffix('.mmd')
+        mermaid_config = output_path.parent / f'{output_path.stem}-mermaid-config.json'
+        config = context.cache_dir / 'puppeteer-config.json'
+        if not config.exists():
+            config.write_text('{"args":["--no-sandbox","--disable-setuid-sandbox"]}', encoding='utf-8')
+        cfg = {
             'fontFamily': CSS_FONT,
             'fontSize': 16,
             'themeVariables': {
                 'fontFamily': CSS_FONT,
                 'fontSize': '16px',
             }
-        }), encoding='utf-8')
+        }
+        if 'theme' in context.options:
+            cfg['theme'] = context.options['theme']
+        if 'layout' in context.options:
+            cfg['layout'] = context.options['layout']
+        if 'look' in context.options:
+            cfg['look'] = context.options['look']
+        mermaid_config.write_text(json.dumps(cfg), encoding='utf-8')
         source.write_text(content, encoding='utf-8')
-        command=[executable,'-i',str(source),'-o',str(output_path),'-b','transparent','-q',
-                 '--puppeteerConfigFile',str(config),'-c',str(mermaid_config)]
+        command = [executable, '-i', str(source), '-o', str(output_path), '-b', 'transparent', '-q',
+                   '--puppeteerConfigFile', str(config), '-c', str(mermaid_config)]
+        if 'theme' in context.options:
+            command.extend(['-t', context.options['theme']])
         if context.output_format == 'pdf' and _mmdc_supports_pdf_fit(executable):
             command.append('--pdfFit')
         try:
@@ -72,7 +83,9 @@ class MermaidRenderer:
                 command.remove('--pdfFit')
                 error = _run(command, context.timeout, env, cwd=context.source_dir)
             return f'mmdc {error}' if error else ''
-        finally: source.unlink(missing_ok=True)
+        finally:
+            source.unlink(missing_ok=True)
+            mermaid_config.unlink(missing_ok=True)
 
 @dataclass(frozen=True)
 class D2Renderer:

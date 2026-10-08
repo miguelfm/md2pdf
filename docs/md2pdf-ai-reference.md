@@ -456,12 +456,11 @@ fonte e emítese un aviso; con `--strict`, a conversión falla.
 
 ### 14.2 Mermaid
 
-Admite os tipos habituais: `flowchart`, `sequenceDiagram`, `classDiagram`,
-`stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`…
+Admite todos os tipos de diagrama estándar e modernos de Mermaid (compatibles con Mermaid CLI 12+): `flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`, `timeline`, `quadrantChart`, `sankey-beta`, `xychart-beta`, `usecase-beta`, `kanban`, `architecture-beta`, etc.
 
-- Etiquetas curtas; para partir unha etiqueta usa `<br/>`: `A[Verificar<br/>contorna]`.
-- Sintaxe estándar, sen extensións exclusivas de Mermaid Live Editor.
-- Non admite os atributos `layout` nin `theme`.
+- Etiquetas curtas; para partir unha etiqueta usa `<br/>` ou cadeas con markdown: `A["Verificar<br/>contorna"]`.
+- Atributos propios admitidos: `layout=dagre|elk`, `theme=base|dark|default|forest|neutral|neo|neo-dark|redux|redux-dark|redux-color|redux-dark-color|null` e `look=classic|handDrawn`.
+- Tamén admite configuracións globais en frontmatter/metadata baixo `diagrams.mermaid`.
 
 ### 14.3 D2
 

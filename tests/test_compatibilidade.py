@@ -160,5 +160,26 @@ class MermaidPdfFitTests(unittest.TestCase):
             self.assertTrue(renderers._mmdc_supports_pdf_fit('mmdc'))
 
 
+@unittest.skipUnless(shutil.which('mmdc'), 'mmdc non está instalado')
+class MermaidCli12IntegrationTests(unittest.TestCase):
+    def test_mermaid_v12_renders_with_options_and_modern_types(self):
+        from md2pdf.diagrams.processor import process_diagrams
+        source = (
+            "```{.mermaid theme=neo layout=elk look=handDrawn}\n"
+            "flowchart TD\n"
+            "    A --> B\n"
+            "```\n\n"
+            "```mermaid\n"
+            "usecase-beta\n"
+            "    actor User\n"
+            "    User --> Login(Login)\n"
+            "```\n"
+        )
+        out, stats = process_diagrams(source, 'lualatex')
+        self.assertEqual(stats.errors.get('mermaid', []), [])
+        self.assertEqual(stats.new.get('mermaid', 0) + stats.cached.get('mermaid', 0), 2)
+        self.assertNotIn('```mermaid', out)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -107,6 +107,26 @@ class ExtendedTests(unittest.TestCase):
             '---\ndiagrams:\n  d2:\n    layout: elk\n---\n', metadata)
         self.assertEqual(defaults, {'d2': {'layout': 'elk', 'theme': 1}})
 
+    def test_mermaid_options_and_defaults(self):
+        out, stats = process_diagrams(
+            '```{.mermaid layout=elk theme=dark look=handDrawn #fig:fluxo caption="Fluxo"}\nflowchart TD\nA-->B\n```',
+            'lualatex', defaults={'mermaid': {'layout': 'dagre', 'theme': 'forest', 'look': 'classic'}})
+        self.assertEqual(self.calls[0][0].options, {'layout': 'elk', 'theme': 'dark', 'look': 'handDrawn'})
+        self.assertIn('![Fluxo]', out)
+        self.assertIn('#fig:fluxo', out)
+
+    def test_mermaid_invalid_options_preserve_source(self):
+        for attributes in ('layout=invalido', 'theme=invalido', 'look=invalido'):
+            text = f'```{{.mermaid {attributes}}}\nflowchart TD\nA-->B\n```'
+            out, stats = process_diagrams(text, 'lualatex')
+            self.assertEqual(out, text)
+            self.assertTrue(stats.errors['mermaid'])
+
+    def test_mermaid_options_invalidate_cache(self):
+        for attrs in ('theme=forest', 'theme=forest width=80%', 'theme=dark', 'layout=elk'):
+            process_diagrams(f'```{{.mermaid {attrs}}}\nflowchart TD\nA-->B\n```', 'lualatex')
+        self.assertEqual(len(self.calls), 3)
+
     def test_unclosed_and_non_diagram_fences_untouched(self):
         for text in ('```d2\na -> b', '```python\n```d2\na -> b\n```'):
             self.assertEqual(process_diagrams(text, 'lualatex')[0], text)
