@@ -91,7 +91,7 @@ class MermaidRenderer:
 class D2Renderer:
     name: str='d2'; languages: tuple[str,...]=('d2',)
     executable_names: tuple[str,...]=('d2','d2.exe')
-    render_tag: str='v1'; font_px: float=16.0
+    render_tag: str='v2'; font_px: float=16.0
     def missing_message(self,count): return f'{count} diagrama(s) D2 pero `d2` non está instalado'
     def render(self, executable, context, content, output_path):
         if context.source_dir:
@@ -105,6 +105,12 @@ class D2Renderer:
             command = [executable, '--theme=' + context.options.get('theme', '0')]
             if 'layout' in context.options:
                 command.append('--layout=' + context.options['layout'])
+            if context.options.get('sketch') in ('true', '1'):
+                command.append('--sketch')
+            if 'pad' in context.options:
+                command.append('--pad=' + context.options['pad'])
+            if 'dark-theme' in context.options:
+                command.append('--dark-theme=' + context.options['dark-theme'])
             error=_run(command + [str(source),str(output_path)],context.timeout,
                        cwd=context.source_dir)
             return f'd2 {error}' if error else ''

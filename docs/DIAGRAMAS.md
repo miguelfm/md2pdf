@@ -37,9 +37,10 @@ Os pés son texto literal, non Markdown enriquecido.
 - Dimensións positivas con %, px, pt, cm, mm ou in.
 - Só width ou height: a proporción queda a cargo de Pandoc.
 - Ambas dimensións explícitas poden deformar a imaxe; úsanse só se se desexa.
-- D2: layout=dagre|elk|tala e theme=identificador-numérico.
+- D2: layout=dagre|elk|tala, theme=identificador-numérico (0–8, 100–105, 300–303), sketch=true|false (debuxado a man), pad=píxeles (marxe arredor do diagrama, por defecto 100) e dark-theme=identificador-numérico (para modo escuro en SVG, p. ex. 200–201).
 - Graphviz: layout=dot|neato|fdp|sfdp|circo|twopi|osage|patchwork.
 - Mermaid: layout=dagre|elk (e tidy-tree se está dispoñible), theme=base|dark|default|forest|neutral|neo|neo-dark|redux|redux-dark|redux-color|redux-dark-color|null e look=classic|handDrawn (compatible con Mermaid CLI 12+). Tamén se pode seguir usando directivas internas (como `%%{init: ...}%%`).
+- Vega-Lite: theme=carbong10|carbong100|carbong90|carbonwhite|dark|excel|fivethirtyeight|ggplot2|googlecharts|latimes|powerbi|quartz|urbaninstitute|vox|default|none.
 
 Un valor incorrecto conserva o bloque como código e emite un aviso.
 Non se admiten argumentos de consola arbitrarios. TALA require o seu motor
@@ -61,8 +62,12 @@ diagrams:
   d2:
     layout: elk
     theme: 0
+    sketch: false
+    pad: 20
   graphviz:
     layout: dot
+  vega-lite:
+    theme: fivethirtyeight
 ---
 ```
 

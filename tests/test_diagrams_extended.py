@@ -56,9 +56,9 @@ class ExtendedTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 2)
 
     def test_layout_invalidates_but_width_does_not(self):
-        for attrs in ('layout=elk', 'layout=elk width=80%', 'layout=dagre'):
+        for attrs in ('layout=elk', 'layout=elk width=80%', 'layout=dagre', 'layout=dagre sketch=true', 'layout=dagre sketch=true pad=20'):
             process_diagrams('```{.d2 '+attrs+'}\na -> b\n```', 'lualatex')
-        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(len(self.calls), 4)
 
     def test_defaults_overridden_and_caption(self):
         out, stats = process_diagrams(
@@ -69,7 +69,7 @@ class ExtendedTests(unittest.TestCase):
         self.assertIn('#fig:demo width=90%', out)
 
     def test_invalid_option_preserves_source(self):
-        for attributes in ('layout=bad', 'width=-5%', 'args=--evil'):
+        for attributes in ('layout=bad', 'width=-5%', 'args=--evil', 'sketch=invalid', 'pad=-5', 'dark-theme=bad'):
             text = '```{.d2 '+attributes+'}\na -> b\n```'
             out, stats = process_diagrams(text, 'lualatex')
             self.assertEqual(out, text)
@@ -106,6 +106,15 @@ class ExtendedTests(unittest.TestCase):
         defaults = load_diagram_defaults(
             '---\ndiagrams:\n  d2:\n    layout: elk\n---\n', metadata)
         self.assertEqual(defaults, {'d2': {'layout': 'elk', 'theme': 1}})
+
+    def test_d2_modern_options_and_defaults(self):
+        text = '```{.d2 sketch pad=15 dark-theme=201}\na -> b\n```'
+        out, stats = process_diagrams(
+            text, 'lualatex', defaults={'d2': {'sketch': False, 'pad': 50, 'theme': 3}})
+        self.assertEqual(stats.new['d2'], 1)
+        self.assertEqual(self.calls[0][0].options, {
+            'sketch': 'true', 'pad': '15', 'dark-theme': '201', 'theme': '3'
+        })
 
     def test_mermaid_options_and_defaults(self):
         out, stats = process_diagrams(

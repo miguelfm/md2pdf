@@ -52,6 +52,49 @@ class VegaTests(unittest.TestCase):
                     self.assertEqual(stats.cached['vega-lite'], 1)
 
     @unittest.skipUnless(importlib.util.find_spec('vl_convert'), 'vl-convert-python non instalado')
+    def test_theme_and_font_and_cache_invalidation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch('md2pdf.diagrams.processor.cache_dir', return_value=root):
+                # Tema ggplot2 e verificación de fonte
+                text_ggplot = '```{.vega-lite theme=ggplot2}\n' + json.dumps(SPEC) + '\n```'
+                out_html, stats = process_diagrams(text_ggplot, 'html')
+                self.assertFalse(stats.errors.get('vega-lite'))
+                self.assertEqual(stats.new['vega-lite'], 1)
+                svg_path = next(root.glob('*.svg'))
+                self.assertIn('Source Sans 3', svg_path.read_text(encoding='utf-8'))
+
+                # Cambiar de tema a fivethirtyeight debe invalidar a caché
+                text_538 = '```{.vega-lite theme=fivethirtyeight}\n' + json.dumps(SPEC) + '\n```'
+                _, stats = process_diagrams(text_538, 'html')
+                self.assertEqual(stats.new['vega-lite'], 1)
+
+                # Tema non admitido debe conservar o texto orixinal e emitir erro
+                bad_theme = '```{.vega-lite theme=invalido}\n' + json.dumps(SPEC) + '\n```'
+                bad_out, stats = process_diagrams(bad_theme, 'html')
+                self.assertEqual(bad_out, bad_theme)
+                self.assertTrue(stats.errors['vega-lite'])
+
+    @unittest.skipUnless(importlib.util.find_spec('vl_convert'), 'vl-convert-python non instalado')
+    def test_modern_vegalite_specs(self):
+        # Gráfico circular (arc) e xerador de secuencia con transform
+        arc_spec = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {"values": [{"c": "A", "v": 40}, {"c": "B", "v": 60}]},
+            "mark": "arc",
+            "encoding": {
+                "theta": {"field": "v", "type": "quantitative"},
+                "color": {"field": "c", "type": "nominal"}
+            }
+        }
+        text = '```{.vega-lite #fig:pizza caption="Pizza"}\n' + json.dumps(arc_spec) + '\n```'
+        for engine in ('lualatex', 'html', 'docx'):
+            out, stats = process_diagrams(text, engine)
+            self.assertFalse(stats.errors.get('vega-lite'), stats.errors)
+            self.assertNotIn('```{.vega-lite', out)
+
+
+    @unittest.skipUnless(importlib.util.find_spec('vl_convert'), 'vl-convert-python non instalado')
     def test_bad_json_and_network_preserve_source(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch('md2pdf.diagrams.processor.cache_dir', return_value=Path(directory)):
@@ -61,6 +104,17 @@ class VegaTests(unittest.TestCase):
                     self.assertEqual(out, text)
                     self.assertTrue(stats.errors['vega-lite'])
                     self.assertEqual(list(Path(directory).iterdir()), [])
+
+    @unittest.skipUnless(importlib.util.find_spec('vl_convert'), 'vl-convert-python non instalado')
+    def test_defaults_merge_with_options(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch('md2pdf.diagrams.processor.cache_dir', return_value=Path(directory)):
+                text = '```{.vega-lite #fig:a caption="A"}\n' + json.dumps(SPEC) + '\n```'
+                out, stats = process_diagrams(
+                    text, 'lualatex', defaults={'vega-lite': {'theme': 'ggplot2'}})
+                self.assertFalse(stats.errors.get('vega-lite'))
+                self.assertEqual(stats.new['vega-lite'], 1)
+
 
 if __name__ == '__main__':
     unittest.main()

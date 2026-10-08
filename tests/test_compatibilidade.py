@@ -1,5 +1,6 @@
 """Compatibilidade coas versións actuais de Pandoc, KOMA-Script e mermaid-cli."""
 
+import importlib.util
 import re
 import shutil
 import subprocess
@@ -198,6 +199,64 @@ class GraphvizCompatibilityTests(unittest.TestCase):
             self.assertEqual(stats.errors.get('graphviz', []), [])
             self.assertEqual(stats.new.get('graphviz', 0) + stats.cached.get('graphviz', 0), 2)
             self.assertNotIn('```{.dot', out)
+
+
+@unittest.skipUnless(shutil.which('d2'), 'd2 non está instalado')
+class D2CompatibilityTests(unittest.TestCase):
+    def test_d2_modern_features_and_options(self):
+        from md2pdf.diagrams.processor import process_diagrams
+        source = (
+            "```{.d2 layout=elk theme=1 sketch pad=10 dark-theme=201 #fig:d2elk caption=\"Diagrama D2 ELK Sketch\"}\n"
+            "x -> y: chamada\n"
+            "y -> z: proceso\n"
+            "```\n\n"
+            "```{.d2 #fig:d2sql caption=\"Táboa SQL D2\"}\n"
+            "users: {\n"
+            "  shape: sql_table\n"
+            "  id: int {constraint: primary_key}\n"
+            "  name: string\n"
+            "}\n"
+            "```\n"
+        )
+        for engine in ('lualatex', 'html', 'docx'):
+            out, stats = process_diagrams(source, engine)
+            self.assertEqual(stats.errors.get('d2', []), [])
+            self.assertEqual(stats.new.get('d2', 0) + stats.cached.get('d2', 0), 2)
+            self.assertNotIn('```{.d2', out)
+
+
+@unittest.skipUnless(importlib.util.find_spec('vl_convert'), 'vl-convert-python non instalado')
+class VegaLiteCompatibilityTests(unittest.TestCase):
+    def test_vegalite_version_themes_and_modern_features(self):
+        from md2pdf.diagrams.processor import process_diagrams
+        source = (
+            "```{.vega-lite theme=fivethirtyeight #fig:rendemento caption=\"Rendemento\"}\n"
+            "{\n"
+            "  \"$schema\": \"https://vega.github.io/schema/vega-lite/v5.json\",\n"
+            "  \"data\": {\"values\": [{\"mes\": \"Xan\", \"val\": 12}, {\"mes\": \"Feb\", \"val\": 19}]},\n"
+            "  \"mark\": \"bar\",\n"
+            "  \"encoding\": {\n"
+            "    \"x\": {\"field\": \"mes\", \"type\": \"nominal\"},\n"
+            "    \"y\": {\"field\": \"val\", \"type\": \"quantitative\"}\n"
+            "  }\n"
+            "}\n"
+            "```\n\n"
+            "```{.vega-lite theme=ggplot2 #fig:dispersao caption=\"Dispersión\"}\n"
+            "{\n"
+            "  \"data\": {\"values\": [{\"x\": 1, \"y\": 2}, {\"x\": 2, \"y\": 5}]},\n"
+            "  \"mark\": \"point\",\n"
+            "  \"encoding\": {\n"
+            "    \"x\": {\"field\": \"x\", \"type\": \"quantitative\"},\n"
+            "    \"y\": {\"field\": \"y\", \"type\": \"quantitative\"}\n"
+            "  }\n"
+            "}\n"
+            "```\n"
+        )
+        for engine in ('lualatex', 'html', 'docx'):
+            out, stats = process_diagrams(source, engine)
+            self.assertEqual(stats.errors.get('vega-lite', []), [])
+            self.assertEqual(stats.new.get('vega-lite', 0) + stats.cached.get('vega-lite', 0), 2)
+            self.assertNotIn('```{.vega-lite', out)
 
 
 if __name__ == '__main__':

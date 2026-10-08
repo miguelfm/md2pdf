@@ -292,11 +292,12 @@ A cor de fondo das liñas destacadas é un amarelo suave por defecto. Para perso
 
 Nota: a implementación usa `highlightlines` nativo de `fvextra`, polo que é compatible co resaltado de sintaxe de Pandoc.
 
-### Diagramas: Mermaid, D2 e Graphviz
+### Diagramas: Mermaid, D2, Graphviz e Vega-Lite
 
 Tamén se admiten gráficos de datos con [Vega-Lite](VEGA-LITE.md):
-histogramas, liñas, puntos, regresións e sectores. Exemplos en
-[exemplos-vega-lite.md](exemplos-vega-lite.md).
+histogramas, liñas, puntos, regresións e sectores (con soporte de 14 temas visuais,
+tipografía integrada Source Sans 3 e xeración sen navegador mediante vl-convert-python).
+Exemplos en [exemplos-vega-lite.md](exemplos-vega-lite.md).
 
 Consulta [Diagramas configurables](DIAGRAMAS.md) para seleccionar layout,
 engadir pés e referencias e establecer valores predeterminados por documento.
@@ -338,12 +339,12 @@ Se `mmdc` non está instalado, os bloques mantéñense como código fonte no doc
 
 O mesmo motor acepta bloques `d2`, `dot` e `graphviz`. Cada ferramenta é
 opcional e independente: só se comproba o executable cando o documento contén
-un bloque desa linguaxe. D2 emprégase para diagramas conceptuais e de
-arquitectura; DOT/Graphviz resulta especialmente útil para grafos, árbores e
-autómatas.
+un bloque desa linguaxe. D2 emprégase para diagramas conceptuais, esquemas SQL e de
+arquitectura; admite opcións de `layout` (`dagre`, `elk`, `tala`), `theme` (identificadores numéricos), `sketch` (estilo debuxado a man), `pad` (marxe arredor do diagrama) e `dark-theme`. DOT/Graphviz resulta especialmente útil para grafos, árbores e
+autómatas (con todos os motores: `dot`, `neato`, `fdp`, `sfdp`, `circo`, `twopi`, `osage`, `patchwork`).
 
 ````markdown
-```d2
+```{.d2 layout=elk sketch}
 cliente -> servidor: HTTP
 servidor -> base_de_datos: SQL
 ```

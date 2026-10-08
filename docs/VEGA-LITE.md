@@ -18,9 +18,13 @@ A API utilizada é a de https://github.com/vega/vl-convert .
 ## Sintaxe
 
 Bloques vega-lite ou vegalite, con JSON estrito dentro; sen comentarios nin
-comas finais. Admítense width, height, caption e #identificador, igual ca nos
-outros diagramas. O tema e estilos defínense no JSON (config), non no atributo
-theme de D2. layout tampouco se aplica a Vega-Lite.
+comas finais. Admítense width, height, caption, #identificador e theme, igual ca nos
+outros diagramas. A tipografía predeterminada configúrase automaticamente como
+`Source Sans 3, sans-serif` para emparellar co estilo visual do documento.
+O atributo theme admite os 14 temas de vega-themes: `carbong10`, `carbong100`,
+`carbong90`, `carbonwhite`, `dark`, `excel`, `fivethirtyeight`, `ggplot2`,
+`googlecharts`, `latimes`, `powerbi`, `quartz`, `urbaninstitute`, `vox`, ou `default`/`none`.
+Tamén se poden definir estilos adicionais no propio JSON (`config`). layout non se aplica a Vega-Lite.
 
 Consulta exemplos-vega-lite.md para histogramas, puntos con regresión e sectores.
 A regresión do exemplo é un axuste aos datos, non unha predición validada.
@@ -35,6 +39,7 @@ controlan o tamaño final no documento.
 ```yaml
 diagrams:
   vega-lite:
+    theme: fivethirtyeight
     width: 85%
 ```
 

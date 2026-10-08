@@ -17,16 +17,28 @@ class DiagramTests(unittest.TestCase):
             directory = Path(temporary)
             output = directory / 'out.svg'
             context = RenderContext(directory, 'svg',
-                                    options={'layout': 'elk', 'theme': '1'},
+                                    options={'layout': 'elk', 'theme': '1',
+                                             'sketch': 'true', 'pad': '20',
+                                             'dark-theme': '200'},
                                     source_dir=directory)
             with patch('md2pdf.diagrams.renderers._run', return_value='') as run:
                 D2Renderer().render('d2', context, 'a -> b', output)
             command = run.call_args.args[0]
             self.assertIn('--layout=elk', command)
             self.assertIn('--theme=1', command)
+            self.assertIn('--sketch', command)
+            self.assertIn('--pad=20', command)
+            self.assertIn('--dark-theme=200', command)
             self.assertEqual(Path(command[-2]).parent, directory)
             self.assertFalse(Path(command[-2]).exists())
             self.assertEqual(run.call_args.kwargs['cwd'], directory)
+            context_no_sketch = RenderContext(directory, 'svg',
+                                              options={'sketch': 'false'},
+                                              source_dir=directory)
+            with patch('md2pdf.diagrams.renderers._run', return_value='') as run:
+                D2Renderer().render('d2', context_no_sketch, 'a -> b', output)
+            command_no = run.call_args.args[0]
+            self.assertNotIn('--sketch', command_no)
             context = RenderContext(directory, 'svg', options={'layout': 'neato'})
             with patch('md2pdf.diagrams.renderers._run', return_value='') as run:
                 GraphvizRenderer().render('dot', context, 'graph { a -- b }', output)

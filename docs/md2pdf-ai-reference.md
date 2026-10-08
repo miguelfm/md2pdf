@@ -464,11 +464,17 @@ Admite todos os tipos de diagrama estándar e modernos de Mermaid (compatibles c
 
 ### 14.3 D2
 
-Adecuado para arquitecturas e diagramas conceptuais. Atributos propios:
-`layout=dagre|elk|tala` e `theme=<número>` (identificador numérico de tema de D2).
+Adecuado para arquitecturas, esquemas SQL, diagramas de clases e diagramas conceptuais.
+Atributos propios admitidos:
+- `layout=dagre|elk|tala`: algoritmos de ordenación espacial (dagre por defecto).
+- `theme=<número>`: identificador numérico de tema claro de D2 (0–8, 100–105, 300–303; 0 por defecto).
+- `sketch=true|false` (ou simplemente `sketch`): estilo debuxado a man.
+- `pad=<píxeles>`: espazado arredor do diagrama en píxeles (D2 usa 100 por defecto; útil reducilo a p. ex. `pad=20` ou `pad=0`).
+- `dark-theme=<número>`: tema escuro para navegadores en modo escuro en saída SVG (200–201).
+- Tamén admite configuracións globais en frontmatter/metadata baixo `diagrams.d2`.
 
 ````markdown
-```{.d2 #fig:arquitectura layout=elk caption="Arquitectura da aplicación"}
+```{.d2 #fig:arquitectura layout=elk sketch caption="Arquitectura da aplicación"}
 cliente -> servidor: HTTP
 servidor -> datos: SQL
 ```
@@ -493,16 +499,16 @@ digraph {
 
 ### 14.5 Vega-Lite
 
-Gráficos de datos estáticos (sen interacción nin tooltips). Restricións:
+Gráficos de datos estáticos (sen interacción nin tooltips). Admite tipos estándar e modernos de Vega-Lite (liñas, barras, áreas, dispersión, sectores/arc, secuencias, etc.).
 
 - O contido é **JSON estrito**: sen comentarios nin comas finais.
-- Os datos van **inline** en `data.values` ou `datasets`. Non se admiten `url`, `href` nin
-  marcas `image`, nin campos de datos con eses nomes.
-- Tema e estilos van no propio JSON (`config`); non se admiten `layout` nin `theme`.
+- Os datos van **inline** en `data.values` ou `datasets` (ou xeradores como `sequence`). Non se admiten `url`, `href` nin marcas `image`, nin campos de datos con eses nomes.
+- Tipografía predeterminada harmonizada automaticamente como `Source Sans 3, sans-serif`.
+- Admite o atributo `theme` (ou `diagrams.vega-lite.theme` en metadatos YAML) con calquera dos temas integrados de Vega: `carbong10`, `carbong100`, `carbong90`, `carbonwhite`, `dark`, `excel`, `fivethirtyeight`, `ggplot2`, `googlecharts`, `latimes`, `powerbi`, `quartz`, `urbaninstitute`, `vox`, ou `default`/`none`. Tamén se poden definir estilos propios no JSON (`config`).
 - `width`/`height` do JSON controlan a composición; os atributos do bloque, o tamaño final.
 
 ````markdown
-```{.vega-lite #fig:tempos width=85% caption="Distribución dos tempos de resposta"}
+```{.vega-lite #fig:tempos theme=fivethirtyeight width=85% caption="Distribución dos tempos de resposta"}
 {
   "data": {"values": [{"tempo": 12}, {"tempo": 15}, {"tempo": 15},
                       {"tempo": 18}, {"tempo": 22}, {"tempo": 25}]},

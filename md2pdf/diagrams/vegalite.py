@@ -13,7 +13,7 @@ class VegaLiteRenderer:
     name: str = 'vega-lite'
     languages: tuple[str, ...] = ('vega-lite', 'vegalite')
     executable_names: tuple[str, ...] = ()
-    render_tag: str = 'v1-inline'
+    render_tag: str = 'v2-inline'
     font_px: float = 10.0
 
     def find_executable(self):
@@ -40,9 +40,12 @@ class VegaLiteRenderer:
         try:
             source.write_text(json.dumps(spec, ensure_ascii=False), encoding='utf-8')
             worker = Path(__file__).with_name('vegalite_worker.py')
+            command = [executable, str(worker), str(source), str(output_path),
+                       context.output_format]
+            if 'theme' in context.options:
+                command.append('--theme=' + context.options['theme'])
             result = subprocess.run(
-                [executable, str(worker), str(source), str(output_path),
-                 context.output_format],
+                command,
                 stdin=subprocess.DEVNULL, capture_output=True, text=True,
                 timeout=context.timeout, cwd=context.source_dir)
             if result.returncode:
