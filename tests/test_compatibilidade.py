@@ -181,5 +181,24 @@ class MermaidCli12IntegrationTests(unittest.TestCase):
         self.assertNotIn('```mermaid', out)
 
 
+@unittest.skipUnless(shutil.which('dot'), 'dot non está instalado')
+class GraphvizCompatibilityTests(unittest.TestCase):
+    def test_graphviz_version_and_layouts(self):
+        from md2pdf.diagrams.processor import process_diagrams
+        source = (
+            "```{.dot layout=neato #fig:rede caption=\"Rede neato\"}\n"
+            "graph { a -- b; b -- c; c -- a; }\n"
+            "```\n\n"
+            "```{.dot layout=circo #fig:circular caption=\"Anel circo\"}\n"
+            "graph { 1 -- 2 -- 3 -- 4 -- 1; }\n"
+            "```\n"
+        )
+        for engine in ('lualatex', 'html', 'docx'):
+            out, stats = process_diagrams(source, engine)
+            self.assertEqual(stats.errors.get('graphviz', []), [])
+            self.assertEqual(stats.new.get('graphviz', 0) + stats.cached.get('graphviz', 0), 2)
+            self.assertNotIn('```{.dot', out)
+
+
 if __name__ == '__main__':
     unittest.main()
