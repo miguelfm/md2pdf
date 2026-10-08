@@ -387,6 +387,10 @@ public function store(Request $request)
 Formatos válidos: `"3"`, `"1,3,5"`, `"2-6"`, `"1,3,7-9"`. DOCX ignora o resaltado, así que
 o texto non debe depender só del: nomea tamén o elemento («a regra de `email`…»).
 
+As liñas cóntanse desde a primeira dentro do bloque, incluídas as baleiras. O resaltado
+aplícase só ao bloque que leva `hl`; admite tamén documentos con todos os bloques
+resaltados e combínase con `.compact` e cos bloques de terminal.
+
 ### 13.3 Pés e referencias de código: non soportados
 
 Os bloques de código non levan pé nin se poden referenciar. Unha liña `: Título` tras o
@@ -419,6 +423,24 @@ class RepositorioAlumnos:
 ````
 
 Isto activa unha tipografía máis compacta (10 pt con interliñado de 13 pt) que amplía a capacidade horizontal a ~77 columnas e reduce a altura vertical, evitando quebras de liña `↪` innecesarias. Tamén é combinable con resaltado (`{.compact hl="3,5"}`) ou configurábel globalmente mediante o metadato `code-compact-threshold: 25` no front matter.
+
+### 13.7 Resaltado de palabras e código en liña
+
+Para marcar unha palabra ou un fragmento cun fondo, usa un span coa clase `.mark`:
+
+```markdown
+A comparación é [estrita]{.mark}.
+
+A condición é [`x < 0 || x > 100`]{.mark}.
+```
+
+Funciona en PDF e HTML. Para poñer código en negra, envolve o código en liña con
+asteriscos dobres: `**` antes do acento grave de apertura e `**` despois do de peche.
+Respecta as normas de énfase do repositorio de destino.
+
+Estas marcas úsanse no texto do documento. Dentro dun bloque de código, o Markdown
+consérvase literalmente: `.mark` e os asteriscos non destacan palabras do bloque.
+Para liñas completas, usa `hl` (sección 13.2).
 
 ## 14. Diagramas e gráficos
 

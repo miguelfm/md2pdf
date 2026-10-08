@@ -6,7 +6,7 @@
 --   ```
 --
 -- Funciona con LuaLaTeX + fvextra (highlightlines).
--- Non ten efecto con --listings (ignorado silenciosamente).
+-- Nas demais saídas conserva o bloque e o atributo hl.
 --
 -- A cor de fondo defínese no preámbulo con:
 --   \fvset{highlightcolor=<cor>}
@@ -40,6 +40,8 @@ end
 
 -- ── Filtro principal ──────────────────────────────────────────
 function CodeBlock(block)
+  if not FORMAT:match('latex') then return nil end
+
   local hl = block.attributes['hl']
   if not hl or hl == '' then return nil end
 
@@ -50,14 +52,13 @@ function CodeBlock(block)
   local clean = block:clone()
   clean.attributes['hl'] = nil
 
-  -- Xerar o LaTeX do bloque (con resaltado de sintaxe de Pandoc)
-  local latex = pandoc.write(pandoc.Pandoc({clean}), 'latex')
-
-  -- \fvset{highlightlines=...} actívase só para este bloque
-  local result =
-    '\\fvset{highlightlines={' .. lines_str .. '}}\n' ..
-    latex .. '\n' ..
-    '\\fvset{highlightlines={}}'
-
-  return pandoc.RawBlock('latex', result)
+  -- Conservar o CodeBlock para que o escritor final de Pandoc xere
+  -- as definicións de resaltado e aplique o tema seleccionado.
+  -- \fvset{highlightlines=...} actívase só para este bloque.
+  return {
+    pandoc.RawBlock('latex',
+      '\\fvset{highlightlines={' .. lines_str .. '}}'),
+    clean,
+    pandoc.RawBlock('latex', '\\fvset{highlightlines={}}')
+  }
 end

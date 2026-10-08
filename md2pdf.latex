@@ -67,6 +67,12 @@ $endif$
 % ── Cores ────────────────────────────────────────────────────
 \usepackage[dvipsnames,svgnames,x11names]{xcolor}
 
+% Pandoc activa strikeout tamén para os spans .mark e .underline.
+$if(strikeout)$
+\usepackage{luacolor}
+\usepackage[soul]{lua-ul}
+$endif$
+
 % ── Ligazóns e metadatos PDF ─────────────────────────────────
 % Permitir cortes en URL longas sen cambiar os destinos das ligazóns.
 % Se xurl non está instalado, conservar o comportamento anterior.
