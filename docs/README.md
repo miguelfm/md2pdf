@@ -809,11 +809,15 @@ md2pdf/
 │   ├── metadata.py            Extracción de metadatos YAML
 │   ├── preprocess.py          Preprocesamento do Markdown
 │   ├── lint.py                Validación previa e modo --strict
-│   ├── diagrams/              Renderizadores, caché e validación de gráficos
+│   ├── diagrams/              Arquitectura modular de diagramas
+│   │   ├── base.py            Clase base BaseRenderer e protocolo Renderer
+│   │   ├── renderers.py       Adaptadores de Mermaid, D2 e Graphviz
+│   │   ├── vegalite.py        Adaptador illado de Vega-Lite (vl-convert)
+│   │   └── processor.py       Procesamento nunha soa pasada e caché
 │   ├── mermaid.py             API de compatibilidade Mermaid
-│   ├── converter.py           Orquestración da conversión
+│   ├── converter.py           Orquestración limpa da conversión
 │   └── engines/
-│       ├── lualatex.py        Motor LuaLaTeX (comandos + snippets)
+│       ├── lualatex.py        Motor LuaLaTeX (comandos, preámbulos e snippets)
 │       ├── docx.py            Motor DOCX
 │       └── html.py            Motor HTML5 autocontido
 ├── md2pdf-preamble.tex        Personalizacións LaTeX

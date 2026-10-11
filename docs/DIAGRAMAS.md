@@ -190,3 +190,12 @@ As probas de integración adicionais requiren PyMuPDF e Pillow:
 python -m pip install PyMuPDF Pillow PyYAML 'vl-convert-python>=1.7,<2'
 python -m unittest discover -s tests -v
 ```
+
+## Arquitectura de renderizadores
+
+O subsistema de diagramas segue os principios de deseño SOLID (SRP, OCP, LSP, DIP):
+
+- **Protocolo e clase base** (`md2pdf.diagrams.base`): `Renderer` define o contrato formal, e `BaseRenderer` proporciona comportamentos predeterminados (localización de executables con `find_executable`, cálculo de pegadas de caché con `cache_tag`, filtrado de opcións con `filter_render_options` e mensaxes de ausencia).
+- **Adaptadores encapsulados** (`md2pdf.diagrams.renderers` e `md2pdf.diagrams.vegalite`): Cada motor (`MermaidRenderer`, `D2Renderer`, `GraphvizRenderer`, `VegaLiteRenderer`) declara as súas opcións admitidas (`allowed_options`), bandeiras booleanas (`boolean_flags`) e chaves que invalidan a caché (`render_option_keys`), e implementa a súa propia validación (`validate_option`).
+- **Procesador desacoplado** (`md2pdf.diagrams.processor`): O procesador `process_diagrams` é independente dos motores individuais; xestiona unicamente o fluxo nunha soa pasada, a caché por hash SHA-256 e os atributos comúns de figura Pandoc (`width`, `height`, `caption`, `id`), delegando o resto polimorficamente.
+

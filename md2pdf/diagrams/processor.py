@@ -12,25 +12,23 @@ from .base import RenderContext
 from .common import (DIAGRAM_CLASS, FORMAT_BY_ENGINE, TARGET_FONT_PT, TEXTWIDTH_PT, cache_dir,
                      content_hash, image_block, width_attr)
 from .validation import validate_output, pdf_font_warning, validation_warning
-from .renderers import RENDERERS
+from .renderers import (
+    D2_LAYOUTS,
+    GRAPHVIZ_LAYOUTS,
+    MERMAID_LAYOUTS,
+    MERMAID_LOOKS,
+    MERMAID_THEMES,
+    RENDERERS,
+)
+from .vegalite import VEGA_THEMES
 
 FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})([^\r\n]*)$')
 LAYOUTS = {
-    'd2': {'dagre', 'elk', 'tala'},
-    'graphviz': {'dot', 'neato', 'fdp', 'sfdp', 'circo', 'twopi', 'osage', 'patchwork'},
-    'mermaid': {'dagre', 'elk', 'tidy-tree'},
+    'd2': set(D2_LAYOUTS),
+    'graphviz': set(GRAPHVIZ_LAYOUTS),
+    'mermaid': set(MERMAID_LAYOUTS),
 }
-MERMAID_THEMES = {
-    'base', 'dark', 'default', 'forest', 'neutral',
-    'neo', 'neo-dark', 'redux', 'redux-dark', 'redux-color', 'redux-dark-color', 'null',
-}
-MERMAID_LOOKS = {'classic', 'handDrawn'}
-VEGA_THEMES = {
-    'carbong10', 'carbong100', 'carbong90', 'carbonwhite',
-    'dark', 'excel', 'fivethirtyeight', 'ggplot2', 'googlecharts',
-    'latimes', 'powerbi', 'quartz', 'urbaninstitute', 'vox',
-    'default', 'none',
-}
+COMMON_OPTIONS = frozenset({'width', 'height', 'caption', 'id'})
 DIMENSION = re.compile(r'(?:\d+(?:\.\d+)?|\.\d+)(?:%|px|pt|cm|mm|in)')
 IDENTIFIER = re.compile(r'[A-Za-z][\w:.-]*')
 
@@ -96,6 +94,8 @@ def parse_info(info, registry):
         language = tokens.pop(0) if tokens else None
     if language not in registry:
         return None, {}
+    renderer = registry[language]
+    boolean_flags = getattr(renderer, 'boolean_flags', frozenset({'sketch'}))
     options = {}
     for token in tokens:
         if token.startswith('.'):
@@ -105,57 +105,31 @@ def parse_info(info, registry):
         elif '=' in token:
             key, value = token.split('=', 1)
             options[key] = value
-        elif token == 'sketch':
-            options['sketch'] = 'true'
+        elif token in boolean_flags:
+            options[token] = 'true'
         elif token != language:
             raise ValueError(f'atributo non recoñecido: {token}')
-    return registry[language], options
+    return renderer, options
 
-def validate(name, options):
-    allowed = {'width', 'height', 'caption', 'id'}
-    if name in LAYOUTS:
-        allowed.add('layout')
-    if name in ('d2', 'mermaid', 'vega-lite'):
-        allowed.add('theme')
-    if name == 'mermaid':
-        allowed.add('look')
-    if name == 'd2':
-        allowed.update({'sketch', 'pad', 'dark-theme'})
-    for key, value in options.items():
-        if key not in allowed:
+def validate(name, options, renderers=RENDERERS):
+    """Valida e normaliza opcións comúns de figura e opcións específicas do renderizador."""
+    renderer_map = {r.name: r for r in renderers}
+    renderer = renderer_map.get(name)
+    for key, value in list(options.items()):
+        if key in COMMON_OPTIONS:
+            if not isinstance(value, (str, int, float)) or isinstance(value, bool):
+                raise ValueError(f'valor incorrecto de {key}')
+            val_str = str(value)
+            if key in {'width', 'height'}:
+                if not DIMENSION.fullmatch(val_str) or float(re.match(r'[\d.]+', val_str)[0]) <= 0:
+                    raise ValueError(f'dimensión incorrecta: {key}={val_str}')
+            elif key == 'id' and not IDENTIFIER.fullmatch(val_str):
+                raise ValueError('identificador de figura incorrecto')
+            options[key] = val_str
+        elif renderer is not None and hasattr(renderer, 'validate_option'):
+            options[key] = renderer.validate_option(key, value)
+        else:
             raise ValueError(f'opción non admitida para {name}: {key}')
-        if key == 'sketch' and isinstance(value, bool):
-            value = 'true' if value else 'false'
-        elif not isinstance(value, (str, int, float)) or isinstance(value, bool):
-            raise ValueError(f'valor incorrecto de {key}')
-        value = str(value)
-        options[key] = value
-        if key == 'layout' and value not in LAYOUTS[name]:
-            raise ValueError(f'layout non admitido: {value}')
-        if key == 'theme':
-            if name == 'd2' and not re.fullmatch(r'\d{1,4}', value):
-                raise ValueError('theme debe ser un identificador numérico de D2')
-            if name == 'mermaid' and value not in MERMAID_THEMES:
-                raise ValueError(f'tema de Mermaid non admitido: {value}')
-            if name == 'vega-lite' and value not in VEGA_THEMES:
-                raise ValueError(f'tema de Vega-Lite non admitido: {value}')
-        if key == 'dark-theme':
-            if name == 'd2' and not re.fullmatch(r'\d{1,4}', value):
-                raise ValueError('dark-theme debe ser un identificador numérico de D2')
-        if key == 'sketch':
-            if value.lower() not in {'true', 'false', '1', '0'}:
-                raise ValueError(f'valor incorrecto de sketch: {value}')
-            options[key] = value.lower()
-        if key == 'pad':
-            if not re.fullmatch(r'\d{1,4}', value):
-                raise ValueError('pad debe ser un número de píxeles')
-        if key == 'look' and name == 'mermaid' and value not in MERMAID_LOOKS:
-            raise ValueError(f'look de Mermaid non admitido: {value}')
-        if key in {'width', 'height'}:
-            if not DIMENSION.fullmatch(value) or float(re.match(r'[\d.]+', value)[0]) <= 0:
-                raise ValueError(f'dimensión incorrecta: {key}={value}')
-        if key == 'id' and not IDENTIFIER.fullmatch(value):
-            raise ValueError('identificador de figura incorrecto')
     return options
 
 def figure_block(output, fmt, engine, font_px, options):
@@ -215,9 +189,9 @@ def process_diagrams(text: str, engine: str, renderers=RENDERERS, *,
             inherited = (defaults or {}).get(name, {})
             if not isinstance(inherited, dict):
                 raise ValueError(f'diagrams.{name} debe ser un mapa')
-            options = validate(name, {**inherited, **local})
+            options = validate(name, {**inherited, **local}, renderers=renderers)
             finder = getattr(renderer, 'find_executable', None)
-            executable = (finder() if finder else next(
+            executable = (finder(shutil.which) if finder else next(
                 (p for n in renderer.executable_names if (p := shutil.which(n))), None))
             if not executable:
                 raise ValueError(renderer.missing_message(1))
@@ -231,8 +205,12 @@ def process_diagrams(text: str, engine: str, renderers=RENDERERS, *,
                 if warning:
                     stats.warnings[name].append(warning)
             root = cache_dir(name)
-            render_options = {k: v for k, v in options.items()
-                              if k in {'layout', 'theme', 'look', 'sketch', 'pad', 'dark-theme'}}
+            render_options = (
+                renderer.filter_render_options(options)
+                if hasattr(renderer, 'filter_render_options')
+                else {k: v for k, v in options.items()
+                      if k in {'layout', 'theme', 'look', 'sketch', 'pad', 'dark-theme'}}
+            )
             # Nova xeración de caché: saídas verificadas e identidade do lanzador.
             tag = (renderer.cache_tag() if hasattr(renderer, 'cache_tag')
                    else renderer.render_tag)

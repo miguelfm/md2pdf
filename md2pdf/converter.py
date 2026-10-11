@@ -20,8 +20,7 @@ from .metadata  import (_extract_md_metadata, _find_metadata_file,
                          _load_metadata_file)
 from .preprocess import preprocess_md
 from .html_validation import validate_html
-from .engines.lualatex import (build_lualatex_cmd, _build_activity_label,
-                                _build_titlepage_snippet, _temp_tex_file)
+from .engines.lualatex import build_lualatex_cmd, prepare_lualatex_extras
 from .engines.docx     import build_docx_cmd
 from .engines.html     import build_html_cmd
 
@@ -282,96 +281,26 @@ def convert_one(
             if h_indices:
                 print_snippet_path = cmd[h_indices[-1] + 1]
 
-        # ── Portada e etiqueta de actividade (só lualatex) ────
+        # ── Portada, etiqueta de actividade e axustes LuaLaTeX ────
         if engine == 'lualatex':
-            activity_val = md_meta.get('activity', '')
-
-            # Detectar se hai título (front matter, metadata.yaml ou primeiro # h1)
-            # O regex ^#(?!#) asegura que só coincide con h1, non con ## ou ###
-            has_title = bool(md_meta.get('title') or
-                             re.search(r'^#(?!#)\s+\S', processed, re.MULTILINE))
-            if not has_title:
-                print(f'  ⚠  Aviso: non se detectou título en '
-                      f'{input_path.name} (engade un # Título ou '
-                      f'title: no YAML front matter)',
-                      file=sys.stderr)
-
-            # ── Modo plain: eliminar o # título do corpo ──────
-            # Con --shift-heading-level-by=-1 pandoc converte o primeiro
-            # # h1 a nivel 0, que se renderiza como \part{} no corpo.
-            # En modo plain eliminámolo para que non apareza; o título
-            # segue dispoñible nos metadatos PDF vía --metadata.
-            if plain and has_title:
-                h1_match = re.search(r'^#(?!#)\s+\S.*$', processed,
-                                     re.MULTILINE)
-                if h1_match:
-                    # Extraer título do h1 se non vén de metadatos
-                    if not md_meta.get('title'):
-                        h1_text = re.sub(r'^#\s+', '', h1_match.group(0))
-                        md_meta['title'] = h1_text.strip()
-                    processed = (processed[:h1_match.start()]
-                                 + processed[h1_match.end():])
-                    with open(tmp.name, 'w', encoding='utf-8') as f_upd:
-                        f_upd.write(processed)
-                # Pasar título como metadato para pdftitle
-                title_val = md_meta.get('title', '')
-                if title_val:
-                    cmd.extend(['--metadata', f'title={title_val}'])
-
-            if titlepage:
-                if not has_title:
-                    print(f'  ✗ ERRO: non se pode xerar portada sen título. '
-                          f'Engade un # Título ou title: no YAML front matter.',
-                          file=sys.stderr)
-                    return False
-                if debug:
-                    print('  [DEBUG] fm_meta (front matter):', fm_meta)
-                    print('  [DEBUG] meta_file:',
-                          str(meta_file) if meta_file else 'NONE')
-                    print('  [DEBUG] md_meta completo:', md_meta)
-                tp_content = _build_titlepage_snippet(
-                    md_meta, print_mode, night_mode=night_mode,
-                    front_author=front_author,
-                )
-                tp_path = _temp_tex_file(tp_content)
-                extra_tmp_files.append(tp_path)
-                cmd.extend(['-B', tp_path])
-            elif not plain:
-                # Sen portada: título estilizado antes do TOC (só se hai título)
-                if has_title:
-                    if print_mode:
-                        title_color = 'black'
-                    elif night_mode:
-                        title_color = 'night-link'
-                    else:
-                        title_color = 'blue!45!black'
-                    b_lines = [
-                        '\\makeatletter',
-                        '\\begin{center}',
-                        f'  {{\\LARGE\\bfseries\\sffamily'
-                        f'\\color{{{title_color}}}\\@title\\par}}',
-                        '\\end{center}',
-                        '\\vskip 0.6em',
-                        '\\makeatother',
-                    ]
-                    b_path = _temp_tex_file('\n'.join(b_lines) + '\n')
-                    extra_tmp_files.append(b_path)
-                    cmd.extend(['-B', b_path])
-
-            # Etiqueta de actividade inxectada no corpo antes do primeiro ##
-            if activity_val and not plain:
-                act_latex = _build_activity_label(
-                    activity_val, print_mode, night_mode=night_mode)
-                raw_block = '```{=latex}\n' + act_latex + '```\n\n'
-                m2 = re.search(r'^##\s', processed, re.MULTILINE)
-                if m2:
-                    processed = (processed[:m2.start()]
-                                 + raw_block
-                                 + processed[m2.start():])
-                else:
-                    processed = processed + '\n' + raw_block
-                with open(tmp.name, 'w', encoding='utf-8') as f_upd:
-                    f_upd.write(processed)
+            processed, lualatex_extras, ok = prepare_lualatex_extras(
+                cmd=cmd,
+                processed=processed,
+                tmp_path=tmp.name,
+                md_meta=md_meta,
+                input_path=input_path,
+                titlepage=titlepage,
+                plain=plain,
+                print_mode=print_mode,
+                night_mode=night_mode,
+                front_author=front_author,
+                debug=debug,
+                fm_meta=fm_meta,
+                meta_file=meta_file,
+            )
+            if not ok:
+                return False
+            extra_tmp_files.extend(lualatex_extras)
 
         # ── Debug ─────────────────────────────────────────────
         if debug:
