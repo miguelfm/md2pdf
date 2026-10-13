@@ -17,9 +17,11 @@ Varios HTML poden empaquetarse ademais como **IMS Content Package** para Moodle 
 
 Convencións deste documento: «debe» indica unha regra; «convén» ou «preferir», un criterio
 que admite excepcións xustificadas. Os exemplos marcados con ❌ son erros que hai que evitar.
+As convencións do repositorio de destino prevalecen sobre as recomendacións xerais desta referencia. Por exemplo, `docencia` mantén títulos numerados e índices manuais nas fontes Markdown; md2pdf retíraos e xera a numeración e o índice da saída.
+
 Este ficheiro é unha referencia, non un material para converter: as súas cabeceiras `#` de
-parte e a numeración manual das seccións só serven para citalas aquí e **non deben
-imitarse** nos documentos xerados.
+parte só organizan esta referencia. Nos materiais, usa un único título de nivel 1 e
+segue as normas de numeración do repositorio de destino.
 
 ---
 
@@ -150,6 +152,7 @@ Cada tipo de callout ten unha función:
 | `warning` | Risco de erro frecuente ou comportamento sorprendente |
 | `danger` | Erro grave, perda de datos, seguridade ou acción difícil de reverter |
 | `info` | Contexto técnico que amplía pero non interrompe o fío principal |
+| `task` | Tarefa ou exercicio práctico interactivo con cadro de resposta editable |
 
 Non convertas cada dato interesante nun callout. Varios callouts seguidos indican que parte
 dese contido debe volver ao texto normal. Reserva `warning` e `danger` para situacións que
@@ -262,12 +265,12 @@ course: "Curso 2025-2026"
 keywords: "PHP, DAW, Backend"
 ```
 
-### 11.3 O que non debes escribir
+### 11.3 Construcións que transforma o preprocesador
 
 O preprocesador elimina ou altera estas construcións:
 
 - `[TOC]` e índices manuais (`## Índice` seguido dunha lista de ligazóns): o índice é
-  automático.
+  automático. Poden conservarse na fonte cando o repositorio os esixa.
 - Liñas `---` fóra do front matter e dos bloques de código: elimínanse todas, tamén dentro
   de callouts. Non uses separadores horizontais nin cabeceiras subliñadas con `---`.
 - Numeración manual: `## 1.2. Título` convértese en `## Título`. Por iso **unha cabeceira
@@ -278,7 +281,7 @@ O preprocesador elimina ou altera estas construcións:
 
 - **Un só `#` por documento**, ao inicio: é o título do documento. Todo o contido vai
   desde `##`, que é o nivel 1 da numeración.
-- As seccións numéranse automaticamente (1, 1.1, 1.1.1…); non engadas números.
+- As seccións numéranse automaticamente na saída (1, 1.1, 1.1.1…). Na fonte, segue a convención do repositorio: md2pdf admite títulos numerados e elimina esa numeración antes de converter.
 - Non saltes niveis (`##` → `####`) e non uses máis de tres niveis salvo necesidade.
 
 Algunhas palabras nas cabeceiras engaden automaticamente un emoji, en todas as saídas:
@@ -320,18 +323,35 @@ Tipos e aliases:
 | `warning` | `atención`, `atencion` | Atención | Non |
 | `danger` | `perigo` | Crítico | Si |
 | `info` | — | Info | — |
+| `task` | `tarefa`, `task-box` | Tarefa | Si |
 
 Un alias non recoñecido en DOCX sae como texto normal, sen etiqueta. Por iso convén usar
 sempre os nomes ingleses.
 
-### 12.2 Sintaxe alternativa e conversións automáticas
+### 12.2 Callouts interactivos de tarefa (`task`)
+
+Os callouts de tipo `task` (`tarefa`, `task-box`, `taskbox`) xeran áreas de resposta editables para o alumnado:
+- **PDF (LuaLaTeX):** Campo interactivo de formulario PDF estándar (*AcroForm*) con `\TextField[multiline=true]`. Permite escribir, editar e gardar (`Ctrl+S`) as respostas no propio PDF con calquera visor estándar.
+- **HTML5:** Elemento `<textarea class="task-box-input">` con gardado e persistencia automática en `localStorage` do navegador. En impresión preséntase como cadro delimitado limpo para escritura manual.
+- **DOCX:** Encabezado `🎯 Tarefa:` en negra cun marcador de espazo de resposta.
+
+Pódense engadir atributos como `id`, `height` (ex: `4cm`, `7em`, `120px`) e `placeholder`:
+
+```markdown
+::: {.task id="ex1" height="4cm" placeholder="Escribe aquí a túa resposta..."}
+
+Explica a vantaxe principal de usar índices nunha base de datos relacional.
+:::
+```
+
+### 12.3 Sintaxe alternativa e conversións automáticas
 
 Tamén se converten a callout:
 
 - A sintaxe de GitHub/Obsidian: `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!DANGER]`,
-  `> [!INFO]` (e os alias galegos en maiúsculas).
+  `> [!INFO]`, `> [!TASK]`, `> [!TAREFA]` (e os alias galegos en maiúsculas).
 - **Unha cita que empece por certos emojis:** `> ⚠️ …` → `warning`, `> 💡 …` → `tip`,
-  `> 📘 …` → `info`, `> 📝 …` → `note`, `> ⛔ …` → `danger`.
+  `> 📘 …` → `info`, `> 📝 …` → `note`, `> ⛔ …` → `danger`, `> 🎯 …` → `task`.
 
 Prefire a sintaxe `:::`. Non empeces unha cita textual por un destes emojis se non queres
 un callout.
@@ -367,6 +387,10 @@ public function store(Request $request)
 Formatos válidos: `"3"`, `"1,3,5"`, `"2-6"`, `"1,3,7-9"`. DOCX ignora o resaltado, así que
 o texto non debe depender só del: nomea tamén o elemento («a regra de `email`…»).
 
+As liñas cóntanse desde a primeira dentro do bloque, incluídas as baleiras. O resaltado
+aplícase só ao bloque que leva `hl`; admite tamén documentos con todos os bloques
+resaltados e combínase con `.compact` e cos bloques de terminal.
+
 ### 13.3 Pés e referencias de código: non soportados
 
 Os bloques de código non levan pé nin se poden referenciar. Unha liña `: Título` tras o
@@ -378,6 +402,45 @@ ligazón interna (sección 17.2).
 
 No PDF, os emojis dentro de bloques de código substitúense por texto (`✅` → `[OK]`,
 `⚠️` → `[!]`…). Evítaos no código salvo que formen parte do exemplo.
+
+### 13.5 Bloques de terminal e ordes de consola
+
+Para ordes e sesións de consola (`bash`, `sh`, `powershell`, `zsh`, `console`, `cmd`, etc.), indica sempre a linguaxe específica no bloque fenced (` ```bash `). `md2pdf` aplica automaticamente un fondo e bordo sutilmente diferenciados para que o alumnado distinga claramente os comandos do sistema do código fonte de aplicacións (como PHP ou Python).
+
+Non inclúas símbolos artificiais de prompt (`$`, `>`, `#`, `>_`) nin caracteres manuais ao inicio das liñas de comando salvo que sexa indispensable diferenciar entrada e saída. Isto garante que o alumnado poida copiar e pegar as ordes directamente no terminal sen provocar erros de sintaxe (`command not found`).
+
+### 13.6 Bloques de código compactos para listados longos
+
+Para listados longos (clases completas, ficheiros de configuración extensos ou saídas de consola volumosas), engade a clase `{.compact}` (ou `.compacto`):
+
+````markdown
+```python {.compact}
+class RepositorioAlumnos:
+    def __init__(self, conexion):
+        self.conexion = conexion
+    # listado longo...
+```
+````
+
+Isto activa unha tipografía máis compacta (10 pt con interliñado de 13 pt) que amplía a capacidade horizontal a ~77 columnas e reduce a altura vertical, evitando quebras de liña `↪` innecesarias. Tamén é combinable con resaltado (`{.compact hl="3,5"}`) ou configurábel globalmente mediante o metadato `code-compact-threshold: 25` no front matter.
+
+### 13.7 Resaltado de palabras e código en liña
+
+Para marcar unha palabra ou un fragmento cun fondo, usa un span coa clase `.mark`:
+
+```markdown
+A comparación é [estrita]{.mark}.
+
+A condición é [`x < 0 || x > 100`]{.mark}.
+```
+
+Funciona en PDF e HTML. Para poñer código en negra, envolve o código en liña con
+asteriscos dobres: `**` antes do acento grave de apertura e `**` despois do de peche.
+Respecta as normas de énfase do repositorio de destino.
+
+Estas marcas úsanse no texto do documento. Dentro dun bloque de código, o Markdown
+consérvase literalmente: `.mark` e os asteriscos non destacan palabras do bloque.
+Para liñas completas, usa `hl` (sección 13.2).
 
 ## 14. Diagramas e gráficos
 
@@ -415,20 +478,25 @@ fonte e emítese un aviso; con `--strict`, a conversión falla.
 
 ### 14.2 Mermaid
 
-Admite os tipos habituais: `flowchart`, `sequenceDiagram`, `classDiagram`,
-`stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`…
+Admite todos os tipos de diagrama estándar e modernos de Mermaid (compatibles con Mermaid CLI 12+): `flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`, `timeline`, `quadrantChart`, `sankey-beta`, `xychart-beta`, `usecase-beta`, `kanban`, `architecture-beta`, etc.
 
-- Etiquetas curtas; para partir unha etiqueta usa `<br/>`: `A[Verificar<br/>contorna]`.
-- Sintaxe estándar, sen extensións exclusivas de Mermaid Live Editor.
-- Non admite os atributos `layout` nin `theme`.
+- Etiquetas curtas; para partir unha etiqueta usa `<br/>` ou cadeas con markdown: `A["Verificar<br/>contorna"]`.
+- Atributos propios admitidos: `layout=dagre|elk`, `theme=base|dark|default|forest|neutral|neo|neo-dark|redux|redux-dark|redux-color|redux-dark-color|null` e `look=classic|handDrawn`.
+- Tamén admite configuracións globais en frontmatter/metadata baixo `diagrams.mermaid`.
 
 ### 14.3 D2
 
-Adecuado para arquitecturas e diagramas conceptuais. Atributos propios:
-`layout=dagre|elk|tala` e `theme=<número>` (identificador numérico de tema de D2).
+Adecuado para arquitecturas, esquemas SQL, diagramas de clases e diagramas conceptuais.
+Atributos propios admitidos:
+- `layout=dagre|elk|tala`: algoritmos de ordenación espacial (dagre por defecto).
+- `theme=<número>`: identificador numérico de tema claro de D2 (0–8, 100–105, 300–303; 0 por defecto).
+- `sketch=true|false` (ou simplemente `sketch`): estilo debuxado a man.
+- `pad=<píxeles>`: espazado arredor do diagrama en píxeles (D2 usa 100 por defecto; útil reducilo a p. ex. `pad=20` ou `pad=0`).
+- `dark-theme=<número>`: tema escuro para navegadores en modo escuro en saída SVG (200–201).
+- Tamén admite configuracións globais en frontmatter/metadata baixo `diagrams.d2`.
 
 ````markdown
-```{.d2 #fig:arquitectura layout=elk caption="Arquitectura da aplicación"}
+```{.d2 #fig:arquitectura layout=elk sketch caption="Arquitectura da aplicación"}
 cliente -> servidor: HTTP
 servidor -> datos: SQL
 ```
@@ -453,16 +521,16 @@ digraph {
 
 ### 14.5 Vega-Lite
 
-Gráficos de datos estáticos (sen interacción nin tooltips). Restricións:
+Gráficos de datos estáticos (sen interacción nin tooltips). Admite tipos estándar e modernos de Vega-Lite (liñas, barras, áreas, dispersión, sectores/arc, secuencias, etc.).
 
 - O contido é **JSON estrito**: sen comentarios nin comas finais.
-- Os datos van **inline** en `data.values` ou `datasets`. Non se admiten `url`, `href` nin
-  marcas `image`, nin campos de datos con eses nomes.
-- Tema e estilos van no propio JSON (`config`); non se admiten `layout` nin `theme`.
+- Os datos van **inline** en `data.values` ou `datasets` (ou xeradores como `sequence`). Non se admiten `url`, `href` nin marcas `image`, nin campos de datos con eses nomes.
+- Tipografía predeterminada harmonizada automaticamente como `Source Sans 3, sans-serif`.
+- Admite o atributo `theme` (ou `diagrams.vega-lite.theme` en metadatos YAML) con calquera dos temas integrados de Vega: `carbong10`, `carbong100`, `carbong90`, `carbonwhite`, `dark`, `excel`, `fivethirtyeight`, `ggplot2`, `googlecharts`, `latimes`, `powerbi`, `quartz`, `urbaninstitute`, `vox`, ou `default`/`none`. Tamén se poden definir estilos propios no JSON (`config`).
 - `width`/`height` do JSON controlan a composición; os atributos do bloque, o tamaño final.
 
 ````markdown
-```{.vega-lite #fig:tempos width=85% caption="Distribución dos tempos de resposta"}
+```{.vega-lite #fig:tempos theme=fivethirtyeight width=85% caption="Distribución dos tempos de resposta"}
 {
   "data": {"values": [{"tempo": 12}, {"tempo": 15}, {"tempo": 15},
                       {"tempo": 18}, {"tempo": 22}, {"tempo": 25}]},
@@ -481,13 +549,14 @@ predición validada: preséntaa como tal no texto.
 
 ### 14.6 Tamaño e lexibilidade
 
-Sen `width` nin `height`, md2pdf escala cada diagrama para que o seu texto quede preto do
-tamaño das notas ao pé (uns 9,5 pt), sen superar o ancho da páxina nin uns 14 cm de alto.
-Consecuencias:
+Sen `width` nin `height`, md2pdf escala cada diagrama para que o seu texto quede a
+12 pt no PDF (elixido conscientemente para achegarse aos 13 pt do corpo do texto sen desbordar
+as marxes en A4) e a `.96rem` en HTML. Mide a letra real do diagrama xerado, en Source Sans 3 en
+Graphviz e Mermaid. Non escribas `fontsize` nin `fontname` no diagrama: teñen prioridade. Consecuencias:
 
 - Un diagrama moi alto (moitos niveis en vertical) ou moi ancho (moitos nodos en
   horizontal) redúcese, e o seu texto tamén.
-- Se o texto estimado queda por debaixo de 8 pt, md2pdf avisa (só no PDF e se PyMuPDF
+- Se o texto estimado queda máis dun 10 % por debaixo dese tamaño, md2pdf avisa (só no PDF e se PyMuPDF
   está instalado). O aviso non detén a conversión.
 - A solución adoita ser dividir o diagrama, acurtar etiquetas ou cambiar a orientación
   (`LR`/`TB`); reducir `width` empeora a lexibilidade.
@@ -521,14 +590,20 @@ Prioridade: atributo do bloque > front matter > `metadata.yaml` > valor predeter
 
 - O pé (`: Texto {#tbl:id}`) vai tras a táboa, separado por unha liña baleira; permite
   citala con `@tbl:rutas`.
-- Os anchos das columnas calcúlanse polo **contido** das celas, non pola lonxitude dos
-  `---`. Unha táboa curta queda co seu ancho natural e centrada.
+- Os anchos das columnas calcúlanse polo **contido** das celas: escribe sempre os `---`
+  da mesma lonxitude. Unha táboa que cabe sen partir liñas queda co seu ancho natural e
+  centrada; unha táboa con columnas baleiras para encher ocupa toda a liña. Só se hai
+  que forzar anchos concretos, guións de lonxitude distinta fixan anchos proporcionais.
 - Evita cadeas longas sen espazos nas celas (URLs, *namespaces* completos): forzan a
   columna. Abrevia (`UserAuthenticationController`) e deixa o nome completo no texto.
 - Evita celas con varios parágrafos: a táboa resume e o texto desenvolve.
+- Nunha columna só de números con algún decimal, o PDF aliña as unidades e o separador
+  decimal. Escribe só o número na cela (`3.5`, non `3.5 s` nin `` `3.5` ``) e centra a
+  columna con `|:-:|` se o queres centrado.
 - No PDF, as táboas de ata 6 filas non se parten entre páxinas; as máis longas pártense
-  repetindo a cabeceira. Prefire varias táboas curtas, unha por concepto, a unha táboa
-  xigante, e pon as filas máis importantes ao inicio.
+  repetindo a cabeceira nun estilo sutil (cursiva, peso normal e ton suave). As primeiras
+  4 filas e a penúltima protéxense contra orfas. Prefire varias táboas curtas, unha
+  por concepto, a unha táboa xigante, e pon as filas máis importantes ao inicio.
 - Salto de liña dentro dunha cela: `<br>` (PDF e HTML; DOCX ignórao). Non uses barra
   invertida nin dobre espazo.
 
@@ -605,7 +680,26 @@ Revisa o apartado [Conversión explícita](#conversion-explicita).
 Se a cabeceira non ten `{#id}`, Pandoc xera un automaticamente: minúsculas, espazos
 convertidos en guións, sen signos de puntuación, **sen o número da sección** e
 conservando as letras acentuadas (`## Conversións de tipo` → `#conversións-de-tipo`).
-Para ligazóns que deban manterse estables, pon un `{#id}` explícito sen acentos.
+A eliminación da numeración **non reescribe os destinos das ligazóns**. Por exemplo,
+`## 1. Conversións` xera `#conversións`, mentres que unha ligazón a
+`#1-conversións` conserva ese destino e queda rota na saída. O índice manual non
+presenta ese problema porque se elimina e se xera de novo.
+
+Para remisións no corpo ou entre documentos, usa un identificador explícito na
+cabeceira e ese mesmo identificador na ligazón:
+
+```markdown
+## 1. Conversións {#conversion-explicita}
+
+Revisa [Conversións](#conversion-explicita).
+```
+
+Isto funciona tamén cunha ligazón a outro documento como
+`A5_Operadores.md#conversion-explicita`. Non cambies só o destino da ligazón:
+a cabeceira de destino debe declarar ese identificador. Para identificar seccións
+novas, prefire nomes descritivos sen numeración nin acentos. En HTML, `--strict`
+detecta destinos internos inexistentes; revisa tamén as ligazóns entre documentos
+na saída final.
 
 ### 17.3 Ligazóns externas
 
@@ -636,7 +730,10 @@ ficheiros locais ligados (código de partida, PDF, ZIP) inclúense no paquete.
 - Liña baleira antes da lista (sección 11.1).
 - Sublistas sangradas ata o texto do elemento pai (dous espazos tras `-`, tres tras
   `1.`); máximo dous niveis.
-- Listas numeradas para pasos con orde; viñetas para o resto.
+- Listas numeradas para pasos con orde («Paso a paso»): `md2pdf` resalta automaticamente
+  os números en negra coa cor corporativa (`heading-section`) e engade separación vertical
+  adicional (`itemsep=0.5em`) para que pasos de varias liñas non se confundan cos contiguos.
+- Viñetas para o resto de enumeracións sen orde estrita, que manteñen espazamento compacto.
 
 ### 18.2 Listas de definición
 
@@ -654,9 +751,18 @@ Para glosarios, parámetros ou propiedades:
 
 - **Negra** para termos clave; *cursiva* para títulos de obras e termos noutra lingua;
   `código en liña` para funcións, variables, ficheiros e comandos.
-- **Non poñas barras invertidas no código en liña do texto corrido** (`\n`, `\t`, `\\`):
-  no PDF saen mal (por exemplo, `\{}n`). Describe o carácter («un salto de liña») ou usa un
-  bloque de código. Nos bloques de código non hai problema.
+- O código en liña amósase por defecto en tipografía monoespazada coa cor temática sen fondo.
+  Opcionalmente pódese activar o fondo tipo «píldora» con `--inline-pill` (`#F0F2F5` en día,
+  `#EDE8DC` en noite, transparente en impresión). As rutas longas (`/etc/php/...`) e expresións con
+  operadores rompen automaticamente de liña se chegan á marxe dereita. Fóra das táboas, o código
+  de ata 20 caracteres non se parte nunca: `$c ? $a : $b` pasa enteiro á liña seguinte.
+  Nas táboas, os códigos curtos protéxense mentres caiban na cela; se non caben, permítense
+  cortes nos separadores e, como recurso secundario, no guión baixo. Os anchos manuais
+  respéctanse. Un aviso de código máis ancho ca a cela indica que debes revisar a táboa.
+- O código en liña admite barras invertidas (`\n`, `\t`, `\\`), til, circunflexo e
+  letras acentuadas, tamén nas táboas. Escríbeos literalmente entre acentos graves;
+  o filtro escápaos para LaTeX. Non engadas escapes LaTeX á fonte Markdown.
+  Usa un bloque de código cando a lonxitude ou o contexto o fagan máis lexíbel.
 
 ### 18.4 Citas
 
@@ -769,17 +875,21 @@ Contido e pedagoxía:
 Sintaxe:
 
 - [ ] Front matter con valores dunha liña; `activity` cando o proxecto o use.
-- [ ] Un só `#`; cabeceiras sen numerar e sen empezar por número; ningunha contén «Reto»
-      sen querer.
-- [ ] Sen `---`, `[TOC]` nin índices manuais.
+- [ ] Un só `#`; numeración e índice da fonte segundo as normas do repositorio;
+      ningunha cabeceira contén «Reto» sen querer nin un número inicial que deba
+      conservarse como parte do título.
+- [ ] Sen `---` no corpo; `[TOC]` e os índices manuais, se existen, serán substituídos
+      polo índice automático da saída.
 - [ ] Liña baleira antes de cada lista, táboa, cabeceira, cita e bloque.
-- [ ] Todos os bloques de código teñen linguaxe; `hl=` só nas liñas comentadas.
+- [ ] Todos os bloques de código teñen linguaxe; `hl=` só nas liñas comentadas; `{.compact}` se o listado é longo.
 - [ ] Callouts con nomes ingleses e liña baleira tras a apertura.
 - [ ] Todos os diagramas e imaxes informativas teñen pé; as decorativas, `{.decorative}`.
 - [ ] Imaxes grandes ou PDF con `{width=...}`.
 - [ ] Referencias con `@fig:`/`@tbl:` e ligazóns internas; nada de `@sec:`, `@eq:`, `@lst:`
       nin posicións («abaixo», «á dereita»).
-- [ ] Sen barras invertidas no código en liña da prosa.
+- [ ] Código en liña escrito literalmente, sen escapes LaTeX engadidos.
+- [ ] Remisións no corpo con identificadores explícitos coincidentes no destino;
+      non reutilizar as áncoras numeradas do índice manual sen declaralas.
 - [ ] Ligazóns externas con `https://`; ligazóns entre actividades relativas ao `.md`.
 
 Verificación:

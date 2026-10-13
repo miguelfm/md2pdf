@@ -40,12 +40,14 @@ INSTALL_DIR: Path = Path(__file__).resolve().parent.parent
 
 
 # ── Fontes con fallback ───────────────────────────────────────
-# Adobe renomeou "Source Sans Pro" a "Source Sans 3".
-# Detectamos cal está instalada e usamos o nome correcto.
+# Por defecto o corpo do texto é sans-serif (Source Sans 3) para máxima
+# lexibilidade en pantalla e coherencia técnica con código e diagramas.
+# O modo serif (Source Serif 4) está dispoñible coa opción --serif (ideal para papel).
 FONT_CANDIDATES: dict[str, list[str]] = {
-    'main': ['Source Serif 4', 'Source Serif Pro', 'Source Serif'],
-    'sans': ['Source Sans 3', 'Source Sans Pro', 'Source Sans'],
-    'mono': ['Source Code Pro'],
+    'main':  ['Source Sans 3', 'Source Sans Pro', 'Source Sans'],
+    'serif': ['Source Serif 4', 'Source Serif Pro', 'Source Serif'],
+    'sans':  ['Source Sans 3', 'Source Sans Pro', 'Source Sans'],
+    'mono':  ['Source Code Pro'],
 }
 
 _font_cache: dict[str, str] = {}
@@ -68,7 +70,7 @@ def _detect_font(role: str) -> str:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
-    fallback = FONT_CANDIDATES.get(role, ['serif'])[0]
+    fallback = FONT_CANDIDATES.get(role, ['sans' if role != 'serif' else 'serif'])[0]
     _font_cache[role] = fallback
     return fallback
 
@@ -96,6 +98,10 @@ CALLOUT_BLOCKQUOTE_TYPES: dict[str, str] = {
     'DANGER':   'danger',
     'PERIGO':   'perigo',
     'INFO':     'info',
+    'TASK':     'task',
+    'TAREFA':   'task',
+    'TASK-BOX': 'task-box',
+    'TASKBOX':  'taskbox',
 }
 
 # Emojis ao inicio dun blockquote que indican un callout.
@@ -107,6 +113,7 @@ CALLOUT_EMOJI_MAP: list[tuple[str, str]] = [
     ('📘',  'info'),
     ('📝',  'note'),
     ('⛔',  'danger'),
+    ('🎯',  'task'),
 ]
 
 
@@ -132,9 +139,39 @@ def _to_polyglossia(lang: str) -> str:
 
 # ── Pandoc ────────────────────────────────────────────────────
 
+_pandoc_version_cache: tuple[int, ...] | None = None
+
+
+def _pandoc_version() -> tuple[int, ...]:
+    """Versión de Pandoc instalada, p. ex. (3, 11). (0,) se non se pode ler."""
+    global _pandoc_version_cache
+    if _pandoc_version_cache is None:
+        try:
+            first = subprocess.run(
+                ['pandoc', '--version'], capture_output=True, text=True, timeout=10,
+            ).stdout.splitlines()[0]
+            _pandoc_version_cache = tuple(
+                int(part) for part in first.split()[1].split('.') if part.isdigit()
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired, IndexError, ValueError):
+            _pandoc_version_cache = (0,)
+    return _pandoc_version_cache
+
+
 def _pandoc_highlight_flag() -> str:
-    """Devolve o flag para o estilo de resaltado de Pandoc."""
+    """Opción de resaltado: --syntax-highlighting desde Pandoc 3.8, que marca
+    --highlight-style como obsoleta."""
+    if _pandoc_version() >= (3, 8):
+        return '--syntax-highlighting'
     return '--highlight-style'
+
+
+def _pandoc_math_flag(method: str) -> str:
+    """Opción de matemáticas: --math-method=<método> desde Pandoc 3.11, que marca
+    --mathml, --mathjax, --katex… como obsoletas."""
+    if _pandoc_version() >= (3, 11):
+        return f'--math-method={method}'
+    return f'--{method}'
 
 
 def _pandoc_template_dirs() -> list[Path]:

@@ -28,7 +28,7 @@ RE_FM_BLOCK = re.compile(
 RE_FENCE = re.compile(r'^(`{3,}|~{3,})(.*)$')
 # Primeira clase dun bloque de atributos: {.java}, {#id .java}, { .java }
 RE_CLASE = re.compile(r'(?:^\{|\s)\.([\w+-]+)(?=[\s}])')
-RE_CALLOUT_OPEN = re.compile(r'^:::\s*(\w+)')
+RE_CALLOUT_OPEN = re.compile(r'^:::\s*(?:\{[ \t]*[.#]?([\w-]+)|([\w-]+))')
 RE_CALLOUT_CLOSE = re.compile(r'^:::$')
 RE_H1 = re.compile(r'^#\s+\S')
 # Liñas que non se esperan dentro dos metadatos. Un «# » só pode ser un
@@ -135,9 +135,10 @@ def lint_md(text: str) -> list[str]:
         if m_open:
             callout_stack.append(i)
             next_line = lines[i] if i < len(lines) else ''
+            callout_type = m_open.group(1) or m_open.group(2)
             if next_line.strip() != '':
                 issues.append(
-                    f'liña {i}: callout `:::{m_open.group(1)}` sen liña '
+                    f'liña {i}: callout `:::{callout_type}` sen liña '
                     f'baleira a continuación '
                     f'(LaTeX fallará con «Extra }}, or forgotten $»)'
                 )

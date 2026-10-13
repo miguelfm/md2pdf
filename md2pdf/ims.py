@@ -312,7 +312,6 @@ def build_ims_package(
                 section_numbering=section_numbering,
                 lang=lang,
                 highlight=highlight,
-                listings=False,
                 titlepage=False,
                 callouts=callouts,
                 no_metadata=no_metadata,

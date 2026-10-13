@@ -1,15 +1,82 @@
 -- auto-table-widths.lua
 local MAX_CELL_LEN = 60
 local MAX_MBOX_LEN = 15
+-- Fóra das táboas, o código en liña de ata BODY_MBOX_LEN caracteres non se
+-- parte nunca, aínda que leve espazos ou puntos de corte: unha expresión
+-- curta como `$c ? $a : $b` partida en dúas liñas cústalle lela a quen a
+-- está aprendendo. Na liña do corpo hai sitio para levala enteira á seguinte.
+local BODY_MBOX_LEN = 20
 local BREAK_CLASS = "[,%s/%.:=%?%-_%(;]"
--- Táboas de contido curto: se ningunha cela pasa de NATURAL_MAX_CELL caracteres
--- e o ancho natural estimado non supera NATURAL_MAX_TOTAL da liña, non se fixan
--- anchos e Pandoc usa columnas l/c/r co seu ancho natural. Así unha táboa de
--- verdade ou de valores numéricos non se estira ata ocupar a liña enteira nin
--- deixa columnas estreitísimas ao lado doutras anchas.
-local NATURAL_MAX_CELL = 20
+-- Táboas que caben sen partir liñas: se o ancho natural de todas as columnas
+-- (a liña máis longa de cada unha) suma como moito NATURAL_MAX_TOTAL da liña,
+-- non se fixan anchos e Pandoc usa columnas l/c/r co seu ancho natural,
+-- centradas. Así unha táboa curta non se estira ata ocupar a liña enteira
+-- deixando ocos baleiros entre as columnas. As táboas con algunha columna sen
+-- contido no corpo son para encher e seguen ocupando toda a liña.
 local NATURAL_MAX_TOTAL = 0.85
 local CHAR_WIDTH = 0.013
+-- Ancho mínimo por palabras: ningunha columna debe ser máis estreita que a
+-- palabra máis longa sen espazos das súas celas, ou LaTeX divídea con guión.
+-- Anchos (pt) medidos en \small co corpo de 13 pt: Source Sans 3 (ou
+-- Source Serif 4 en modo serif) no corpo e Source Sans 3 negra na cabeceira.
+-- As letras con til miden o mesmo ca sen ela; o resto de caracteres conta
+-- OTHER_PT. A Source Code Pro dá MONO_PT por carácter; md2pdf.latex ponlle a
+-- escala MatchLowercase, que iguala a súa altura da x coa da letra do corpo,
+-- así que mide 7,12 pt co corpo en Source Sans 3 e 6,96 en Source Serif 4.
+-- O espazo entre palabras mide SPACE_PT;
+-- con texto aliñado á esquerda TeX case nunca o encolle, e prefire levar a
+-- palabra á liña seguinte.
+local SANS_REGULAR_PT = {
+  ["a"]=5.98, ["b"]=6.56, ["c"]=5.41, ["d"]=6.58, ["e"]=5.88, ["f"]=3.46,
+  ["g"]=5.98, ["h"]=6.45, ["i"]=2.92, ["j"]=2.93, ["k"]=5.87, ["l"]=3.02,
+  ["m"]=9.83, ["n"]=6.49, ["o"]=6.43, ["p"]=6.58, ["q"]=6.58, ["r"]=4.12,
+  ["s"]=4.97, ["t"]=4.01, ["u"]=6.45, ["v"]=5.54, ["w"]=8.53, ["x"]=5.29,
+  ["y"]=5.54, ["z"]=5.04, ["A"]=6.45, ["B"]=6.97, ["C"]=6.77, ["D"]=7.29,
+  ["E"]=6.25, ["F"]=5.86, ["G"]=7.32, ["H"]=7.73, ["I"]=3.12, ["J"]=5.69,
+  ["K"]=6.87, ["L"]=5.76, ["M"]=8.62, ["N"]=7.67, ["O"]=7.88, ["P"]=6.71,
+  ["Q"]=7.88, ["R"]=6.75, ["S"]=6.33, ["T"]=6.36, ["U"]=7.65, ["V"]=6.11,
+  ["W"]=9.32, ["X"]=6.08, ["Y"]=5.65, ["Z"]=6.39, ["0"]=5.89, ["1"]=5.89,
+  ["2"]=5.89, ["3"]=5.89, ["4"]=5.89, ["5"]=5.89, ["6"]=5.89, ["7"]=5.89,
+  ["8"]=5.89, ["9"]=5.89, ["."]=2.95, [","]=2.95, [";"]=2.95, [":"]=2.95,
+  ["-"]=3.69, ["_"]=5.93, ["("]=3.59, [")"]=3.59, ["/"]=4.15, ["'"]=2.95,
+}
+local SERIF_PT = {
+  ["a"]=6.04, ["b"]=6.84, ["c"]=5.79, ["d"]=6.73, ["e"]=6.05, ["f"]=4.20,
+  ["g"]=6.14, ["h"]=7.13, ["i"]=3.54, ["j"]=3.29, ["k"]=6.49, ["l"]=3.54,
+  ["m"]=10.69, ["n"]=7.19, ["o"]=6.51, ["p"]=6.92, ["q"]=6.61, ["r"]=5.02,
+  ["s"]=5.15, ["t"]=3.86, ["u"]=6.92, ["v"]=5.99, ["w"]=9.06, ["x"]=6.24,
+  ["y"]=6.07, ["z"]=5.41, ["A"]=7.88, ["B"]=7.46, ["C"]=7.49, ["D"]=8.42,
+  ["E"]=7.15, ["F"]=6.87, ["G"]=8.09, ["H"]=9.35, ["I"]=4.40, ["J"]=4.44,
+  ["K"]=7.91, ["L"]=7.07, ["M"]=10.70, ["N"]=8.72, ["O"]=8.39, ["P"]=6.99,
+  ["Q"]=8.39, ["R"]=7.72, ["S"]=6.07, ["T"]=7.17, ["U"]=8.62, ["V"]=8.00,
+  ["W"]=11.41, ["X"]=7.69, ["Y"]=7.51, ["Z"]=6.54, ["0"]=5.93, ["1"]=5.93,
+  ["2"]=5.93, ["3"]=5.93, ["4"]=5.93, ["5"]=5.93, ["6"]=5.93, ["7"]=5.93,
+  ["8"]=5.93, ["9"]=5.93, ["."]=3.56, [","]=3.56, [";"]=3.56, [":"]=3.56,
+  ["-"]=3.70, ["_"]=6.07, ["("]=4.02, [")"]=4.02, ["/"]=3.91, ["'"]=2.51,
+}
+local SANS_BOLD_PT = {
+  ["a"]=6.25, ["b"]=6.80, ["c"]=5.54, ["d"]=6.80, ["e"]=6.14, ["f"]=4.05,
+  ["g"]=6.33, ["h"]=6.77, ["i"]=3.27, ["j"]=3.30, ["k"]=6.50, ["l"]=3.39,
+  ["m"]=10.17, ["n"]=6.79, ["o"]=6.58, ["p"]=6.80, ["q"]=6.80, ["r"]=4.72,
+  ["s"]=5.26, ["t"]=4.54, ["u"]=6.74, ["v"]=6.20, ["w"]=9.21, ["x"]=6.10,
+  ["y"]=6.18, ["z"]=5.46, ["A"]=6.80, ["B"]=7.18, ["C"]=6.90, ["D"]=7.53,
+  ["E"]=6.50, ["F"]=6.22, ["G"]=7.57, ["H"]=8.00, ["I"]=3.57, ["J"]=6.04,
+  ["K"]=7.28, ["L"]=6.14, ["M"]=9.04, ["N"]=7.89, ["O"]=8.11, ["P"]=7.07,
+  ["Q"]=8.11, ["R"]=7.27, ["S"]=6.60, ["T"]=6.60, ["U"]=7.89, ["V"]=6.60,
+  ["W"]=9.64, ["X"]=6.73, ["Y"]=6.23, ["Z"]=6.42, ["0"]=6.26, ["1"]=6.26,
+  ["2"]=6.26, ["3"]=6.26, ["4"]=6.26, ["5"]=6.26, ["6"]=6.26, ["7"]=6.26,
+  ["8"]=6.26, ["9"]=6.26, ["."]=3.56, [","]=3.56, [";"]=3.56, [":"]=3.56,
+  ["-"]=3.94, ["_"]=5.93, ["("]=4.08, [")"]=4.08, ["/"]=4.02, ["'"]=3.56,
+}
+local BODY_FONT = "sans"
+local OTHER_PT = 5.95
+local SPACE_PT = 2.37
+local MONO_PT = 7.12
+local STRONG_FACTOR = 1.08
+local WORD_MARGIN = 1.03
+-- Pandoc reparte (\linewidth - 2(n-1)\tabcolsep) entre as n columnas.
+local LINE_PT = 472.3     -- \linewidth en A4 con marxes de 22 mm
+local TABCOLSEP_PT = 6
 local estilar_cabeceira
 local function content_length(inlines)
   local len = 0
@@ -41,28 +108,269 @@ local function longest_segment(text)
   if cur > maxlen then maxlen = cur end
   return maxlen
 end
-local function unbreakable_len(code_text)
-  local has_break = code_text:match("[/\\%.:=%?%-_]") ~= nil
-  if (#code_text <= 8) or (#code_text <= MAX_MBOX_LEN and not has_break) then
-    return #code_text
+-- O código curto vai nunha caixa que non se parte. Ata MAX_MBOX_LEN
+-- caracteres só se parte se ten un punto de corte (/ \ . : = ? -); o guión
+-- baixo non conta, porque vai dentro dos identificadores (`PHP_INI_SYSTEM`,
+-- `$_SERVER`, `memory_limit`) e partilos nel dificulta lelos. O código máis
+-- longo pode partirse tamén no guión baixo.
+local function is_mbox(text)
+  local has_break = text:match("[/\\%.:=%?%-]") ~= nil
+  return (#text <= 8) or (#text <= MAX_MBOX_LEN and not has_break)
+end
+-- A mesma segmentación úsase para medir e renderizar o código das táboas.
+-- Os operadores dobres e :// mantéñense xuntos; non se engaden guións visibles.
+local WRAP_ATTR = "md2pdf-table-wrap"
+local function code_segments(text, underscores)
+  local chars, parts, cur = {}, {}, ""
+  for _, c in utf8.codes(text) do table.insert(chars, utf8.char(c)) end
+  local i = 1
+  while i <= #chars do
+    local c = chars[i]
+    cur = cur .. c
+    local cut = c:match("[,%s/\\%.:=%?%-%(;]") ~= nil
+      or (underscores and c == "_")
+    if c == ":" and chars[i + 1] == "/" and chars[i + 2] == "/" then
+      cur = cur .. "//"
+      i = i + 2
+    elseif (c == "&" or c == "|") and chars[i + 1] == c then
+      cur = cur .. c
+      i = i + 1
+      cut = true
+    end
+    if cut then table.insert(parts, cur); cur = "" end
+    i = i + 1
   end
-  return longest_segment(code_text)
+  if cur ~= "" then table.insert(parts, cur) end
+  return parts
+end
+local function code_mbox(el)
+  return not el.attributes[WRAP_ATTR] and is_mbox(el.text)
+end
+local function unbreakable_len(el)
+  if code_mbox(el) then
+    return utf8.len(el.text)
+  end
+  local maxlen = 0
+  for _, part in ipairs(code_segments(el.text, el.attributes[WRAP_ATTR] ~= "soft")) do
+    maxlen = math.max(maxlen, utf8.len((part:gsub("%s+$", ""))))
+  end
+  return maxlen
 end
 local function longest_code(inlines)
   local maxlen = 0
   for _, inline in ipairs(inlines) do
     if inline.t == "Code" then
-      local len = unbreakable_len(inline.text)
+      local len = unbreakable_len(inline)
       if len > maxlen then maxlen = len end
     end
   end
   return maxlen
 end
+-- Letra base das letras latinas con til ou diacrítico (Latin-1).
+local BASE_LETTER = {}
+for code, base in pairs({
+  [0xC0] = "AAAAAA", [0xC7] = "C", [0xC8] = "EEEE", [0xCC] = "IIII",
+  [0xD1] = "N", [0xD2] = "OOOOO", [0xD9] = "UUUU", [0xDD] = "Y",
+  [0xE0] = "aaaaaa", [0xE7] = "c", [0xE8] = "eeee", [0xEC] = "iiii",
+  [0xF1] = "n", [0xF2] = "ooooo", [0xF9] = "uuuu", [0xFD] = "y",
+}) do
+  for k = 1, #base do BASE_LETTER[code + k - 1] = base:sub(k, k) end
+end
+local function text_pt(text, font)
+  local pt = 0
+  for _, code in utf8.codes(text) do
+    local c = code < 128 and string.char(code) or BASE_LETTER[code]
+    pt = pt + (c and font[c] or OTHER_PT)
+  end
+  return pt
+end
+local function is_letter(code)
+  return (code < 128 and string.char(code):match("%a") ~= nil) or code >= 0xC0
+end
+-- Palabras dunha cela, liña a liña (un <br> empeza liña nova). Unha palabra
+-- acaba nun espazo, salto de liña ou tras un guión explícito; o código en
+-- liña e as URL van á parte. Cada palabra leva o seu ancho (pt), se vai tras
+-- un espazo e dous anchos para o mínimo da columna:
+--   need  o que obriga a axustar a táboa;
+--   full  o que se lle dá á columna cando se axusta.
+-- TeX só divide palabras con polo menos HYPHEN_MIN_LETTERS letras seguidas,
+-- e a esas súmaselles WORD_MARGIN. As que non pode dividir («CA1.8»,
+-- «/etc/php/8.5/cli/php.ini») non se parten: como moito invaden o espazo
+-- entre columnas (2\tabcolsep = 12 pt), así que só obrigan a axustar se
+-- invadirían máis de OVERFLOW_PT. O código e as URL contan ata o seu
+-- primeiro punto de corte.
+local HYPHEN_MIN_LETTERS = 4
+local OVERFLOW_PT = 8
+local function cell_lines(inlines, font)
+  local lines, line = {}, {}
+  local cur, run, maxrun, space = 0, 0, 0, false
+  local function push(word)
+    word.space = space
+    table.insert(line, word)
+    space = false
+  end
+  local function close()
+    if cur > 0 then
+      if maxrun < HYPHEN_MIN_LETTERS then
+        push({ pt = cur, need = cur - OVERFLOW_PT, full = cur })
+      else
+        push({ pt = cur, need = cur * WORD_MARGIN, full = cur * WORD_MARGIN })
+      end
+    end
+    cur, run, maxrun = 0, 0, 0
+  end
+  local function walk(list, factor)
+    for _, inline in ipairs(list) do
+      local t = inline.t
+      if t == "Str" then
+        for _, code in utf8.codes(inline.text) do
+          local c = utf8.char(code)
+          cur = cur + text_pt(c, font) * factor
+          if is_letter(code) then
+            run = run + 1
+            if run > maxrun then maxrun = run end
+          else
+            run = 0
+          end
+          if c == "-" then close() end
+        end
+      elseif t == "Space" or t == "SoftBreak" then
+        close()
+        space = true
+      elseif t == "LineBreak" or t == "RawInline" then
+        close()
+        table.insert(lines, line)
+        line, space = {}, false
+      elseif t == "Code" then
+        close()
+        local min = unbreakable_len(inline) * MONO_PT
+        push({ pt = utf8.len(inline.text) * MONO_PT, need = min, full = min })
+      elseif t == "Link" and (inline.classes:includes("uri")
+          or inline.classes:includes("email")) then
+        close()
+        local text = pandoc.utils.stringify(inline.content)
+        local min = longest_segment(text) * OTHER_PT
+        push({ pt = text_pt(text, font), need = min, full = min })
+      elseif t == "Math" or t == "Note" then
+        close()
+      elseif t == "Strong" then
+        walk(inline.content, factor * STRONG_FACTOR)
+      elseif inline.content then
+        walk(inline.content, factor)
+      end
+    end
+  end
+  walk(inlines, 1)
+  close()
+  table.insert(lines, line)
+  return lines
+end
+-- Liñas que ocupa unha cela nunha columna de width pt, enchendo cada liña
+-- coas palabras que caben. Unha palabra máis ancha ca columna ocupa as liñas
+-- que precise.
+local function count_lines(lines, width)
+  local n = 0
+  for _, words in ipairs(lines) do
+    local cur = 0
+    n = n + 1
+    for _, w in ipairs(words) do
+      local add = w.pt + ((cur > 0 and w.space) and SPACE_PT or 0)
+      if cur > 0 and cur + add > width then
+        n = n + 1
+        cur = w.pt
+      else
+        cur = cur + add
+      end
+      if cur > width then
+        local extra = math.ceil(cur / width) - 1
+        n = n + extra
+        cur = cur - extra * width
+      end
+    end
+  end
+  return n
+end
+-- Ancho natural (pt) de cada columna: a súa liña máis longa sen partir.
+local function natural_widths(rows, ncols)
+  local widths = {}
+  for i = 1, ncols do widths[i] = 0 end
+  for _, row in ipairs(rows) do
+    for i, lines in pairs(row) do
+      for _, words in ipairs(lines) do
+        local w = 0
+        for k, word in ipairs(words) do
+          w = w + word.pt + ((k > 1 and word.space) and SPACE_PT or 0)
+        end
+        if w > widths[i] then widths[i] = w end
+      end
+    end
+  end
+  return widths
+end
+-- Hai algunha columna sen ningunha cela con contido no corpo?
+local function empty_column(tbl, ncols)
+  for i = 1, ncols do
+    local filled = false
+    for _, body in ipairs(tbl.bodies) do
+      for _, row in ipairs(body.body) do
+        local cell = row.cells[i]
+        if cell and pandoc.utils.stringify(cell.contents) ~= "" then
+          filled = true
+        end
+      end
+    end
+    if not filled then return true end
+  end
+  return false
+end
+local function natural_fits(tbl, rows, ncols)
+  if empty_column(tbl, ncols) then return false end
+  local total = 2 * TABCOLSEP_PT * (ncols - 1)
+  for _, w in ipairs(natural_widths(rows, ncols)) do total = total + w end
+  return total <= NATURAL_MAX_TOTAL * LINE_PT
+end
+-- Altura estimada da táboa en liñas: en cada fila manda a cela máis alta.
+local function table_height(rows, widths, avail)
+  local h = 0
+  for _, row in ipairs(rows) do
+    local m = 1
+    for i, lines in pairs(row) do
+      local n = count_lines(lines, math.max(widths[i] * avail, 1))
+      if n > m then m = n end
+    end
+    h = h + m
+  end
+  return h
+end
 local function analyze_cells(tbl, ncols)
-  local max_lens, min_lens = {}, {}
+  local max_lens, min_lens, word_pts, word_rows = {}, {}, {}, {}
   for i = 1, ncols do
     max_lens[i] = 1
     min_lens[i] = 0
+    word_pts[i] = { need = 0, full = 0 }
+  end
+  local function process_words(rows, font)
+    for _, row in ipairs(rows) do
+      local cells = {}
+      for i, cell in ipairs(row.cells) do
+        if i <= ncols then
+          cells[i] = {}
+          for _, block in ipairs(cell.contents) do
+            if block.content then
+              for _, line in ipairs(cell_lines(block.content, font)) do
+                table.insert(cells[i], line)
+                for _, w in ipairs(line) do
+                  local wp = word_pts[i]
+                  if w.need > wp.need then wp.need = w.need end
+                  if w.full > wp.full then wp.full = w.full end
+                end
+              end
+            end
+          end
+        end
+      end
+      table.insert(word_rows, cells)
+    end
   end
   local function process_rows(rows)
     for _, row in ipairs(rows) do
@@ -98,23 +406,145 @@ local function analyze_cells(tbl, ncols)
       end
     end
     process_rows(tbl.head.rows)
+    process_words(tbl.head.rows, SANS_BOLD_PT)
   end
+  local body_font_map = (BODY_FONT == "serif") and SERIF_PT or SANS_REGULAR_PT
   for _, body in ipairs(tbl.bodies) do
     process_rows(body.body)
+    process_words(body.body, body_font_map)
   end
-  return max_lens, min_lens
+  return max_lens, min_lens, word_pts, word_rows
+end
+-- Anchos manuais: se a liña separadora dunha táboa ten guións de lonxitude
+-- distinta, Pandoc xa calcula anchos relativos a partir deles. Neses casos
+-- respéctanse e non se calculan automaticamente. Guións iguais (o habitual)
+-- dan anchos iguais, e entón segue o cálculo automático.
+-- Pandoc conta tamén os dous puntos de aliñamento: |:---:|---| dá anchos
+-- distintos aínda que os guións sexan iguais. Por iso compróbase se hai algún
+-- número de guións d, igual para todas as columnas, que explique os anchos
+-- (ancho proporcional a d + dous puntos); se o hai, non son manuais.
+local function dous_puntos(alineacion)
+  if alineacion == "AlignCenter" then return 2 end
+  if alineacion == "AlignLeft" or alineacion == "AlignRight" then return 1 end
+  return 0
+end
+local function anchos_manuais(tbl)
+  local ws, cs = {}, {}
+  for i, colspec in ipairs(tbl.colspecs) do
+    if type(colspec[2]) ~= "number" then return false end
+    ws[i], cs[i] = colspec[2], dous_puntos(colspec[1])
+  end
+  for d = 1, 200 do
+    local total = 0
+    for i = 1, #ws do total = total + d + cs[i] end
+    local encaixa = true
+    for i = 1, #ws do
+      if math.abs(ws[i] - (d + cs[i]) / total) > 0.001 then
+        encaixa = false
+        break
+      end
+    end
+    if encaixa then return false end
+  end
+  return true
+end
+-- Se os mínimos non caben xuntos, cúmprense os máis pequenos (mentres ás
+-- demais columnas lles quede polo menos MIN_SHARE de media) e o resto
+-- repártese entre as columnas de palabras máis longas, en proporción ao seu
+-- mínimo: esas partirán a palabra, pero as outras non.
+local MIN_SHARE = 0.1
+local function repartir_sen_sitio(widths, floor)
+  local ncols = #widths
+  local order, weight, rest = {}, {}, 0
+  for i = 1, ncols do
+    weight[i] = floor[i] > 0 and floor[i] or widths[i]
+    rest = rest + weight[i]
+    if floor[i] > 0 then table.insert(order, i) end
+  end
+  table.sort(order, function(a, b) return floor[a] < floor[b] end)
+  local fixed, used, nrest = {}, 0, ncols
+  for _, i in ipairs(order) do
+    if (1 - used - floor[i]) / (nrest - 1) < MIN_SHARE then break end
+    fixed[i] = true
+    used = used + floor[i]
+    rest = rest - weight[i]
+    nrest = nrest - 1
+  end
+  for i = 1, ncols do
+    widths[i] = fixed[i] and floor[i] or (1 - used) * weight[i] / rest
+  end
+end
+-- Ensancha as columnas máis estreitas que a súa palabra máis longa (como o
+-- mínimo por cabeceira, só se non pasa do 60 %). O espazo que falta sae das
+-- outras columnas punto a punto: cada vez da que menos altura engade á
+-- táboa, simulando o reparto das palabras en liñas, e en empate da que máis
+-- lle sobra sobre o seu propio mínimo, que adoita ser a de máis texto.
+-- A estimación dos anchos pode errar nun par de puntos, así que cada columna
+-- valórase LOOKAHEAD_PT máis estreita do que quedaría: unha liña xusto no
+-- límite contará como partida e esa columna só cederá se non hai outra.
+local LOOKAHEAD_PT = 2
+local function axustar_a_palabras(widths, min_widths, word_pts, rows)
+  local ncols = #widths
+  local avail = LINE_PT - 2 * TABCOLSEP_PT * (ncols - 1)
+  local floor, wmins, raise = {}, {}, {}
+  local sum_floor, deficit = 0, 0
+  for i = 1, ncols do
+    local wmin = word_pts[i].full / avail
+    if wmin > 0.6 then wmin = 0 end
+    local hmin = min_widths[i] <= 0.6 and min_widths[i] or 0
+    floor[i] = math.max(wmin, hmin)
+    wmins[i] = wmin
+    sum_floor = sum_floor + floor[i]
+    if wmin > widths[i] and word_pts[i].need / avail > widths[i] then
+      raise[i] = true
+      deficit = deficit + wmin - widths[i]
+    end
+  end
+  if deficit == 0 then return end
+  if sum_floor > 1 then
+    repartir_sen_sitio(widths, floor)
+    return
+  end
+  for i = 1, ncols do
+    if raise[i] then widths[i] = wmins[i] end
+  end
+  local step, lookahead = 1 / avail, LOOKAHEAD_PT / avail
+  while deficit > 1e-9 do
+    local cut = math.min(step, deficit)
+    local best, best_h, best_slack
+    for j = 1, ncols do
+      local slack = widths[j] - floor[j]
+      if slack >= cut then
+        local w = widths[j]
+        widths[j] = w - cut - lookahead
+        local h = table_height(rows, widths, avail)
+        widths[j] = w
+        if not best or h < best_h or (h == best_h and slack > best_slack) then
+          best, best_h, best_slack = j, h, slack
+        end
+      end
+    end
+    if not best then break end
+    widths[best] = widths[best] - cut
+    deficit = deficit - cut
+  end
+  if deficit > 1e-9 then
+    local sum = 0
+    for i = 1, ncols do sum = sum + widths[i] end
+    for i = 1, ncols do widths[i] = widths[i] / sum end
+  end
 end
 function Table(tbl)
   local ncols = #tbl.colspecs
   if ncols == 0 then return tbl end
-  local max_lens, min_lens = analyze_cells(tbl, ncols)
-  local natural, estimado = true, 0
-  for i = 1, ncols do
-    if max_lens[i] > NATURAL_MAX_CELL then natural = false end
-    estimado = estimado + max_lens[i] * CHAR_WIDTH + 0.02
+  if anchos_manuais(tbl) then
+    return tbl
   end
-  if natural and estimado <= NATURAL_MAX_TOTAL then
-    estilar_cabeceira(tbl)
+  local max_lens, min_lens, word_pts, word_rows = analyze_cells(tbl, ncols)
+  if natural_fits(tbl, word_rows, ncols) then
+    -- Se algunha liña do Markdown pasa de 72 caracteres, Pandoc xa lle deu
+    -- anchos relativos ás columnas (p{}); sen eles usa l/c/r naturais.
+    for _, colspec in ipairs(tbl.colspecs) do colspec[2] = nil end
     -- Unha táboa co seu ancho natural non ocupa a liña enteira, así que se
     -- centra. Faise localmente, porque o preámbulo pode ter \LTleft a cero
     -- para que as táboas de ancho completo empecen na marxe.
@@ -174,8 +604,8 @@ function Table(tbl)
   if final_sum > 0 and math.abs(final_sum - 1.0) > 0.001 then
     for i = 1, ncols do widths[i] = widths[i] / final_sum end
   end
+  axustar_a_palabras(widths, min_widths, word_pts, word_rows)
   for i, colspec in ipairs(tbl.colspecs) do colspec[2] = widths[i] end
-  estilar_cabeceira(tbl)
   return tbl
 end
 
@@ -231,18 +661,196 @@ local function add_path_breaks(s)
   s = s:gsub("\1", "://\\discretionary{}{}{}")
   return s
 end
-local function code_to_mbox(el)
-  if not FORMAT:match("latex") then return nil end
+local function code_to_latex(el, mbox)
   local text = el.text
-  local has_break = text:match("[/\\%.:=%?%-_]") ~= nil
-  if (#text <= 8) or (#text <= MAX_MBOX_LEN and not has_break) then
+  if mbox then
     return pandoc.RawInline("latex",
       "\\leavevmode\\strut\\allowbreak\\mbox{\\texttt{" .. escape(text) .. "}}")
   end
   local esc = add_path_breaks(add_op_breaks(escape(text)))
   return pandoc.RawInline("latex", "\\leavevmode\\strut\\texttt{" .. esc .. "}")
 end
+local function table_code(el)
+  if code_mbox(el) then return code_to_latex(el, true) end
+  local parts = code_segments(el.text, el.attributes[WRAP_ATTR] ~= "soft")
+  local escaped = {}
+  for _, part in ipairs(parts) do table.insert(escaped, escape(part)) end
+  return pandoc.RawInline("latex", "\\leavevmode\\strut\\texttt{"
+    .. table.concat(escaped, "\\discretionary{}{}{}") .. "}")
+end
+local function body_code(el)
+  if not FORMAT:match("latex") then return nil end
+  return code_to_latex(el, #el.text <= BODY_MBOX_LEN or is_mbox(el.text))
+end
+-- Os anchos finais poden ser menores ca os mínimos, ou vir impostos polo
+-- autor. Relaxamos só o código que non cabe e volvemos medir a táboa coas
+-- mesmas regras. A política só avanza: protexido → separadores → guión baixo.
+local function fit_table_code(tbl, warn)
+  local avail = LINE_PT - 2 * TABCOLSEP_PT * (#tbl.colspecs - 1)
+  local changed, overflow = false, false
+  local function rows_fit(rows)
+    for _, row in ipairs(rows) do
+      local column = 1
+      for _, cell in ipairs(row.cells) do
+        local width = 0
+        for i = column, column + cell.col_span - 1 do
+          local spec = tbl.colspecs[i]
+          if not spec or type(spec[2]) ~= "number" then return end
+          width = width + spec[2] * avail
+        end
+        width = width + 2 * TABCOLSEP_PT * (cell.col_span - 1)
+        cell.contents = cell.contents:walk({ Code = function(el)
+          local len = unbreakable_len(el)
+          if len * MONO_PT > width then
+            if not warn then
+              for _, mode in ipairs({ "soft", "underscore" }) do
+                if not el.attributes[WRAP_ATTR]
+                    or el.attributes[WRAP_ATTR] == "soft" and mode == "underscore" then
+                  local old = el.attributes[WRAP_ATTR]
+                  el.attributes[WRAP_ATTR] = mode
+                  if unbreakable_len(el) < len then
+                    changed = true
+                    return el
+                  end
+                  el.attributes[WRAP_ATTR] = old
+                end
+              end
+            end
+            overflow = true
+          end
+          return el
+        end })
+        column = column + cell.col_span
+      end
+    end
+  end
+  rows_fit(tbl.head.rows)
+  for _, body in ipairs(tbl.bodies) do
+    rows_fit(body.head)
+    rows_fit(body.body)
+  end
+  rows_fit(tbl.foot.rows)
+  if warn and overflow then
+    pandoc.log.warn("Código en liña máis ancho ca a súa cela, mesmo cos cortes "
+      .. "dispoñibles. Revisa os anchos ou a estrutura da táboa.")
+  end
+  return changed
+end
+-- Aliñamento decimal (só LaTeX). Nunha columna na que todas as celas do
+-- corpo son números («9», «-2», «3.5», «0,75») e polo menos un ten parte
+-- decimal, todas as celas ocupan o mesmo ancho: a parte enteira vai á
+-- dereita dun oco tan ancho coma a máis longa da columna, e a decimal á
+-- esquerda doutro coma a decimal máis longa. Así as unidades e o separador
+-- quedan na mesma vertical, e o aliñamento da columna (|:-:| centrada)
+-- move o bloque enteiro. As celas baleiras respéctanse. Desactívase con
+-- «decimal-align: false» nos metadatos ou coa opción --no-decimal-align.
+local DECIMAL_ALIGN = true
+local function read_meta(meta)
+  local v = meta["decimal-align"]
+  if v == false or (v ~= nil and type(v) ~= "boolean"
+      and pandoc.utils.stringify(v) == "false") then
+    DECIMAL_ALIGN = false
+  end
+  local bf = meta["body-font"] or meta["font-body"] or meta["mainfont"]
+  if bf then
+    local s = pandoc.utils.stringify(bf):lower()
+    if s:find("serif") then
+      BODY_FONT = "serif"
+    elseif s:find("sans") then
+      BODY_FONT = "sans"
+    end
+  end
+  if meta["serif"] == true or (meta["serif"] ~= nil
+      and pandoc.utils.stringify(meta["serif"]):lower() == "true") then
+    BODY_FONT = "serif"
+  end
+  if BODY_FONT == "serif" then
+    OTHER_PT = 6.4
+    SPACE_PT = 2.76
+    MONO_PT = 6.96
+  else
+    OTHER_PT = 5.95
+    SPACE_PT = 2.37
+    MONO_PT = 7.12
+  end
+end
+-- Parte enteira e decimal dunha cela numérica; "" se está baleira e nil se
+-- non é un número.
+local function cell_number(cell)
+  local blocks = cell.contents
+  if #blocks == 0 then return "" end
+  local b = blocks[1]
+  if #blocks > 1 or (b.t ~= "Plain" and b.t ~= "Para") then return nil end
+  if #b.content == 0 then return "" end
+  if #b.content > 1 or b.content[1].t ~= "Str" then return nil end
+  local text = b.content[1].text
+  local int, frac = text:match("^([+-]?%d+)([.,]%d+)$")
+  if int then return int, frac end
+  if text:match("^[+-]?%d+$") then return text, "" end
+  return nil
+end
+local function decimal_column(tbl, i)
+  local cells, decimal = {}, false
+  for _, body in ipairs(tbl.bodies) do
+    for _, row in ipairs(body.body) do
+      local cell = row.cells[i]
+      if not cell or cell.col_span ~= 1 then return nil end
+      local int, frac = cell_number(cell)
+      if not int then return nil end
+      if int ~= "" then
+        table.insert(cells, { cell = cell, int = int, frac = frac })
+        if frac ~= "" then decimal = true end
+      end
+    end
+  end
+  if decimal and #cells >= 2 then return cells end
+  return nil
+end
+local function align_decimals(tbl)
+  if not DECIMAL_ALIGN or not FORMAT:match("latex") then return end
+  for i = 1, #tbl.colspecs do
+    local cells = decimal_column(tbl, i)
+    if cells then
+      local int_max, frac_max = "", ""
+      for _, c in ipairs(cells) do
+        if #c.int > #int_max then int_max = c.int end
+        if #c.frac > #frac_max then frac_max = c.frac end
+      end
+      for _, c in ipairs(cells) do
+        c.cell.contents = { pandoc.Plain({ pandoc.RawInline("latex",
+          string.format("\\leavevmode\\hphantom{%s}\\llap{%s}\\rlap{%s}\\hphantom{%s}",
+            int_max, c.int, c.frac, frac_max)) }) }
+      end
+    end
+  end
+end
 return {
-  { Table = Table },
-  { Code = code_to_mbox },
+  { Meta = read_meta },
+  -- O aliñamento decimal vai despois de calcular os anchos, que len o
+  -- texto das celas; Table modifica tbl no sitio.
+  { Table = function(tbl)
+      local original_widths = {}
+      for i, spec in ipairs(tbl.colspecs) do original_widths[i] = spec[2] end
+      local result = Table(tbl)
+      if FORMAT:match("latex") then
+        while fit_table_code(tbl, false) do
+          for i, spec in ipairs(tbl.colspecs) do spec[2] = original_widths[i] end
+          result = Table(tbl)
+        end
+        fit_table_code(tbl, true)
+      end
+      estilar_cabeceira(tbl)
+      align_decimals(tbl)
+      return result
+    end },
+  -- O código das táboas segue a política coa que se calcularon os anchos,
+  -- incluídas as relaxacións por falta de sitio; o resto, a de body_code.
+  -- En orde descendente,
+  -- devolver false despois da táboa evita que Code a percorra de novo.
+  { traverse = "topdown",
+    Table = function(tbl)
+      if not FORMAT:match("latex") then return nil end
+      return tbl:walk({ Code = table_code }), false
+    end,
+    Code = body_code },
 }

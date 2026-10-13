@@ -31,7 +31,7 @@ class LinkTests(unittest.TestCase):
 \documentclass{article}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage[a4paper,margin=20mm]{geometry}
+\usepackage[a4paper,margin=22mm]{geometry}
 \usepackage{xcolor}
 \usepackage{longtable,booktabs,array,calc}
 \usepackage{needspace,tcolorbox}

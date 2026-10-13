@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,16 +17,28 @@ class DiagramTests(unittest.TestCase):
             directory = Path(temporary)
             output = directory / 'out.svg'
             context = RenderContext(directory, 'svg',
-                                    options={'layout': 'elk', 'theme': '1'},
+                                    options={'layout': 'elk', 'theme': '1',
+                                             'sketch': 'true', 'pad': '20',
+                                             'dark-theme': '200'},
                                     source_dir=directory)
             with patch('md2pdf.diagrams.renderers._run', return_value='') as run:
                 D2Renderer().render('d2', context, 'a -> b', output)
             command = run.call_args.args[0]
             self.assertIn('--layout=elk', command)
             self.assertIn('--theme=1', command)
+            self.assertIn('--sketch', command)
+            self.assertIn('--pad=20', command)
+            self.assertIn('--dark-theme=200', command)
             self.assertEqual(Path(command[-2]).parent, directory)
             self.assertFalse(Path(command[-2]).exists())
             self.assertEqual(run.call_args.kwargs['cwd'], directory)
+            context_no_sketch = RenderContext(directory, 'svg',
+                                              options={'sketch': 'false'},
+                                              source_dir=directory)
+            with patch('md2pdf.diagrams.renderers._run', return_value='') as run:
+                D2Renderer().render('d2', context_no_sketch, 'a -> b', output)
+            command_no = run.call_args.args[0]
+            self.assertNotIn('--sketch', command_no)
             context = RenderContext(directory, 'svg', options={'layout': 'neato'})
             with patch('md2pdf.diagrams.renderers._run', return_value='') as run:
                 GraphvizRenderer().render('dot', context, 'graph { a -- b }', output)
@@ -67,7 +80,10 @@ class DiagramTests(unittest.TestCase):
                 return Result()
 
             context = RenderContext(directory, 'pdf')
-            with patch('md2pdf.diagrams.renderers.subprocess.run', fake_run):
+            # mmdc anterior á 12, que aínda ten --pdfFit
+            with patch('md2pdf.diagrams.renderers._mmdc_supports_pdf_fit',
+                       return_value=True), \
+                 patch('md2pdf.diagrams.renderers.subprocess.run', fake_run):
                 error = MermaidRenderer().render('mmdc', context,
                                                   'graph LR\nA-->B', output)
             self.assertEqual(error, '')
@@ -80,7 +96,10 @@ class DiagramTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             output = directory / 'diagram.pdf'
-            with patch('md2pdf.diagrams.renderers._run', side_effect=[
+            # A axuda di que a opción existe, pero mmdc 12 rexéitaa.
+            with patch('md2pdf.diagrams.renderers._mmdc_supports_pdf_fit',
+                       return_value=True), \
+                 patch('md2pdf.diagrams.renderers._run', side_effect=[
                     "devolveu 1: error: unknown option '--pdfFit'", '']) as run:
                 error = MermaidRenderer().render('mmdc',
                     RenderContext(directory, 'pdf'), 'graph LR\nA-->B', output)
@@ -91,6 +110,19 @@ class DiagramTests(unittest.TestCase):
             self.assertEqual(first.kwargs, second.kwargs)
             self.assertNotIn('--pdfFit', second.args[0])
             self.assertFalse(output.with_suffix('.mmd').exists())
+
+    def test_mermaid_without_pdf_fit_does_not_retry_on_its_error(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            with patch('md2pdf.diagrams.renderers._mmdc_supports_pdf_fit',
+                       return_value=False), \
+                 patch('md2pdf.diagrams.renderers._run',
+                       return_value="devolveu 1: error: unknown option '--pdfFit'") as run:
+                error = MermaidRenderer().render('mmdc',
+                    RenderContext(directory, 'pdf'), 'graph LR\nA-->B',
+                    directory / 'out.pdf')
+            self.assertIn('--pdfFit', error)
+            self.assertEqual(run.call_count, 1)
 
     def test_mermaid_does_not_retry_other_pdf_errors(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -110,6 +142,35 @@ class DiagramTests(unittest.TestCase):
                 MermaidRenderer().render('mmdc', RenderContext(directory, 'svg'),
                                           'graph LR\nA-->B', output)
             self.assertNotIn('--pdfFit', run.call_args.args[0])
+
+    def test_mermaid_options_passed_to_config_and_command(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            output = directory / 'diagram.svg'
+            captured_config = {}
+
+            def fake_run(command, *args, **kwargs):
+                cfg_idx = command.index('-c') + 1
+                cfg_path = Path(command[cfg_idx])
+                self.assertTrue(cfg_path.exists())
+                captured_config.update(json.loads(cfg_path.read_text(encoding='utf-8')))
+                return ''
+
+            context = RenderContext(directory, 'svg',
+                                    options={'theme': 'forest', 'layout': 'elk', 'look': 'handDrawn'})
+            with patch('md2pdf.diagrams.renderers._run', side_effect=fake_run) as run:
+                error = MermaidRenderer().render('mmdc', context, 'flowchart TD\nA-->B', output)
+            self.assertEqual(error, '')
+            command = run.call_args.args[0]
+            self.assertIn('-t', command)
+            self.assertIn('forest', command)
+            self.assertEqual(captured_config.get('theme'), 'forest')
+            self.assertEqual(captured_config.get('layout'), 'elk')
+            self.assertEqual(captured_config.get('look'), 'handDrawn')
+            self.assertIn('Source Sans 3', captured_config.get('fontFamily', ''))
+            cfg_path = directory / 'diagram-mermaid-config.json'
+            self.assertFalse(cfg_path.exists())
+            self.assertFalse(output.with_suffix('.mmd').exists())
 
     def test_d2_and_graphviz_commands_use_requested_format(self):
         with tempfile.TemporaryDirectory() as temporary:

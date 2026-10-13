@@ -26,15 +26,18 @@ Mantéñense, adaptadas a tecnoloxías web nativas:
 - índice automático compacto e centrado;
 - numeración de seccións mediante `--number-sections` de Pandoc (sen lóxica propia duplicada);
 - callouts `note`, `tip`, `warning`, `danger` e `info`;
+- callouts interactivos de tarefas (`task`, `tarefa`, `task-box`) con caixas `<textarea>` e persistencia automática en `localStorage` por documento e tarefa;
 - resaltado sintáctico;
 - `hl="1,3,5-7"` para destacar liñas concretas de código;
+- bloques de terminal (`bash`, `sh`, `.terminal`...) con fondo e bordo sutilmente diferenciados en día, noite e impresión;
+- bloques de código compactos (`.compact` ou limiar `code-compact-threshold`);
 - figuras e táboas numeradas;
 - compatibilidade cos pés de figura herdados do pipeline PDF (`*Figura N. ...*`), normalizados antes do filtro HTML para evitar numeración duplicada;
 - referencias `@fig:` e `@tbl:`/`@tab:` como ligazóns internas;
 - Mermaid, D2, Graphviz e Vega-Lite como SVG;
 - notas ao pé;
 - ecuacións mediante MathML;
-- `--night`, `--print`, `--plain`, `--no-toc`, `--no-number`, `--watch` e `--strict`.
+- `--night`, `--print`, `--plain`, `--no-terminal-blocks`, `--no-toc`, `--no-number`, `--watch` e `--strict`.
 
 As regras exclusivas de paxinación LaTeX (`needspace`, `longtable`, `small-table.lua`, etc.) non se executan no HTML de pantalla. Para impresión úsanse regras CSS de salto de páxina.
 
@@ -54,7 +57,6 @@ Estas comprobacións realízanse sobre o HTML final, polo que tamén cobren elem
 ## Limitacións deliberadas
 
 - `--titlepage` non aplica: o título intégrase na páxina HTML.
-- `--listings` segue sendo exclusivo de LuaLaTeX.
 - DOCX continúa sen resolver as referencias propias `@fig:`/`@tbl:`.
 - O HTML non intenta imitar unha páxina A4 na pantalla; é responsive. `@media print` si define unha composición A4 básica para imprimir desde o navegador.
 - Os gráficos Vega-Lite son estáticos; non se conservan tooltips nin interacción.
@@ -71,7 +73,7 @@ O formato por motor é:
 
 A caché é independente por formato, polo que a mesma fonte de diagrama pode coexistir nas tres saídas.
 
-Sen `width` explícito, o ancho do diagrama exprésase en `em`, non en porcentaxe: as etiquetas quedan a ~0,73 do tamaño do texto (a mesma proporción que 9,5 pt sobre 13 pt no PDF) e o CSS (`max-width: 100%`) só o reduce cando non cabe. Cunha porcentaxe, nun móbil o diagrama encollía co contedor ata ser ilexible. Un `width=80%` escrito no bloque respéctase tal cal.
+Sen `width` explícito, o ancho do diagrama exprésase en `em`, non en porcentaxe. A imaxe leva a clase `md2pdf-diagram`, que lle dá `font-size: .96rem`, o tamaño das celas das táboas; como o `em` dun `width` é o da propia imaxe, as etiquetas quedan a ese tamaño tamén nas pantallas estreitas (no PDF, 12 pt). O CSS (`max-width: 100%`) só o reduce cando non cabe. Cunha porcentaxe, nun móbil o diagrama encollía co contedor ata ser ilexible. Un `width=80%` escrito no bloque respéctase tal cal.
 
 ## Ficheiro autocontido
 

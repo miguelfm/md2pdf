@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from md2pdf.config import OUTPUT_EXTENSIONS, TEMPLATE_NAMES
+from md2pdf.config import OUTPUT_EXTENSIONS, TEMPLATE_NAMES, _pandoc_math_flag
 from md2pdf.converter import convert_one
 from md2pdf.diagrams.common import FORMAT_BY_ENGINE
 from md2pdf.engines.html import build_html_cmd
@@ -54,7 +54,7 @@ class HtmlEngineTests(unittest.TestCase):
         self.assertIn('--standalone', cmd)
         self.assertIn('--embed-resources', cmd)
         self.assertIn('--section-divs', cmd)
-        self.assertIn('--mathml', cmd)
+        self.assertIn(_pandoc_math_flag('mathml'), cmd)
         self.assertIn('--number-sections', cmd)
         self.assertIn('--toc', cmd)
         self.assertIn('night-mode=true', cmd)
@@ -261,7 +261,7 @@ Véxase a @fig:grafo.
         ok, html, out = self._convert(source)
         self.assertTrue(ok)
         self.assertEqual(html.count('id="fig:grafo"'), 1)
-        self.assertRegex(html, r'style="width:[0-9.]+em"')
+        self.assertRegex(html, r'class="md2pdf-diagram" style="width:[0-9.]+em"')
         self.assertEqual(validate_html(out), [])
 
     @unittest.skipUnless(shutil.which('mmdc'), 'Mermaid CLI non instalado')

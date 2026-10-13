@@ -2,8 +2,15 @@
 
 from pathlib import Path
 
-from ..assets import _find_html_css, _find_html_filter
-from ..config import INSTALL_DIR
+from ..assets import (
+    _find_compact_code_filter,
+    _find_html_css,
+    _find_html_filter,
+    _find_javadoc_syntax,
+    _find_term_pairs_filter,
+    _find_terminal_blocks_filter,
+)
+from ..config import INSTALL_DIR, _pandoc_highlight_flag, _pandoc_math_flag
 
 
 def build_html_cmd(
@@ -24,6 +31,7 @@ def build_html_cmd(
     print_mode: bool = False,
     night_mode: bool = False,
     plain_mode: bool = False,
+    serif_mode: bool = False,
     source_dir: str | None = None,
     **kwargs,
 ) -> list[str]:
@@ -36,15 +44,24 @@ def build_html_cmd(
         '--embed-resources',
         '--section-divs',
         '--shift-heading-level-by=-1',
-        '--mathml',
+        _pandoc_math_flag('mathml'),
         f'--template={template}',
         '-V', f'lang={lang}',
-        f'--highlight-style={highlight}',
+        f'{_pandoc_highlight_flag()}={highlight}',
     ]
+
+    # Sintaxe Javadoc corrixida (ver javadoc.xml)
+    javadoc_syntax = _find_javadoc_syntax()
+    if javadoc_syntax:
+        cmd.append(f'--syntax-definition={javadoc_syntax}')
 
     css = _find_html_css()
     if css:
         cmd.extend(['--css', str(css)])
+
+    term_pairs = _find_term_pairs_filter()
+    if term_pairs:
+        cmd.extend(['--lua-filter', str(term_pairs)])
 
     # Primeiro normalizamos os pés de figura herdados (imaxe seguida de
     # ``*Figura N. ...*``) á representación Figure de Pandoc. O filtro HTML
@@ -52,6 +69,17 @@ def build_html_cmd(
     figure_captions = INSTALL_DIR / 'figure-captions.lua'
     if figure_captions.exists():
         cmd.extend(['--lua-filter', str(figure_captions)])
+
+    terminal_blocks: bool = kwargs.get('terminal_blocks', True)
+    terminal_filter = _find_terminal_blocks_filter()
+    if terminal_filter:
+        cmd.extend(['--lua-filter', str(terminal_filter)])
+        if not terminal_blocks:
+            cmd.extend(['--metadata', 'terminal-blocks=false'])
+
+    compact_filter = _find_compact_code_filter()
+    if compact_filter:
+        cmd.extend(['--lua-filter', str(compact_filter)])
 
     html_filter = _find_html_filter()
     if html_filter:
@@ -72,6 +100,8 @@ def build_html_cmd(
         cmd.extend(['-V', 'night-mode=true'])
     if plain_mode:
         cmd.extend(['-V', 'plain-mode=true'])
+    if serif_mode:
+        cmd.extend(['-V', 'serif-mode=true'])
 
     # O filtro HTML consulta esta marca para respectar --no-callouts.
     cmd.extend(['--metadata', f'md2pdf-callouts={str(callouts).lower()}'])

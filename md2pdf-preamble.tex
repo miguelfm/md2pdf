@@ -11,13 +11,21 @@
 \AfterEndPreamble{%
   \KOMAoptions{headsepline=false,footsepline=false}%
   \clearpairofpagestyles
-  \cfoot{\pagemark}%
+  % Número de páxina na esquina inferior dereita, fóra da caixa de texto (na marxe):
+  % 12 mm desprazado cara fóra sitúa o número a 10 mm do bordo do papel (marxe de 22 mm)
+  % e a 7,6 mm do bordo inferior, garantindo seguridade en impresión e despexando o código.
+  \rofoot[\rlap{\makebox[12mm][r]{\pagemark}}]{\rlap{\makebox[12mm][r]{\pagemark}}}%
+  \lefoot[\llap{\makebox[12mm][l]{\pagemark}}]{\llap{\makebox[12mm][l]{\pagemark}}}%
   \pagestyle{scrheadings}%
 }
 % ── Aliñamento á esquerda ───────────────────────────────────
 \usepackage{ragged2e}
-\setlength{\RaggedRightRightskip}{0pt plus 2.5em}
-\AtBeginDocument{\RaggedRight}
+\setlength{\RaggedRightRightskip}{0pt plus 3.8em}
+\AtBeginDocument{%
+  % Evita palabras soltas ao final de parágrafo (runts) penalizando colas < 25%
+  \RaggedRightParfillskip=0pt plus 0.75\textwidth
+  \RaggedRight
+}
 % ── Microtipografía ─────────────────────────────────────────
 \AtBeginDocument{%
   \microtypesetup{activate={true,nocompatibility}}%
@@ -55,7 +63,11 @@
 }
 % ── Espazado vertical e cabeceiras ──────────────────────────
 \usepackage{setspace}
-\setstretch{1.15}
+% Entreliña 1,45 veces o tamaño (13 pt × 1,2 × 1,2083 = 18,85 pt), o límite
+% superior do intervalo tipográfico habitual (1,2–1,45): a liña ten uns 80
+% caracteres e a Source Serif 4 ten a altura da x alta (0,475 em). As táboas
+% herdan o mesmo factor, así que texto e celas teñen a mesma proporción.
+\setstretch{1.2083}
 \RedeclareSectionCommand[beforeskip=1.6em, afterskip=0.6em]{section}
 \RedeclareSectionCommand[beforeskip=1.3em, afterskip=0.4em]{subsection}
 \RedeclareSectionCommand[beforeskip=1.0em, afterskip=0.3em]{subsubsection}
@@ -69,17 +81,49 @@
 \setlength{\abovecaptionskip}{3pt}
 \setlength{\belowcaptionskip}{1pt}
 \AtEndEnvironment{figure}{\vspace{-8pt}}
+% Se a cabeceira vén xusto despois doutra (\if@nobreak segue activo),
+% non se reserva espazo: \Needspace forzaría un salto entre ambas.
+\makeatletter
+\newcommand{\mdpdf@headneedspace}[1]{\if@nobreak\else\Needspace{#1}\fi}
 \AtBeginDocument{%
-  \pretocmd{\section}{\Needspace{8\baselineskip}}{}{}%
-  \pretocmd{\subsection}{\Needspace{7\baselineskip}}{}{}%
-  \pretocmd{\subsubsection}{\Needspace{6\baselineskip}}{}{}%
+  \pretocmd{\section}{\mdpdf@headneedspace{8\baselineskip}}{}{}%
+  \pretocmd{\subsection}{\mdpdf@headneedspace{7\baselineskip}}{}{}%
+  \pretocmd{\subsubsection}{\mdpdf@headneedspace{6\baselineskip}}{}{}%
 }
+\makeatother
 \AfterEndPreamble{%
   \setlength{\topsep}{0.15em}%
   \setlength{\partopsep}{0pt}%
   \setlength{\itemsep}{0.3em}%
   \setlength{\parsep}{0.2em}%
 }
+% ── Listas e pasos procedementais ───────────────────────────
+% Resalta os números en negra coa cor corporativa (heading-section)
+% e engade separación vertical entre pasos (itemsep=0.5em) para evitar que
+% pasos con varias liñas se confundan visualmente cos pasos contiguos.
+\setlist[enumerate,1]{%
+  font=\bfseries\color{heading-section},%
+  topsep=0.35em,%
+  itemsep=0.5em,%
+  parsep=0.15em%
+}
+\setlist[enumerate,2]{%
+  font=\bfseries\color{heading-section},%
+  topsep=0.25em,%
+  itemsep=0.25em,%
+  parsep=0.1em%
+}
+\makeatletter
+\def\tightlist{%
+  \ifnum\@enumdepth=1\relax
+    \setlength{\itemsep}{0.5em}%
+  \else\ifnum\@enumdepth>1\relax
+    \setlength{\itemsep}{0.25em}%
+  \else
+    \setlength{\itemsep}{0pt}%
+  \fi\fi
+  \setlength{\parskip}{0pt}}
+\makeatother
 % ── Blockquotes ─────────────────────────────────────────────
 \usepackage{tcolorbox}
 \tcbuselibrary{breakable,skins}
@@ -106,9 +150,58 @@
   \captionsetup[table]{position=above}%
 }
 % ── Código en liña ──────────────────────────────────────────
+\definecolor{inline-bg}{HTML}{F0F2F5}
 \definecolor{inline-fg}{HTML}{0550ae}
+\tcbset{md2pdf-inline-style/.style={}}
+\newtcbox{\mdpdfinlinecode}{
+  on line,
+  arc=1.5pt,
+  outer arc=1.5pt,
+  colback=inline-bg,
+  colframe=inline-bg,
+  boxrule=0pt,
+  boxsep=0pt,
+  left=1.5pt,
+  right=1.5pt,
+  top=0pt,
+  bottom=0pt,
+  tcbox raise base,
+  md2pdf-inline-style
+}
 \let\oldtexttt\texttt
-\renewcommand{\texttt}[1]{\textcolor{inline-fg}{\oldtexttt{#1}}}
+\newif\ifmdpdfinlinepill
+\mdpdfinlinepillfalse  % Deshabilitado por defecto; activar con \mdpdfinlinepilltrue ou --inline-pill
+
+\makeatletter
+\ExplSyntaxOn
+\cs_new_protected:Npn \mdpdf_texttt:n #1
+{
+  \ifmdpdfinlinepill
+    \tl_if_in:nnTF { #1 } { \discretionary }
+    {
+      \textcolor{inline-fg}{\oldtexttt{#1}}
+    }
+    {
+      \tl_if_in:nnTF { #1 } { \allowbreak }
+      {
+        \textcolor{inline-fg}{\oldtexttt{#1}}
+      }
+      {
+        \mdpdfinlinecode{\textcolor{inline-fg}{\oldtexttt{#1}}}
+      }
+    }
+  \else
+    \textcolor{inline-fg}{\oldtexttt{#1}}
+  \fi
+}
+\RenewDocumentCommand{\texttt}{m}{
+  \mdpdf_texttt:n { #1 }
+}
+\ExplSyntaxOff
+\pdfstringdefDisableCommands{%
+  \def\texttt#1{#1}%
+}
+\makeatother
 % ── Til literal ──────────────────────────────────────────────
 \AtBeginDocument{%
   \protected\def\textasciitilde{\char126\relax}%
@@ -116,9 +209,13 @@
 % ── Bloques de código ───────────────────────────────────────
 \definecolor{code-bg}{HTML}{f6f8fa}
 \definecolor{code-border}{HTML}{e1e4e8}
+\definecolor{terminal-bg}{HTML}{eef1f5}
+\definecolor{terminal-border}{HTML}{d0d7de}
 \usepackage{fvextra}
 \fvset{breaklines=true, breakanywhere=true}
 \DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
+% Estilo de fonte por defecto: 10,8 pt (\footnotesize) con interliñado pedagóxico (15,4 pt / 1,43x)
+\tcbset{md2pdf-code-font/.style={fontupper=\footnotesize}}
 \makeatletter
 \@ifundefined{Shaded}{%
   \newenvironment{Shaded}{}{}%
@@ -127,15 +224,28 @@
 }%
 \renewenvironment{Shaded}{%
   \begin{tcolorbox}[
+    enhanced,
     colback=code-bg, colframe=code-border, boxrule=0.5pt,
-    arc=3pt, outer arc=3pt, fontupper=\footnotesize,
+    arc=3pt, outer arc=3pt, md2pdf-code-font,
     left=6pt, right=6pt, top=4pt, bottom=4pt,
     before skip=0.45em, after skip=0.7em, breakable,
-    lines before break=3
+    lines before break=3,
+    % Caixa aberta no corte: esquinas rectas e sen liña de bordo no salto de páxina
+    bottomrule at break=0pt,
+    toprule at break=0pt
   ]%
 }{%
   \end{tcolorbox}%
 }
+% Bloques de código compactos (para listados longos opt-in con .compact ou limiar):
+% 10 pt con interliñado equilibrado (11 pt nominal × 1.2083 = 13,0 pt / 1,30x)
+\newenvironment{CompactBlock}{%
+  \tcbset{md2pdf-code-font/.style={fontupper=\fontsize{10pt}{11pt}\selectfont}}%
+}{}
+\newenvironment{TerminalBlock}{%
+  \colorlet{code-bg}{terminal-bg}%
+  \colorlet{code-border}{terminal-border}%
+}{}
 \makeatother
 % ── Táboas ───────────────────────────────────────────────────
 \makeatletter
@@ -149,10 +259,14 @@
   \@ifnextchar[{\md@top@minipage@i}{\md@orig@minipage}%
 }
 \def\md@top@minipage@i[#1]{\md@orig@minipage[t]}
+% arraystretch 1.5: entre fila e fila queda media liña máis ca entre as liñas
+% dunha mesma cela (8,57 pt sobre 17,14 pt), a mesma proporción ca \parskip no
+% corpo. Con 1.2 o engadido era 0.2 liñas e as filas de varias liñas
+% confundíanse coas veciñas.
 \AtBeginEnvironment{longtable}{%
   \let\md@orig@minipage\minipage
   \let\minipage\md@top@minipage
-  \renewcommand{\arraystretch}{1.2}%
+  \renewcommand{\arraystretch}{1.5}%
   \small%
   \addfontfeatures{Numbers=Lining}%
   \setlength{\tabcolsep}{6pt}%
@@ -164,7 +278,7 @@
 \AtBeginEnvironment{tabular}{%
   \let\md@orig@minipage\minipage
   \let\minipage\md@top@minipage
-  \renewcommand{\arraystretch}{1.2}%
+  \renewcommand{\arraystretch}{1.5}%
   \small%
   \addfontfeatures{Numbers=Lining}%
   \setlength{\tabcolsep}{6pt}%
@@ -176,7 +290,7 @@
 \AtBeginEnvironment{tabularx}{%
   \let\md@orig@minipage\minipage
   \let\minipage\md@top@minipage
-  \renewcommand{\arraystretch}{1.2}%
+  \renewcommand{\arraystretch}{1.5}%
   \small%
   \addfontfeatures{Numbers=Lining}%
   \setlength{\tabcolsep}{6pt}%
@@ -237,3 +351,7 @@
 \DeclareRobustCommand{\iconpencil}{{\color{orange!70!black}\scalebox{0.9}{\faIcon{pencil-alt}}}}
 \DeclareRobustCommand{\icontrophy}{{\color{orange!80!black}\scalebox{0.9}{\faTrophy}}}
 \DeclareRobustCommand{\iconban}{{\color{red!70!black}\faBan}}
+% ── Formularios interactivos (AcroForms) ──────────────────────
+\providecommand{\mdpdftaskborder}{0.75 0.75 0.75}
+\providecommand{\mdpdftaskbg}{1 1 1}
+

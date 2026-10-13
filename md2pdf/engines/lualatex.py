@@ -7,6 +7,8 @@ Inclúe:
   - Utilidades LaTeX internas (_tex_escape, _temp_tex_file)
 """
 
+import re
+import sys
 import tempfile
 from pathlib import Path
 
@@ -19,11 +21,15 @@ from ..config import (
 )
 from ..assets import (
     _find_callouts_filter,
+    _find_compact_code_filter,
     _find_hl_lines_filter,
+    _find_javadoc_syntax,
+    _find_terminal_blocks_filter,
     _find_br_filter,
     _find_lua_filter,
     _find_preamble,
     _find_small_table_filter,
+    _find_term_pairs_filter,
 )
 
 
@@ -148,13 +154,22 @@ def _build_print_preamble_snippet() -> str:
 % Sobreescribe as definicións de md2pdf-preamble.tex
 \definecolor{code-bg}{RGB}{255,255,255}
 \definecolor{code-border}{RGB}{180,180,180}
+\definecolor{terminal-bg}{HTML}{F2F2F2}
+\definecolor{terminal-border}{RGB}{140,140,140}
+\definecolor{inline-bg}{RGB}{255,255,255}
 \definecolor{inline-fg}{RGB}{0,0,0}
-% Callouts: fondo branco, borde gris
+\definecolor{heading-section}{RGB}{0,0,0}
+% Callouts: fondo branco, borde gris; código en liña transparente
+\renewcommand{\mdpdftaskborder}{0.55 0.55 0.55}
+\renewcommand{\mdpdftaskbg}{1 1 1}
 \AtBeginDocument{%
   \tcbset{
     md2pdf-callout/.style={
       colback=white,
       colframe=black!55,
+    },
+    md2pdf-inline-style/.style={
+      blankest,
     }
   }%
 }
@@ -192,6 +207,9 @@ def _build_night_preamble_snippet() -> str:
         "% Sobreescribir cores de código do preámbulo\n"
         "\\definecolor{code-bg}{HTML}{EDE8DC}\n"
         "\\definecolor{code-border}{HTML}{D4C8B0}\n"
+        "\\definecolor{terminal-bg}{HTML}{E2DDD0}\n"
+        "\\definecolor{terminal-border}{HTML}{C5B99E}\n"
+        "\\definecolor{inline-bg}{HTML}{EDE8DC}\n"
         "\\definecolor{inline-fg}{HTML}{7A4F2E}\n"
         "% Iconas: paleta cálida sen azul nin verde\n"
         "\\renewcommand{\\iconwarning}{{\\color{night-icon-alert}\\faExclamationTriangle}}\n"
@@ -221,6 +239,9 @@ def _build_night_preamble_snippet() -> str:
         "  \\hypersetup{linkcolor=night-link,urlcolor=night-link,citecolor=night-link}%\n"
         "  \\tcbset{md2pdf-callout/.style={colback=night-code-bg,colframe=night-link}}%\n"
         "}\n"
+        "% Formularios e caixas de tarefas\n"
+        "\\renewcommand{\\mdpdftaskborder}{0.83 0.78 0.69}\n"
+        "\\renewcommand{\\mdpdftaskbg}{0.93 0.91 0.86}\n"
         "% Sobrescribir cores configurables do preámbulo\n"
         "\\renewcommand{\\toctitlecolor}{night-link}\n"
         "\\renewcommand{\\titlebodycolor}{night-link}\n"
@@ -246,17 +267,21 @@ def build_lualatex_cmd(
     lang: str,
     papersize: str,
     highlight: str,
-    listings: bool = False,
     titlepage: bool = False,
     callouts: bool = True,
     author: str | None = None,
     keywords: str | None = None,
     subject: str | None = None,
     print_mode: bool = False,
+    serif: bool = False,
     **kwargs,
 ) -> list[str]:
     """Constrúe o comando Pandoc para LuaLaTeX con template propio."""
     night_mode: bool = kwargs.get('night_mode', False)
+    decimal_align: bool = kwargs.get('decimal_align', True)
+    terminal_blocks: bool = kwargs.get('terminal_blocks', True)
+    body_font: str = 'serif' if serif or kwargs.get('body_font') == 'serif' else 'sans'
+    main_font: str = _detect_font('serif') if body_font == 'serif' else _detect_font('main')
 
     # Se o template está nun directorio de Pandoc, usar só o nome base
     template_arg = str(template)
@@ -276,12 +301,14 @@ def build_lualatex_cmd(
         '-V', 'babel-otherlangs=english,spanish',
         '-V', f'papersize={papersize}',
         '-V', 'fontsize=13pt',
-        '-V', f'mainfont={_detect_font("main")}',
+        '-V', f'mainfont={main_font}',
         '-V', f'sansfont={_detect_font("sans")}',
         '-V', f'monofont={_detect_font("mono")}',
+        '-V', f'bodyfont={body_font}',
+        '-M', f'body-font={body_font}',
         '-V', r'mainfontoptions=Numbers=OldStyle,Ligatures=TeX',
         '-V', r'monofontoptions=Scale=0.85,Ligatures=NoCommon',
-        '-V', 'geometry=top=12mm,bottom=14mm,left=20mm,right=20mm,footskip=7mm',
+        '-V', 'geometry=top=14mm,bottom=16mm,left=22mm,right=22mm,footskip=7mm',
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=' + ('black' if print_mode else 'blue!60!black'),
         '-V', 'urlcolor=' + ('black' if print_mode else 'blue!70!black'),
@@ -305,17 +332,27 @@ def build_lualatex_cmd(
         cmd.extend(['-H', _build_print_preamble_snippet()])
     if night_mode:
         cmd.extend(['-H', _build_night_preamble_snippet()])
+    if kwargs.get('inline_pill', False):
+        cmd.extend(['-H', _temp_tex_file(r'\mdpdfinlinepilltrue')])
 
-    if listings:
-        cmd.append('--listings')
-    else:
-        cmd.extend([f'{_pandoc_highlight_flag()}={highlight}'])
+    cmd.extend([f'{_pandoc_highlight_flag()}={highlight}'])
+    # Sintaxe Javadoc corrixida: sen ela, os tiles dos comentarios /** */
+    # saen co estilo de comentario no medio de palabras en texto normal.
+    javadoc_syntax = _find_javadoc_syntax()
+    if javadoc_syntax:
+        cmd.append(f'--syntax-definition={javadoc_syntax}')
 
     if toc:
         cmd.extend(['--toc', f'--toc-depth={toc_depth}'])
 
     if section_numbering:
         cmd.append('--number-sections')
+
+    # Primeiro normalizamos as listas de pares; logo aplicamos os filtros
+    # de táboas, callouts e código.
+    term_pairs = _find_term_pairs_filter()
+    if term_pairs:
+        cmd.extend(['--lua-filter', str(term_pairs)])
 
     # Filtros Lua (orde importante: anchos → táboas pequenas → callouts → br → hl-lines)
     # Nota: Mermaid xa NON se procesa como filtro Lua aquí: faise no preprocesado
@@ -324,6 +361,10 @@ def build_lualatex_cmd(
     lua_filter = _find_lua_filter()
     if lua_filter:
         cmd.extend(['--lua-filter', str(lua_filter)])
+        if not decimal_align:
+            # auto-table-widths.lua le a opción dos metadatos, onde tamén
+            # a pode poñer o front matter
+            cmd.extend(['--metadata', 'decimal-align=false'])
 
     small_table = _find_small_table_filter()
     if small_table:
@@ -337,6 +378,16 @@ def build_lualatex_cmd(
     br_filter = _find_br_filter()
     if br_filter:
         cmd.extend(['--lua-filter', str(br_filter)])
+
+    terminal_filter = _find_terminal_blocks_filter()
+    if terminal_filter:
+        cmd.extend(['--lua-filter', str(terminal_filter)])
+        if not terminal_blocks:
+            cmd.extend(['--metadata', 'terminal-blocks=false'])
+
+    compact_filter = _find_compact_code_filter()
+    if compact_filter:
+        cmd.extend(['--lua-filter', str(compact_filter)])
 
     hl_filter = _find_hl_lines_filter()
     if hl_filter:
@@ -359,3 +410,117 @@ def build_lualatex_cmd(
         cmd.extend(['-V', f'subject={subject}'])
 
     return cmd
+
+
+def prepare_lualatex_extras(
+    cmd: list[str],
+    processed: str,
+    tmp_path: str,
+    md_meta: dict,
+    input_path: Path,
+    titlepage: bool = False,
+    plain: bool = False,
+    print_mode: bool = False,
+    night_mode: bool = False,
+    front_author: bool = False,
+    debug: bool = False,
+    fm_meta: dict | None = None,
+    meta_file: Path | None = None,
+) -> tuple[str, list[str], bool]:
+    """Prepara os snippets e axustes de Markdown/LaTeX específicos de LuaLaTeX.
+
+    Devolve:
+        (processed_actualizado, extra_tmp_files, éxito)
+    """
+    activity_val = md_meta.get('activity', '')
+
+    # Detectar se hai título (front matter, metadata.yaml ou primeiro # h1)
+    # O regex ^#(?!#) asegura que só coincide con h1, non con ## ou ###
+    has_title = bool(md_meta.get('title') or
+                     re.search(r'^#(?!#)\s+\S', processed, re.MULTILINE))
+    if not has_title:
+        print(f'  ⚠  Aviso: non se detectou título en '
+              f'{input_path.name} (engade un # Título ou '
+              f'title: no YAML front matter)',
+              file=sys.stderr)
+
+    # ── Modo plain: eliminar o # título do corpo ──────
+    # Con --shift-heading-level-by=-1 pandoc converte o primeiro
+    # # h1 a nivel 0, que se renderiza como \part{} no corpo.
+    # En modo plain eliminámolo para que non apareza; o título
+    # segue dispoñible nos metadatos PDF vía --metadata.
+    if plain and has_title:
+        h1_match = re.search(r'^#(?!#)\s+\S.*$', processed, re.MULTILINE)
+        if h1_match:
+            # Extraer título do h1 se non vén de metadatos
+            if not md_meta.get('title'):
+                h1_text = re.sub(r'^#\s+', '', h1_match.group(0))
+                md_meta['title'] = h1_text.strip()
+            processed = (processed[:h1_match.start()]
+                         + processed[h1_match.end():])
+            with open(tmp_path, 'w', encoding='utf-8') as f_upd:
+                f_upd.write(processed)
+        # Pasar título como metadato para pdftitle
+        title_val = md_meta.get('title', '')
+        if title_val:
+            cmd.extend(['--metadata', f'title={title_val}'])
+
+    extra_tmp_files: list[str] = []
+
+    if titlepage:
+        if not has_title:
+            print('  ✗ ERRO: non se pode xerar portada sen título. '
+                  'Engade un # Título ou title: no YAML front matter.',
+                  file=sys.stderr)
+            return processed, extra_tmp_files, False
+        if debug:
+            print('  [DEBUG] fm_meta (front matter):', fm_meta)
+            print('  [DEBUG] meta_file:',
+                  str(meta_file) if meta_file else 'NONE')
+            print('  [DEBUG] md_meta completo:', md_meta)
+        tp_content = _build_titlepage_snippet(
+            md_meta, print_mode, night_mode=night_mode,
+            front_author=front_author,
+        )
+        tp_path = _temp_tex_file(tp_content)
+        extra_tmp_files.append(tp_path)
+        cmd.extend(['-B', tp_path])
+    elif not plain:
+        # Sen portada: título estilizado antes do TOC (só se hai título)
+        if has_title:
+            if print_mode:
+                title_color = 'black'
+            elif night_mode:
+                title_color = 'night-link'
+            else:
+                title_color = 'blue!45!black'
+            b_lines = [
+                '\\makeatletter',
+                '\\begin{center}',
+                f'  {{\\LARGE\\bfseries\\sffamily'
+                f'\\color{{{title_color}}}\\@title\\par}}',
+                '\\end{center}',
+                '\\vskip 0.6em',
+                '\\makeatother',
+            ]
+            b_path = _temp_tex_file('\n'.join(b_lines) + '\n')
+            extra_tmp_files.append(b_path)
+            cmd.extend(['-B', b_path])
+
+    # Etiqueta de actividade inxectada no corpo antes do primeiro ##
+    if activity_val and not plain:
+        act_latex = _build_activity_label(
+            activity_val, print_mode, night_mode=night_mode)
+        raw_block = '```{=latex}\n' + act_latex + '```\n\n'
+        m2 = re.search(r'^##\s', processed, re.MULTILINE)
+        if m2:
+            processed = (processed[:m2.start()]
+                         + raw_block
+                         + processed[m2.start():])
+        else:
+            processed = processed + '\n' + raw_block
+        with open(tmp_path, 'w', encoding='utf-8') as f_upd:
+            f_upd.write(processed)
+
+    return processed, extra_tmp_files, True
+

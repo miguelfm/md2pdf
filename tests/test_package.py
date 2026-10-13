@@ -31,7 +31,31 @@ class PackageTests(unittest.TestCase):
         self.assertIn('lualatex', result.stdout)
         self.assertIn('docx', result.stdout)
         self.assertIn('html', result.stdout)
+        self.assertIn('--serif', result.stdout)
         self.assertNotIn('typst', result.stdout.lower())
+
+    def test_default_and_serif_font_cmd(self):
+        root = Path(__file__).resolve().parents[1]
+        template = root / 'md2pdf.latex'
+        # Default: sans-serif
+        cmd_sans = build_lualatex_cmd(
+            tmp_path='in.md', output_path='out.pdf', template=template,
+            toc=False, toc_depth=3, section_numbering='', lang='gl',
+            papersize='a4', highlight='auto',
+        )
+        self.assertIn('-V', cmd_sans)
+        mainfont_idx = cmd_sans.index('-V')
+        self.assertTrue(any('mainfont=Source Sans' in str(c) for c in cmd_sans))
+        self.assertTrue(any('body-font=sans' in str(c) for c in cmd_sans))
+
+        # Serif mode
+        cmd_serif = build_lualatex_cmd(
+            tmp_path='in.md', output_path='out.pdf', template=template,
+            toc=False, toc_depth=3, section_numbering='', lang='gl',
+            papersize='a4', highlight='auto', serif=True,
+        )
+        self.assertTrue(any('mainfont=Source Serif' in str(c) for c in cmd_serif))
+        self.assertTrue(any('body-font=serif' in str(c) for c in cmd_serif))
 
 
 if __name__ == '__main__':

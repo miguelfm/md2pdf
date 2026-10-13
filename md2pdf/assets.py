@@ -64,6 +64,11 @@ def _find_highlight_theme() -> Path | None:
     return _find_asset('drake-jb.theme')
 
 
+def _find_javadoc_syntax() -> Path | None:
+    """Busca a definición de sintaxe Javadoc corrixida (javadoc.xml)."""
+    return _find_asset('javadoc.xml')
+
+
 def _find_lua_filter() -> Path | None:
     """Busca o filtro Lua para auto-dimensionar columnas de táboas."""
     return _find_asset('auto-table-widths.lua')
@@ -72,6 +77,11 @@ def _find_lua_filter() -> Path | None:
 def _find_small_table_filter() -> Path | None:
     """Busca o filtro Lua para converter táboas pequenas a tabular."""
     return _find_asset('small-table.lua')
+
+
+def _find_term_pairs_filter() -> Path | None:
+    """Busca o filtro para listas de pares termo–explicación."""
+    return _find_asset('term-pairs.lua')
 
 
 def _find_callouts_filter() -> Path | None:
@@ -89,8 +99,18 @@ def _find_hl_lines_filter() -> Path | None:
     return _find_asset('hl-lines.lua')
 
 
+def _find_terminal_blocks_filter() -> Path | None:
+    """Busca o filtro Lua para bloques de terminal (terminal-blocks.lua)."""
+    return _find_asset('terminal-blocks.lua')
+
+
+def _find_compact_code_filter() -> Path | None:
+    """Busca o filtro Lua para bloques de código compactos (compact-code.lua)."""
+    return _find_asset('compact-code.lua')
+
+
 def _find_br_filter() -> Path | None:
-    """Busca o filtro Lua para converter <br> a \\newline{} en LaTeX (br.lua)."""
+    """Busca o filtro Lua para converter <br> a \newline{} en LaTeX (br.lua)."""
     return _find_asset('br.lua')
 
 

@@ -56,9 +56,9 @@ class ExtendedTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 2)
 
     def test_layout_invalidates_but_width_does_not(self):
-        for attrs in ('layout=elk', 'layout=elk width=80%', 'layout=dagre'):
+        for attrs in ('layout=elk', 'layout=elk width=80%', 'layout=dagre', 'layout=dagre sketch=true', 'layout=dagre sketch=true pad=20'):
             process_diagrams('```{.d2 '+attrs+'}\na -> b\n```', 'lualatex')
-        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(len(self.calls), 4)
 
     def test_defaults_overridden_and_caption(self):
         out, stats = process_diagrams(
@@ -69,7 +69,7 @@ class ExtendedTests(unittest.TestCase):
         self.assertIn('#fig:demo width=90%', out)
 
     def test_invalid_option_preserves_source(self):
-        for attributes in ('layout=bad', 'width=-5%', 'args=--evil'):
+        for attributes in ('layout=bad', 'width=-5%', 'args=--evil', 'sketch=invalid', 'pad=-5', 'dark-theme=bad'):
             text = '```{.d2 '+attributes+'}\na -> b\n```'
             out, stats = process_diagrams(text, 'lualatex')
             self.assertEqual(out, text)
@@ -106,6 +106,35 @@ class ExtendedTests(unittest.TestCase):
         defaults = load_diagram_defaults(
             '---\ndiagrams:\n  d2:\n    layout: elk\n---\n', metadata)
         self.assertEqual(defaults, {'d2': {'layout': 'elk', 'theme': 1}})
+
+    def test_d2_modern_options_and_defaults(self):
+        text = '```{.d2 sketch pad=15 dark-theme=201}\na -> b\n```'
+        out, stats = process_diagrams(
+            text, 'lualatex', defaults={'d2': {'sketch': False, 'pad': 50, 'theme': 3}})
+        self.assertEqual(stats.new['d2'], 1)
+        self.assertEqual(self.calls[0][0].options, {
+            'sketch': 'true', 'pad': '15', 'dark-theme': '201', 'theme': '3'
+        })
+
+    def test_mermaid_options_and_defaults(self):
+        out, stats = process_diagrams(
+            '```{.mermaid layout=elk theme=dark look=handDrawn #fig:fluxo caption="Fluxo"}\nflowchart TD\nA-->B\n```',
+            'lualatex', defaults={'mermaid': {'layout': 'dagre', 'theme': 'forest', 'look': 'classic'}})
+        self.assertEqual(self.calls[0][0].options, {'layout': 'elk', 'theme': 'dark', 'look': 'handDrawn'})
+        self.assertIn('![Fluxo]', out)
+        self.assertIn('#fig:fluxo', out)
+
+    def test_mermaid_invalid_options_preserve_source(self):
+        for attributes in ('layout=invalido', 'theme=invalido', 'look=invalido'):
+            text = f'```{{.mermaid {attributes}}}\nflowchart TD\nA-->B\n```'
+            out, stats = process_diagrams(text, 'lualatex')
+            self.assertEqual(out, text)
+            self.assertTrue(stats.errors['mermaid'])
+
+    def test_mermaid_options_invalidate_cache(self):
+        for attrs in ('theme=forest', 'theme=forest width=80%', 'theme=dark', 'layout=elk'):
+            process_diagrams(f'```{{.mermaid {attrs}}}\nflowchart TD\nA-->B\n```', 'lualatex')
+        self.assertEqual(len(self.calls), 3)
 
     def test_unclosed_and_non_diagram_fences_untouched(self):
         for text in ('```d2\na -> b', '```python\n```d2\na -> b\n```'):

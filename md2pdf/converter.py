@@ -20,8 +20,7 @@ from .metadata  import (_extract_md_metadata, _find_metadata_file,
                          _load_metadata_file)
 from .preprocess import preprocess_md
 from .html_validation import validate_html
-from .engines.lualatex import (build_lualatex_cmd, _build_activity_label,
-                                _build_titlepage_snippet, _temp_tex_file)
+from .engines.lualatex import build_lualatex_cmd, prepare_lualatex_extras
 from .engines.docx     import build_docx_cmd
 from .engines.html     import build_html_cmd
 
@@ -76,6 +75,17 @@ def _extract_latex_errors(stderr: str) -> list[str]:
     return relevant or lines[-20:]
 
 
+def _pandoc_warnings(stderr: str) -> list[str]:
+    """Avisos [WARNING] de Pandoc, sen repetir e na orde en que aparecen."""
+    warnings: list[str] = []
+    for line in stderr.splitlines():
+        if line.startswith('[WARNING]'):
+            text = line.removeprefix('[WARNING]').strip()
+            if text not in warnings:
+                warnings.append(text)
+    return warnings
+
+
 def _report_diagram(name: str, new_count: int, cached_count: int,
                     errors: list[str]) -> None:
     """Imprime o resumo do procesado dun tipo de diagrama."""
@@ -105,12 +115,15 @@ def convert_one(
     lang: str = 'gl',
     papersize: str = 'a4',
     highlight: str = 'auto',
-    listings: bool = False,
     titlepage: bool = False,
     callouts: bool = True,
+    decimal_align: bool = True,
+    terminal_blocks: bool = True,
     no_metadata: bool = False,
     print_mode: bool = False,
     night_mode: bool = False,
+    serif: bool = False,
+    inline_pill: bool = False,
     front_author: bool = False,
     plain: bool = False,
     strict: bool = False,
@@ -171,6 +184,13 @@ def convert_one(
             md_meta = {**yaml_meta, **fm_meta}
         else:
             md_meta = fm_meta
+        # «decimal-align: false» no front matter ou en metadata.yaml equivale
+        # a --no-decimal-align
+        if str(md_meta.get('decimal-align', '')).lower() == 'false':
+            decimal_align = False
+        if str(md_meta.get('terminal-blocks', '')).lower() in ('false', 'no', '0') or \
+           str(md_meta.get('terminal-style', '')).lower() in ('false', 'no', '0'):
+            terminal_blocks = False
 
     # ── Preprocesamento ───────────────────────────────────────
     processed = preprocess_md(text, engine, callouts=callouts)
@@ -215,6 +235,18 @@ def convert_one(
             'html':     build_html_cmd,
         }[engine]
 
+        meta_serif = (
+            md_meta.get('serif', '').lower() in ('true', 'yes', '1')
+            or md_meta.get('body-font', '').lower() == 'serif'
+            or md_meta.get('font-body', '').lower() == 'serif'
+        )
+        use_serif = serif or meta_serif
+
+        meta_inline_pill = (
+            str(md_meta.get('inline-pill', '')).lower() in ('true', 'yes', '1')
+        )
+        use_inline_pill = inline_pill or meta_inline_pill
+
         cmd = build_fn(
             tmp_path=tmp.name,
             output_path=str(output_path),
@@ -225,15 +257,19 @@ def convert_one(
             lang=lang,
             papersize=papersize,
             highlight=highlight,
-            listings=listings,
             titlepage=titlepage,
             callouts=callouts,
+            decimal_align=decimal_align,
+            terminal_blocks=terminal_blocks,
             author=md_meta.get('author'),
             keywords=md_meta.get('keywords'),
             subject=md_meta.get('subject') or None,
             print_mode=print_mode,
             night_mode=night_mode,
             plain_mode=plain,
+            serif=use_serif,
+            serif_mode=use_serif,
+            inline_pill=use_inline_pill,
             title=md_meta.get('title'),
             activity=md_meta.get('activity'),
             source_dir=str(input_path.resolve().parent),
@@ -245,96 +281,26 @@ def convert_one(
             if h_indices:
                 print_snippet_path = cmd[h_indices[-1] + 1]
 
-        # ── Portada e etiqueta de actividade (só lualatex) ────
+        # ── Portada, etiqueta de actividade e axustes LuaLaTeX ────
         if engine == 'lualatex':
-            activity_val = md_meta.get('activity', '')
-
-            # Detectar se hai título (front matter, metadata.yaml ou primeiro # h1)
-            # O regex ^#(?!#) asegura que só coincide con h1, non con ## ou ###
-            has_title = bool(md_meta.get('title') or
-                             re.search(r'^#(?!#)\s+\S', processed, re.MULTILINE))
-            if not has_title:
-                print(f'  ⚠  Aviso: non se detectou título en '
-                      f'{input_path.name} (engade un # Título ou '
-                      f'title: no YAML front matter)',
-                      file=sys.stderr)
-
-            # ── Modo plain: eliminar o # título do corpo ──────
-            # Con --shift-heading-level-by=-1 pandoc converte o primeiro
-            # # h1 a nivel 0, que se renderiza como \part{} no corpo.
-            # En modo plain eliminámolo para que non apareza; o título
-            # segue dispoñible nos metadatos PDF vía --metadata.
-            if plain and has_title:
-                h1_match = re.search(r'^#(?!#)\s+\S.*$', processed,
-                                     re.MULTILINE)
-                if h1_match:
-                    # Extraer título do h1 se non vén de metadatos
-                    if not md_meta.get('title'):
-                        h1_text = re.sub(r'^#\s+', '', h1_match.group(0))
-                        md_meta['title'] = h1_text.strip()
-                    processed = (processed[:h1_match.start()]
-                                 + processed[h1_match.end():])
-                    with open(tmp.name, 'w', encoding='utf-8') as f_upd:
-                        f_upd.write(processed)
-                # Pasar título como metadato para pdftitle
-                title_val = md_meta.get('title', '')
-                if title_val:
-                    cmd.extend(['--metadata', f'title={title_val}'])
-
-            if titlepage:
-                if not has_title:
-                    print(f'  ✗ ERRO: non se pode xerar portada sen título. '
-                          f'Engade un # Título ou title: no YAML front matter.',
-                          file=sys.stderr)
-                    return False
-                if debug:
-                    print('  [DEBUG] fm_meta (front matter):', fm_meta)
-                    print('  [DEBUG] meta_file:',
-                          str(meta_file) if meta_file else 'NONE')
-                    print('  [DEBUG] md_meta completo:', md_meta)
-                tp_content = _build_titlepage_snippet(
-                    md_meta, print_mode, night_mode=night_mode,
-                    front_author=front_author,
-                )
-                tp_path = _temp_tex_file(tp_content)
-                extra_tmp_files.append(tp_path)
-                cmd.extend(['-B', tp_path])
-            elif not plain:
-                # Sen portada: título estilizado antes do TOC (só se hai título)
-                if has_title:
-                    if print_mode:
-                        title_color = 'black'
-                    elif night_mode:
-                        title_color = 'night-link'
-                    else:
-                        title_color = 'blue!45!black'
-                    b_lines = [
-                        '\\makeatletter',
-                        '\\begin{center}',
-                        f'  {{\\LARGE\\bfseries\\sffamily'
-                        f'\\color{{{title_color}}}\\@title\\par}}',
-                        '\\end{center}',
-                        '\\vskip 0.6em',
-                        '\\makeatother',
-                    ]
-                    b_path = _temp_tex_file('\n'.join(b_lines) + '\n')
-                    extra_tmp_files.append(b_path)
-                    cmd.extend(['-B', b_path])
-
-            # Etiqueta de actividade inxectada no corpo antes do primeiro ##
-            if activity_val and not plain:
-                act_latex = _build_activity_label(
-                    activity_val, print_mode, night_mode=night_mode)
-                raw_block = '```{=latex}\n' + act_latex + '```\n\n'
-                m2 = re.search(r'^##\s', processed, re.MULTILINE)
-                if m2:
-                    processed = (processed[:m2.start()]
-                                 + raw_block
-                                 + processed[m2.start():])
-                else:
-                    processed = processed + '\n' + raw_block
-                with open(tmp.name, 'w', encoding='utf-8') as f_upd:
-                    f_upd.write(processed)
+            processed, lualatex_extras, ok = prepare_lualatex_extras(
+                cmd=cmd,
+                processed=processed,
+                tmp_path=tmp.name,
+                md_meta=md_meta,
+                input_path=input_path,
+                titlepage=titlepage,
+                plain=plain,
+                print_mode=print_mode,
+                night_mode=night_mode,
+                front_author=front_author,
+                debug=debug,
+                fm_meta=fm_meta,
+                meta_file=meta_file,
+            )
+            if not ok:
+                return False
+            extra_tmp_files.extend(lualatex_extras)
 
         # ── Debug ─────────────────────────────────────────────
         if debug:
@@ -379,6 +345,15 @@ def convert_one(
                 for line in stderr.strip().splitlines()[:15]:
                     print(f'    {line}', file=sys.stderr)
             return False
+
+        # Sen isto, os avisos de Pandoc (opcións obsoletas, recursos que non
+        # atopa...) perdíanse cando a conversión remataba ben.
+        pandoc_warnings = _pandoc_warnings(result.stderr or '')
+        for warning in pandoc_warnings[:10]:
+            print(f'    ⚠  Pandoc: {warning}', file=sys.stderr)
+        if len(pandoc_warnings) > 10:
+            print(f'    ⚠  Pandoc: {len(pandoc_warnings) - 10} avisos máis',
+                  file=sys.stderr)
 
         # ── Validación da saída HTML ───────────────────────────
         if engine == 'html':

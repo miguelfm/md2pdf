@@ -37,10 +37,10 @@ Os pés son texto literal, non Markdown enriquecido.
 - Dimensións positivas con %, px, pt, cm, mm ou in.
 - Só width ou height: a proporción queda a cargo de Pandoc.
 - Ambas dimensións explícitas poden deformar a imaxe; úsanse só se se desexa.
-- D2: layout=dagre|elk|tala e theme=identificador-numérico.
+- D2: layout=dagre|elk|tala, theme=identificador-numérico (0–8, 100–105, 300–303), sketch=true|false (debuxado a man), pad=píxeles (marxe arredor do diagrama, por defecto 100) e dark-theme=identificador-numérico (para modo escuro en SVG, p. ex. 200–201).
 - Graphviz: layout=dot|neato|fdp|sfdp|circo|twopi|osage|patchwork.
-- Mermaid: mantén as opcións do renderizado anterior; non admite layout/theme
-  neste adaptador. Pódese seguir usando a configuración interna de Mermaid.
+- Mermaid: layout=dagre|elk (e tidy-tree se está dispoñible), theme=base|dark|default|forest|neutral|neo|neo-dark|redux|redux-dark|redux-color|redux-dark-color|null e look=classic|handDrawn (compatible con Mermaid CLI 12+). Tamén se pode seguir usando directivas internas (como `%%{init: ...}%%`).
+- Vega-Lite: theme=carbong10|carbong100|carbong90|carbonwhite|dark|excel|fivethirtyeight|ggplot2|googlecharts|latimes|powerbi|quartz|urbaninstitute|vox|default|none.
 
 Un valor incorrecto conserva o bloque como código e emite un aviso.
 Non se admiten argumentos de consola arbitrarios. TALA require o seu motor
@@ -55,11 +55,19 @@ python -m pip install PyYAML
 ```yaml
 ---
 diagrams:
+  mermaid:
+    layout: elk
+    theme: forest
+    look: handDrawn
   d2:
     layout: elk
     theme: 0
+    sketch: false
+    pad: 20
   graphviz:
     layout: dot
+  vega-lite:
+    theme: fivethirtyeight
 ---
 ```
 
@@ -139,13 +147,32 @@ Se faltan as bibliotecas opcionais, emítese un aviso do nivel de validación.
 Non é unha garantía de representación visual perfecta: cómpre revisar o
 PDF final, especialmente figuras con fondos, estilos ou recursos externos.
 
-Consérvase o dimensionado automático existente. Con PyMuPDF, para figuras PDF
-con ancho porcentual e sen altura explícita, estímase o tamaño mínimo do texto:
-por debaixo de 8 pt emítese un aviso. Usa o ancho de texto de referencia do
-motor; pode diferir con outras marxes ou columnas. Non mide texto convertido
-a contornos nin garante lexibilidade. Os atributos width/height explícitos
-seguen tendo prioridade. Para cadeas longas, dividir o diagrama adoita ser
-máis útil que reducilo para encaixar.
+## Tamaño e fonte das etiquetas
+
+As etiquetas saen cun tamaño obxectivo de 12 pt no PDF (elixido conscientemente para achegar a tipografía dos diagramas á do corpo de texto de 13 pt sen provocar desbordamentos nin verticais nin horizontais na páxina A4) e `.96rem` no HTML. Sen `width` explícito, o ancho calcúlase para chegar a ese tamaño:
+
+- Mídese a letra que leva máis caracteres no PDF xerado (PyMuPDF) ou nos
+  atributos `font-size` do SVG. Sen medida (PNG, sen PyMuPDF) úsase o tamaño
+  nominal do renderizador.
+- Graphviz renderiza xa a 12 pt, cun só tamaño para gráfico, nodos e
+  arestas. Os atributos `fontsize` e `fontname` escritos no diagrama teñen
+  prioridade.
+- Mermaid renderiza nativamente con `fontSize: 16px` (12 pt a 96 DPI) e conta
+  funciona con `mmdc 12.0.0+`, que retirou `--pdfFit`: md2pdf consulta
+  `mmdc --help` unha vez e só engade a opción ás versións que a teñen.
+- Fonte: Source Sans 3, a sans do documento, en Graphviz e Mermaid. D2 e
+  Vega-Lite manteñen a súa: vl-convert non atopa a Source Sans 3 (OTF) nin
+  rexistrando o cartafol.
+- O ancho non pasa da liña e a altura, de 560 pt (uns 20 cm). Se o diagrama
+  non cabe ao tamaño obxectivo, redúcese.
+
+Con PyMuPDF, se a letra final queda máis dun 10 % por debaixo do obxectivo
+(por non caber ou por un `width` manual, en % ou en unidades absolutas),
+emítese un aviso. Usa o ancho de texto de referencia do motor; pode diferir
+con outras marxes ou columnas, e non mide texto convertido a contornos. Os
+atributos width/height explícitos seguen tendo prioridade. Un fluxo
+horizontal de máis de catro nodos adoita non caber: orientalo en vertical,
+acurtar as etiquetas ou dividilo é mellor que reducilo.
 
 ```bash
 md2pdf documento.md --strict
@@ -163,3 +190,12 @@ As probas de integración adicionais requiren PyMuPDF e Pillow:
 python -m pip install PyMuPDF Pillow PyYAML 'vl-convert-python>=1.7,<2'
 python -m unittest discover -s tests -v
 ```
+
+## Arquitectura de renderizadores
+
+O subsistema de diagramas segue os principios de deseño SOLID (SRP, OCP, LSP, DIP):
+
+- **Protocolo e clase base** (`md2pdf.diagrams.base`): `Renderer` define o contrato formal, e `BaseRenderer` proporciona comportamentos predeterminados (localización de executables con `find_executable`, cálculo de pegadas de caché con `cache_tag`, filtrado de opcións con `filter_render_options` e mensaxes de ausencia).
+- **Adaptadores encapsulados** (`md2pdf.diagrams.renderers` e `md2pdf.diagrams.vegalite`): Cada motor (`MermaidRenderer`, `D2Renderer`, `GraphvizRenderer`, `VegaLiteRenderer`) declara as súas opcións admitidas (`allowed_options`), bandeiras booleanas (`boolean_flags`) e chaves que invalidan a caché (`render_option_keys`), e implementa a súa propia validación (`validate_option`).
+- **Procesador desacoplado** (`md2pdf.diagrams.processor`): O procesador `process_diagrams` é independente dos motores individuais; xestiona unicamente o fluxo nunha soa pasada, a caché por hash SHA-256 e os atributos comúns de figura Pandoc (`width`, `height`, `caption`, `id`), delegando o resto polimorficamente.
+

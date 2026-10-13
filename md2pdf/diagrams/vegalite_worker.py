@@ -6,7 +6,15 @@ from pathlib import Path
 
 def main():
     import vl_convert as vlc
-    source, output, fmt = sys.argv[1:]
+    args = sys.argv[1:]
+    positional = []
+    options = {}
+    for arg in args:
+        if arg.startswith('--theme='):
+            options['theme'] = arg.split('=', 1)[1]
+        elif not arg.startswith('--'):
+            positional.append(arg)
+    source, output, fmt = positional
     spec = json.loads(Path(source).read_text(encoding='utf-8'))
     converter = {
         'svg': vlc.vegalite_to_svg,
@@ -14,7 +22,14 @@ def main():
         'png': vlc.vegalite_to_png,
     }[fmt]
     # Lista baleira: ningunha orixe externa permitida.
-    result = converter(spec, allowed_base_urls=[])
+    kwargs = {
+        'allowed_base_urls': [],
+        'config': {'font': 'Source Sans 3, sans-serif'},
+    }
+    theme = options.get('theme')
+    if theme and theme not in ('default', 'none'):
+        kwargs['theme'] = theme
+    result = converter(spec, **kwargs)
     if isinstance(result, str):
         Path(output).write_text(result, encoding='utf-8')
     else:

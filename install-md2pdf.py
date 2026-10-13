@@ -15,11 +15,13 @@ Onde instala (Linux):
     ~/.local/share/md2pdf/md2pdf.css                  (estilos HTML)
     ~/.local/share/md2pdf/html.lua                    (semántica HTML)
     ~/.local/share/md2pdf/drake-jb.theme             (cores de resaltado)
+    ~/.local/share/md2pdf/javadoc.xml                (sintaxe Javadoc corrixida)
     ~/.local/share/md2pdf/auto-table-widths.lua      (filtro Lua táboas)
     ~/.local/share/md2pdf/small-table.lua            (filtro Lua táboas pequenas)
     ~/.local/share/md2pdf/callouts.lua               (filtro Lua callouts PDF)
     ~/.local/share/md2pdf/callouts-docx.lua          (filtro Lua callouts DOCX)
     ~/.local/share/md2pdf/hl-lines.lua               (filtro Lua resaltado liñas)
+    ~/.local/share/md2pdf/compact-code.lua           (filtro Lua bloques de código compactos)
     ~/.local/share/md2pdf/br.lua                     (filtro Lua <br> → salto de liña)
     ~/.local/share/md2pdf/figure-captions.lua        (filtro Lua pés e referencias de figuras)
     ~/.local/share/md2pdf/reference.docx             (estilos DOCX, opcional)
@@ -41,6 +43,8 @@ DATA_FILES_REQUIRED = [
     'md2pdf.latex',
     'md2pdf-preamble.tex',
     'auto-table-widths.lua',
+    'term-pairs.lua',
+    'terminal-blocks.lua',
     'md2pdf.html',
     'md2pdf.css',
     'html.lua',
@@ -49,10 +53,12 @@ DATA_FILES_REQUIRED = [
 # Activos opcionais: copiados se existen, saltados silenciosamente se non
 DATA_FILES_OPTIONAL = [
     'drake-jb.theme',
+    'javadoc.xml',
     'small-table.lua',
     'callouts.lua',
     'callouts-docx.lua',
     'hl-lines.lua',
+    'compact-code.lua',
     'br.lua',
     'figure-captions.lua',
     'reference.docx',
