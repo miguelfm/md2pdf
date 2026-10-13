@@ -1,3 +1,4 @@
+import re
 import shutil
 import subprocess
 import tempfile
@@ -92,6 +93,41 @@ Texto anterior.
         )
         self.assertIn(r'\begin{longtable}', latex)
         self.assertNotIn(r'\noindent\begin{tabular}', latex)
+
+    def test_header_plus_large_table_reserves_first_chunk_before_header(self):
+        rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
+        latex = self.render_latex(
+            '### Táboa grande\n\n| A | B |\n|---|---|\n' + rows + '\n'
+        )
+        # Título 5 + cabeceira 1,4 + cinco filas dunha liña (as catro
+        # protexidas e a seguinte) 7,0 = 13,4.
+        reserve = r'\Needspace{14\baselineskip}'
+        header = r'\subsubsection{Táboa grande}'
+        table = r'\begin{longtable}'
+        self.assertIn(reserve, latex)
+        self.assertLess(latex.index(reserve), latex.index(header))
+        between = latex[latex.index(header):latex.index(table)]
+        self.assertNotIn(r'\Needspace', between)
+
+    def test_wrapped_rows_increase_the_reservation(self):
+        long_text = 'texto longo que ocupa varias liñas na cela ' * 2
+        rows = '\n'.join(f'| {i} | {long_text} |' for i in range(1, 8))
+        latex = self.render_latex(
+            '### Táboa grande\n\n| A | B |\n|---|---|\n' + rows + '\n'
+        )
+        match = re.search(r'\\Needspace\{(\d+)\\baselineskip\}', latex)
+        self.assertIsNotNone(match)
+        self.assertGreater(int(match.group(1)), 14)
+        self.assertLess(latex.index(match.group(0)),
+                        latex.index(r'\subsubsection{Táboa grande}'))
+
+    def test_standalone_large_table_has_no_needspace(self):
+        rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
+        latex = self.render_latex(
+            'Texto anterior.\n\n| A | B |\n|---|---|\n' + rows + '\n'
+        )
+        self.assertIn(r'\begin{longtable}', latex)
+        self.assertNotIn(r'\Needspace', latex)
 
     def test_large_table_has_subtle_repeated_header_without_foot(self):
         rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))

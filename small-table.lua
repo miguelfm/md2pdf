@@ -231,6 +231,99 @@ local function convert_small_table(tbl, needed_lines, include_needspace)
   return pandoc.RawBlock('latex', result)
 end
 
+-- Altura estimada do primeiro bloque indivisible dunha longtable, para
+-- reservala antes dun título que a precede. Sen esa reserva, o título queda só
+-- ao final da páxina: \longtable desactiva \if@nobreak, \LT@start deixa un
+-- \penalty\z@ despois do título, e se a cabeceira e as filas protexidas con
+-- \\* non caben, LaTeX corta entre o título e a táboa.
+--
+-- As medidas son as do modelo por defecto (A4, marxes de 22 mm, corpo de
+-- 13 pt e táboas en \small con arraystretch 1.5), en \baselineskip do corpo
+-- (18,8 pt): unha fila dunha liña ocupa 25,7 pt e cada liña máis, 17,1 pt.
+-- Desde a última liña do texto anterior ata a cabeceira da táboa van uns
+-- 98 pt. Cada carácter da cela ocupa de media uns 5 pt. É unha estimación: se
+-- se pasa, o título salta antes do necesario.
+local TEXT_WIDTH_PT = 470
+local TABCOLSEP_PT = 6
+local CHAR_WIDTH_PT = 5.0
+local HEADING_LINES = 5
+local ROW_LINES = 1.4
+local EXTRA_LINE = 0.9
+local CAPTION_LINES = 1.5
+
+-- Liñas dunha cela: repártense as palabras enteiras no ancho da columna,
+-- porque auto-table-widths axusta as columnas estreitas á palabra máis longa.
+-- O ancho de cada p{} é a súa fracción de \linewidth menos os \tabcolsep
+-- entre columnas.
+-- auto-table-widths converte o código das celas en LaTeX en bruto, que
+-- stringify descarta. Para medilo quítanse as ordes e as chaves.
+local function latex_text(s)
+  s = s:gsub('\\discretionary%b{}%b{}%b{}', '')
+  s = s:gsub('\\[%a@]+%*?', '')
+  return (s:gsub('[{}]', ''))
+end
+
+local function cell_text(cell)
+  return pandoc.utils.stringify(cell.contents:walk({
+    RawInline = function(raw)
+      if raw.format:match('latex') then return pandoc.Str(latex_text(raw.text)) end
+    end,
+  }))
+end
+
+local function cell_lines(cell, width, ncols)
+  -- Columnas de ancho natural: o texto non parte.
+  if type(width) ~= 'number' or width <= 0 then return 1 end
+  local avail = width * (TEXT_WIDTH_PT - 2 * TABCOLSEP_PT * (ncols - 1))
+  local per_line = math.max(1, math.floor(avail / CHAR_WIDTH_PT))
+  local lines, used = 1, 0
+  for word in cell_text(cell):gmatch('%S+') do
+    local len = utf8.len(word) or #word
+    if used == 0 then
+      used = len
+    elseif used + 1 + len <= per_line then
+      used = used + 1 + len
+    else
+      lines = lines + 1
+      used = len
+    end
+  end
+  return lines
+end
+
+local function row_lines(row, colspecs)
+  local k = 1
+  for j, cell in ipairs(row.cells) do
+    local spec = colspecs[j]
+    k = math.max(k, cell_lines(cell, spec and spec[2], #colspecs))
+  end
+  return ROW_LINES + EXTRA_LINE * (k - 1)
+end
+
+local function first_chunk_lines(tbl)
+  -- enhance_longtable protexe con \\* as primeiras min_first filas, así que o
+  -- primeiro corte posible vén despois da fila min_first + 1.
+  local total = count_body_rows(tbl)
+  local min_first = math.min(MIN_FIRST_ROWS, math.max(1, total - 2))
+  local chunk = math.min(total, min_first + 1)
+  local lines = HEADING_LINES
+  if tbl.caption and tbl.caption.long and #tbl.caption.long > 0 then
+    lines = lines + CAPTION_LINES
+  end
+  for _, row in ipairs(tbl.head.rows) do
+    lines = lines + row_lines(row, tbl.colspecs)
+  end
+  local n = 0
+  for _, body in ipairs(tbl.bodies) do
+    for _, row in ipairs(body.body) do
+      if n >= chunk then break end
+      lines = lines + row_lines(row, tbl.colspecs)
+      n = n + 1
+    end
+  end
+  return math.ceil(lines)
+end
+
 local function convert_large_table(tbl)
   if not FORMAT:match('latex') then return tbl end
   local latex = pandoc.write(pandoc.Pandoc({tbl}), 'latex')
@@ -253,6 +346,11 @@ end
 -- e a táboa convértese a tabular sen un segundo \needspace. As táboas pequenas
 -- que non seguen inmediatamente a unha cabeceira conservan o comportamento
 -- anterior.
+--
+-- Se a táboa é grande, segue como longtable, e a reserva antes do Header cobre
+-- só o primeiro bloque indivisible (first_chunk_lines). Esta reserva vai antes
+-- do título, non entre o título e a táboa, que é onde se desincronizaría a
+-- longtable.
 local function is_centering_prefix(block)
   return block
     and block.t == 'RawBlock'
@@ -303,6 +401,12 @@ function Blocks(blocks)
           i = i + 2
           goto continue
         end
+      elseif FORMAT:match('latex') then
+        insert_needspace(out, first_chunk_lines(next_block))
+        out:insert(current)
+        out:insert(convert_large_table(next_block))
+        i = i + 2
+        goto continue
       end
     end
 
@@ -328,6 +432,14 @@ function Blocks(blocks)
           i = i + 4
           goto continue
         end
+      elseif FORMAT:match('latex') then
+        insert_needspace(out, first_chunk_lines(tbl))
+        out:insert(current)
+        out:insert(next_block)
+        out:insert(convert_large_table(tbl))
+        out:insert(blocks[i + 3])
+        i = i + 4
+        goto continue
       end
     end
 
