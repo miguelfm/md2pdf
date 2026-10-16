@@ -681,8 +681,9 @@ Deste xeito indícase de forma inequívoca que se trata do mesmo bloque continuo
 O script xera dous modos de presentación do título, ambos construídos en LaTeX puro:
 
 **Modo por defecto (sen `--titlepage`):**
-- A etiqueta `activity` aparece en `\LARGE\bfseries` centrada, con **liñas decorativas** arriba e abaixo axustadas exactamente ao ancho do texto (`\sbox`/`\wd`), antes do TOC.
-- A mesma etiqueta repítese ao inicio da primeira páxina de contido, separando visualmente o TOC do corpo.
+- Antes do TOC vai o título do documento (o primeiro `#` ou `title`), centrado en `\LARGE\bfseries`.
+- A etiqueta `activity` abre a primeira páxina de contido, antes do primeiro `##`: centrada en `\LARGE\bfseries`, con **liñas decorativas** arriba e abaixo axustadas ao ancho do texto (`\sbox`/`\wd`). Se non cabe nunha liña, a etiqueta pártese e as liñas decorativas quedan no ancho da liña.
+- Un espazo non separábel (U+00A0) no valor de `activity` pasa a `~`: serve para que as dúas últimas palabras dunha etiqueta longa non queden separadas.
 - A cor da etiqueta e das liñas decorativas usa o ton `heading-section` (`#1C2F4A` en día, tostado en noite, negro en impresión).
 - Sen `activity`, non se xera ningunha etiqueta.
 

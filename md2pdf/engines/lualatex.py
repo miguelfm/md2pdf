@@ -48,6 +48,7 @@ def _tex_escape(text: str) -> str:
         ('^',  '\\textasciicircum{}'),
         ('_',  '\\_'),
         ('~',  '\\textasciitilde{}'),
+        ('\N{NO-BREAK SPACE}', '~'),
     ]
     for old, new in replacements:
         text = text.replace(old, new)
@@ -70,9 +71,8 @@ def _build_activity_label(activity: str, print_mode: bool,
                            night_mode: bool = False) -> str:
     """
     Xera LaTeX para o identificador da actividade (etiqueta centralizada).
-    Úsase en dous sitios:
-      - como -B sen titlepage: antes do TOC
-      - como bloque raw no corpo: antes do primeiro ## en ambos modos
+    Insírese como bloque raw no corpo, antes do primeiro ##, con portada
+    ou sen ela.
     """
     if print_mode:
         color = 'black'
@@ -82,6 +82,9 @@ def _build_activity_label(activity: str, print_mode: bool,
     return (
         '\\begin{center}\n'
         f'  \\sbox0{{\\LARGE\\bfseries\\sffamily {act}}}\n'
+        # Unha etiqueta que non cabe nunha liña pártese ao compoñela;
+        # as raias quedan no ancho da liña, non no da etiqueta enteira.
+        '  \\ifdim\\wd0>\\linewidth\\sbox0{\\hbox to\\linewidth{}}\\fi\n'
         '  {\\color{heading-section}\\rule{\\wd0}{0.4pt}}\\par\n'
         '  \\vspace{0.35em}\n'
         f'  {{\\LARGE\\bfseries\\sffamily\\color{{{color}}}{act}\\par}}\n'
