@@ -122,6 +122,7 @@ Os campos de metadatos extráense por orde de prioridade:
 | `decimal-align` | Táboas do PDF | `false` desactiva o aliñamento decimal das columnas numéricas (como `--no-decimal-align`) |
 | `terminal-blocks` | Bloques de código (PDF/HTML) | `false` desactiva o fondo diferenciado de comandos de terminal (como `--no-terminal-blocks`) |
 | `code-compact-threshold` | Bloques de código (PDF/HTML) | Limiar de liñas (ex: `25`) para compactar automaticamente bloques longos (por defecto `0`: desactivado) |
+| `code-keep-lines` | Bloques de código (LuaLaTeX) | Máximo de liñas para manter o bloque enteiro na mesma páxina (por defecto `12`; `0` desactívao) |
 
 O campo `subtitle` acepta como alias de `activity` para compatibilidade con documentos anteriores.
 
@@ -611,7 +612,19 @@ O filtro Lua e o preámbulo xestionan conxuntamente o código en liña en LaTeX 
 
 O paquete `fvextra` redefine `verbatim` para que liñas longas rompan automaticamente con un indicador visual `↪` (gris discreto), evitando que o texto se saia da páxina en bloques de código sen linguaxe especificada.
 
-Os bloques de código que non caben nunha soa páxina **córtanse na marxe inferior e continúan na páxina seguinte**, en LuaLaTeX mediante `tcolorbox[breakable]`. O borde do bloque trunca visualmente na páxina 1 e reabre na páxina 2.
+En LuaLaTeX, os bloques de **ata 12 liñas de fonte, incluídas as baleiras**, mantéñense enteiros: se non caben no espazo dispoñible, pasan á páxina seguinte. O limiar lese dos metadatos coa mesma convención que `code-compact-threshold`:
+
+```yaml
+code-keep-lines: 12  # 0 desactiva a protección dos bloques curtos
+```
+
+A protección aplícase tamén a `text`, aos bloques de terminal, aos bloques con `hl`, aos compactos e aos situados en listas ou callouts. É independente de `.compact` e do seu limiar, e funciona tamén con `--print` e `--night`. Conta liñas de fonte, non as liñas visuais producidas ao dobrar liñas longas: evita limiares excesivos ou bloques de poucas liñas pero moi longas que poidan superar a altura dunha páxina. Manter un bloque enteiro pode deixar espazo en branco ao final da páxina anterior; baixa o limiar se prefires unha composición máis densa.
+
+Os bloques que superan o limiar **poden cortarse na marxe inferior e continuar na páxina seguinte**, mediante `tcolorbox[breakable]`. A caixa queda aberta no corte, sen bordo horizontal. Mantense `lines before break=3`, que controla o fragmento anterior ao corte; **non se garante un mínimo de tres liñas no fragmento final**. Non se engade control de viúvas mediante parches internos de `tcolorbox` ou `fvextra`, nin se usa `\Needspace` para o código, pois pode desincronizar `longtable`.
+
+HTML e DOCX conservan o comportamento anterior. En HTML, o CSS de impresión xa inclúe `pre { break-inside: avoid-page; }`.
+
+A [verificación de paxinación](VERIFICACION-CODIGO.md) recolle o caso sintético, a comparación antes/despois en tres documentos docentes e os ocos observados co limiar de 12 liñas.
 
 ### Diferenciación de bloques de código e terminal
 
@@ -835,6 +848,7 @@ md2pdf/
 ├── callouts-docx.lua          Filtro Lua para callouts en DOCX
 ├── hl-lines.lua               Filtro Lua para resaltado de liñas (LuaLaTeX)
 ├── compact-code.lua           Filtro Lua para bloques de código compactos
+├── keep-code.lua              Filtro Lua para manter xuntos os bloques curtos (PDF)
 ├── terminal-blocks.lua        Filtro Lua para fondo diferenciado de terminal
 ├── term-pairs.lua             Filtro Lua para pares de terminal/código
 ├── figure-captions.lua        Filtro Lua para pés de figura e referencias
@@ -918,6 +932,7 @@ python install-md2pdf.py
 ~/.local/share/md2pdf/hl-lines.lua                 ← filtro Lua para resaltado de liñas
 ~/.local/share/md2pdf/figure-captions.lua          ← filtro Lua para pés de figura
 ~/.local/share/md2pdf/compact-code.lua             ← filtro Lua para bloques de código compactos
+~/.local/share/md2pdf/keep-code.lua                ← filtro Lua para bloques de código curtos
 ~/.local/share/md2pdf/terminal-blocks.lua          ← filtro Lua para bloques de terminal
 ~/.local/share/md2pdf/term-pairs.lua               ← filtro Lua para pares de terminal/código
 ~/.local/share/md2pdf/javadoc.xml                  ← sintaxe Javadoc corrixida

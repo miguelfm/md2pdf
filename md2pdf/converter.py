@@ -261,6 +261,7 @@ def convert_one(
             callouts=callouts,
             decimal_align=decimal_align,
             terminal_blocks=terminal_blocks,
+            code_keep_lines=md_meta.get('code-keep-lines'),
             author=md_meta.get('author'),
             keywords=md_meta.get('keywords'),
             subject=md_meta.get('subject') or None,

@@ -109,6 +109,11 @@ def _find_compact_code_filter() -> Path | None:
     return _find_asset('compact-code.lua')
 
 
+def _find_keep_code_filter() -> Path | None:
+    """Busca o filtro Lua para manter xuntos os bloques de código curtos."""
+    return _find_asset('keep-code.lua')
+
+
 def _find_br_filter() -> Path | None:
     """Busca o filtro Lua para converter <br> a \newline{} en LaTeX (br.lua)."""
     return _find_asset('br.lua')

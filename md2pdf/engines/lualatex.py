@@ -22,6 +22,7 @@ from ..config import (
 from ..assets import (
     _find_callouts_filter,
     _find_compact_code_filter,
+    _find_keep_code_filter,
     _find_hl_lines_filter,
     _find_javadoc_syntax,
     _find_terminal_blocks_filter,
@@ -357,7 +358,8 @@ def build_lualatex_cmd(
     if term_pairs:
         cmd.extend(['--lua-filter', str(term_pairs)])
 
-    # Filtros Lua (orde importante: anchos → táboas pequenas → callouts → br → hl-lines)
+    # Filtros Lua: anchos → táboas pequenas → callouts → br → terminal
+    # → compact-code → keep-code → hl-lines.
     # Nota: Mermaid xa NON se procesa como filtro Lua aquí: faise no preprocesado
     # Python (md2pdf/mermaid.py) antes de chamar a Pandoc, para evitar problemas
     # de Chromium colgando cando se executa anidado dentro de Lua/Pandoc.
@@ -391,6 +393,17 @@ def build_lualatex_cmd(
     compact_filter = _find_compact_code_filter()
     if compact_filter:
         cmd.extend(['--lua-filter', str(compact_filter)])
+
+    keep_filter = _find_keep_code_filter()
+    if keep_filter:
+        cmd.extend(['--lua-filter', str(keep_filter)])
+        # O preprocesamento elimina o front matter: transportar o valor
+        # combinado de metadata.yaml e do documento, incluído o cero.
+        code_keep_lines = kwargs.get('code_keep_lines')
+        if code_keep_lines is not None:
+            # Os lectores YAML sinxelos conservan os comentarios en liña.
+            code_keep_lines = str(code_keep_lines).split('#', 1)[0].strip().strip('\'"')
+            cmd.extend(['--metadata', f'code-keep-lines={code_keep_lines}'])
 
     hl_filter = _find_hl_lines_filter()
     if hl_filter:

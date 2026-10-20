@@ -442,6 +442,18 @@ Estas marcas úsanse no texto do documento. Dentro dun bloque de código, o Mark
 consérvase literalmente: `.mark` e os asteriscos non destacan palabras do bloque.
 Para liñas completas, usa `hl` (sección 13.2).
 
+### 13.8 Rotura de páxinas en bloques de código (LuaLaTeX)
+
+Os bloques de ata **12 liñas de fonte** (incluídas as baleiras) mantéñense enteiros: se non caben, pasan á páxina seguinte. Configúrase nos metadatos, como `code-compact-threshold`:
+
+```yaml
+code-keep-lines: 12  # máximo incluído; 0 desactiva a protección
+```
+
+Funciona con `text`, terminal, `.compact`, o limiar automático de compactación, `hl`, listas, callouts e os modos `--print`/`--night`. O reconto non inclúe as liñas visuais creadas ao dobrar liñas longas; evita limiares que poidan producir unha caixa máis alta ca unha páxina. Pode quedar espazo en branco na páxina anterior: reduce o limiar se é excesivo.
+
+Os bloques máis longos seguen podendo partirse, coa caixa aberta no corte. `lines before break=3` controla o fragmento anterior ao corte, pero non garante tres liñas no fragmento final; esa limitación mantense. Non engadas `\Needspace` para o código preto de táboas longas, pois pode desincronizar `longtable`. HTML e DOCX quedan igual; o CSS de impresión de HTML xa evita cortes dentro de `pre`.
+
 ## 14. Diagramas e gráficos
 
 ### 14.1 Regras comúns

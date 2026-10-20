@@ -216,6 +216,7 @@
 \DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines=true,breakanywhere=true}
 % Estilo de fonte por defecto: 10,8 pt (\footnotesize) con interliñado pedagóxico (15,4 pt / 1,43x)
 \tcbset{md2pdf-code-font/.style={fontupper=\footnotesize}}
+\tcbset{md2pdf-code-break/.style={}}
 \makeatletter
 \@ifundefined{Shaded}{%
   \newenvironment{Shaded}{}{}%
@@ -232,11 +233,16 @@
     lines before break=3,
     % Caixa aberta no corte: esquinas rectas e sen liña de bordo no salto de páxina
     bottomrule at break=0pt,
-    toprule at break=0pt
+    toprule at break=0pt,
+    % Ao final para que os bloques curtos poidan anular breakable localmente.
+    md2pdf-code-break
   ]%
 }{%
   \end{tcolorbox}%
 }
+\newenvironment{KeepCodeBlock}{%
+  \tcbset{md2pdf-code-break/.style={unbreakable}}%
+}{}
 % Bloques de código compactos (para listados longos opt-in con .compact ou limiar):
 % 10 pt con interliñado equilibrado (11 pt nominal × 1.2083 = 13,0 pt / 1,30x)
 \newenvironment{CompactBlock}{%
