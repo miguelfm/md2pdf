@@ -248,6 +248,27 @@
 \newenvironment{CompactBlock}{%
   \tcbset{md2pdf-code-font/.style={fontupper=\fontsize{10pt}{11pt}\selectfont}}%
 }{}
+% Variante proporcional: calcula a base a partir de \footnotesize antes
+% de aplicar os 10 pt. \f@baselineskip non inclúe \baselinestretch, que
+% \selectfont aplica unha soa vez ao seleccionar o novo tamaño.
+\newcommand{\mdTwoPdfProportionalCompactFont}{%
+  \footnotesize
+  \edef\mdTwoPdfCompactBaseline{%
+    \fpeval{10 * \strip@pt\dimexpr\f@baselineskip\relax / \f@size}pt}%
+  % fvextra resta un solapamento fixo ao compor cada liña; tamén debe
+  % escalarse para conservar a proporción no PDF, non só na base nominal.
+  \ifcsname FV@backgroundcolorboxoverlap\endcsname
+    \ifx\FV@backgroundcolorboxoverlap\relax\else
+      \edef\mdTwoPdfCompactOverlap{\noexpand\fvset{backgroundcolorboxoverlap=%
+        \fpeval{10 * \strip@pt\dimexpr\FV@backgroundcolorboxoverlap\relax / \f@size}pt}}%
+      \mdTwoPdfCompactOverlap
+    \fi
+  \fi
+  \fontsize{10pt}{\mdTwoPdfCompactBaseline}\selectfont
+}
+\newenvironment{ProportionalCompactBlock}{%
+  \tcbset{md2pdf-code-font/.style={fontupper=\mdTwoPdfProportionalCompactFont}}%
+}{}
 \newenvironment{TerminalBlock}{%
   \colorlet{code-bg}{terminal-bg}%
   \colorlet{code-border}{terminal-border}%

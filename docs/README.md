@@ -668,6 +668,26 @@ docker logs -f db
 ```
 ````
 
+#### Interliñado proporcional ao tamaño da letra
+
+Para conservar a proporción do formato normal ao reducir a letra, engade
+`compact-leading="proportional"` ao bloque compacto:
+
+````markdown
+```php {.compact compact-leading="proportional"}
+<?php for ($i = $total + 1; $i <= $maxTotal; $i++): ?>
+    <td></td>
+<?php endfor; ?>
+```
+````
+
+En PDF mantén os 10 pt do modo compacto e reduce o interliñado na mesma
+proporción que a letra do código normal, arredor dun 7,7 % co formato
+predeterminado. En HTML tamén conserva a proporción do formato normal.
+O axuste é local ao bloque e é compatíbel co resaltado de liñas e cos bloques
+de terminal. Sen este atributo, `.compact` conserva o interliñado máis denso
+de 13 pt. O atributo por si só non activa o modo compacto.
+
 #### Limiar automático opcional
 
 Se nun documento ou curso prefires que calquera bloque que supere certo número de liñas se faga compacto de xeito automático sen ter que marcalo a man, podes indicar o limiar no front matter YAML ou en `metadata.yaml`:

@@ -336,6 +336,12 @@ div.compact pre code,
 div.sourceCode pre.compact code {
   font-size: .80rem;
 }
+/* Conserva a proporción entre o interliñado normal e a letra do código. */
+pre.compact-proportional,
+div.compact-proportional pre,
+div.sourceCode pre.compact-proportional {
+  line-height: calc(1.42 * .80 / .86);
+}
 div.sourceCode {
 margin: 1rem 0 1.25rem;
 }

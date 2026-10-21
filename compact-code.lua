@@ -16,6 +16,10 @@
 --   ```python {.compacto}
 --   ...
 --   ```
+-- Para reducir só o tamaño e conservar a proporción do interliñado:
+--   ```python {.compact compact-leading="proportional"}
+--   ...
+--   ```
 --
 -- Limiar automático opcional:
 --   Pódese activar no front matter YAML ou en metadatos de Pandoc:
@@ -99,11 +103,17 @@ local function process_codeblock(block)
     block.classes:insert('compact')
   end
 
+  local proportional = block.attributes['compact-leading'] == 'proportional'
+  if proportional and not block.classes:includes('compact-proportional') then
+    block.classes:insert('compact-proportional')
+  end
+
   if FORMAT:match('latex') then
+    local environment = proportional and 'ProportionalCompactBlock' or 'CompactBlock'
     return {
-      pandoc.RawBlock('latex', '\\begin{CompactBlock}'),
+      pandoc.RawBlock('latex', '\\begin{' .. environment .. '}'),
       block,
-      pandoc.RawBlock('latex', '\\end{CompactBlock}')
+      pandoc.RawBlock('latex', '\\end{' .. environment .. '}')
     }
   end
 
