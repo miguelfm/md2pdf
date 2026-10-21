@@ -56,5 +56,10 @@ foreach ($format in @('lualatex','html','docx')) {
     Invoke-Checked $launcher @($sample,'-e',$format,'-o',$output)
     if (-not (Test-Path $output) -or (Get-Item $output).Length -eq 0) { throw "Non se xerou $output" }
 }
-Invoke-Checked $python @('-c','import pymupdf,sys; d=pymupdf.open(sys.argv[1]); assert len(d)>0; assert "Windows" in "".join(p.get_text() for p in d); print("PDF verificado:",len(d),"paxinas")',(Join-Path $PSScriptRoot 'proba.pdf'))
+# Use Python single-quoted literals: Windows PowerShell strips embedded double
+# quotes when passing native command arguments (including Python's -c code).
+$verifyPdf = @'
+import pymupdf,sys; d=pymupdf.open(sys.argv[1]); assert len(d)>0; assert 'Windows' in ''.join(p.get_text() for p in d); print('PDF verificado:',len(d),'paxinas')
+'@
+Invoke-Checked $python @('-c',$verifyPdf,(Join-Path $PSScriptRoot 'proba.pdf'))
 Write-Host 'Instalacion e probas completadas. Abre outro terminal para usar md2pdf desde calquera cartafol.'

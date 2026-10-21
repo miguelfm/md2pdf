@@ -89,6 +89,14 @@ md2pdf documento.md
 Os documentos de proba quedan en `scripts/windows/proba.pdf`, `proba.html`
 e `proba.docx`. Abre o PDF para comprobar tamén a súa aparencia.
 
+A comprobación final de `02-user.ps1` abre o PDF con PyMuPDF, verifica que
+ten páxinas e que o texto extraído contén `Windows`, e mostra
+`PDF verificado: N paxinas`. O código pasado a Python con `-c` usa literais
+con comiñas simples para conservar as cadeas ao atravesar Windows PowerShell.
+As versións anteriores podían perder as comiñas dobres e fallar con
+`SyntaxError: unterminated string literal` aínda que os documentos xa estivesen
+xerados. Se atopas ese erro, actualiza o repositorio e repite o paso 2.
+
 Os scripts detéñense ante erros e poden executarse de novo tras corrixilos.
 Se non se atopa un comando recentemente instalado, abre outro terminal e
 repíteo. A detección adicional de TeX Live busca `C:\texlive\*\bin\windows`;
