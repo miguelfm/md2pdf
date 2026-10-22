@@ -93,12 +93,18 @@ Os exemplos deben ser pequenos, executables e coherentes coa versión das ferram
 curso. Se a saída é importante para entender o exemplo, amósaa. Non introduzas
 dependencias, APIs ou sintaxe avanzada innecesarias para o obxectivo inmediato.
 
+Cada explicación enténdese onde está. Se comenta código ou unha saída doutro apartado,
+repite ao seu carón o fragmento mínimo: as liñas que comenta e o contexto que as sitúa,
+sen volver explicar o xa explicado. Unha remisión amplía ou conecta, pero non substitúe
+ese fragmento.
+
 ## 5. Terminoloxía
 
-Emprega galego claro e preciso. Na primeira aparición útil dun termo técnico que o
-alumnado atopará en documentación, ferramentas ou código, engade o termo inglés en cursiva:
-código fonte (*source code*), tempo de execución (*runtime*), forzado de tipos (*cast*),
-ámbito (*scope*). Despois usa o termo máis natural.
+Emprega galego claro e preciso. Na primeira aparición dun termo técnico que o alumnado
+atopará en documentación, ferramentas ou código, engade o termo inglés en cursiva cando non
+se deduza do galego: elemento (*token*), traza da pila (*stack trace*), forzado de tipos
+(*cast*). Omíteo se a tradución é directa e se recoñece sen el, como excepción, búfer ou
+código fonte. Despois usa o termo máis natural.
 
 Non traduzas identificadores, comandos, nomes de APIs, nomes de ficheiro nin termos que
 formen parte literal dunha ferramenta.
@@ -135,6 +141,10 @@ Un recurso visual debe reducir carga cognitiva; non se engade por decoración.
 
 Non forces Mermaid cando D2 ou Graphviz representen a relación de maneira máis natural,
 nin uses Vega-Lite para diagramas conceptuais.
+
+Se unha explicación relaciona varias partes, como o teclado, o terminal e o programa, ou o
+cliente e o servidor, un diagrama sitúa cada parte e o que pasa entre elas. Ao seu carón
+van o código e a saída que amosan ese funcionamento.
 
 Como orientación, un diagrama con máis de seis ou oito nodos, ou con etiquetas longas,
 adoita quedar con texto pequeno. Divídeo, cambia de motor ou de orientación, ou
@@ -880,6 +890,9 @@ Contido e pedagoxía:
 - [ ] Non hai repeticións sen función pedagóxica nin contidos adiantados en exceso.
 - [ ] Non se inventaron correspondencias con RA/CA.
 - [ ] Os exemplos son mínimos, coherentes e, cando corresponda, executables.
+- [ ] Ningunha explicación obriga a buscar noutro apartado o código ou a saída que comenta.
+- [ ] As explicacións que relacionan varias partes teñen o seu diagrama, co código e a
+      saída ao carón.
 - [ ] Cada táboa ou diagrama é a representación máis clara do que mostra.
 - [ ] Os callouts teñen función semántica; `warning` e `danger`, xustificados.
 - [ ] Os materiais do alumnado non conteñen solucións.
