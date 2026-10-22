@@ -23,6 +23,7 @@ from ..assets import (
     _find_callouts_filter,
     _find_compact_code_filter,
     _find_keep_code_filter,
+    _find_keep_with_next_filter,
     _find_hl_lines_filter,
     _find_javadoc_syntax,
     _find_terminal_blocks_filter,
@@ -358,8 +359,8 @@ def build_lualatex_cmd(
     if term_pairs:
         cmd.extend(['--lua-filter', str(term_pairs)])
 
-    # Filtros Lua: anchos → táboas pequenas → callouts → br → terminal
-    # → compact-code → keep-code → hl-lines.
+    # Filtros Lua: anchos → táboas pequenas → parágrafos de entrada → callouts
+    # → br → terminal → compact-code → keep-code → hl-lines.
     # Nota: Mermaid xa NON se procesa como filtro Lua aquí: faise no preprocesado
     # Python (md2pdf/mermaid.py) antes de chamar a Pandoc, para evitar problemas
     # de Chromium colgando cando se executa anidado dentro de Lua/Pandoc.
@@ -374,6 +375,18 @@ def build_lualatex_cmd(
     small_table = _find_small_table_filter()
     if small_table:
         cmd.extend(['--lua-filter', str(small_table)])
+
+    # Antes de callouts: os parágrafos e os bloques de dentro dun callout
+    # aínda son elementos de Pandoc, non LaTeX en bruto.
+    keep_with_next = _find_keep_with_next_filter()
+    if keep_with_next:
+        cmd.extend(['--lua-filter', str(keep_with_next)])
+        # Como code-keep-lines: o preprocesamento elimina o front matter.
+        keep_with_next_value = kwargs.get('keep_with_next')
+        if keep_with_next_value is not None:
+            keep_with_next_value = str(keep_with_next_value).split('#', 1)[0]
+            keep_with_next_value = keep_with_next_value.strip().strip('\'"')
+            cmd.extend(['--metadata', f'keep-with-next={keep_with_next_value}'])
 
     if callouts:
         callouts_filter = _find_callouts_filter()

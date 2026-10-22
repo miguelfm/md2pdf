@@ -109,6 +109,11 @@ def _find_compact_code_filter() -> Path | None:
     return _find_asset('compact-code.lua')
 
 
+def _find_keep_with_next_filter() -> Path | None:
+    """Busca o filtro Lua que mantén un parágrafo de entrada co bloque seguinte."""
+    return _find_asset('keep-with-next.lua')
+
+
 def _find_keep_code_filter() -> Path | None:
     """Busca o filtro Lua para manter xuntos os bloques de código curtos."""
     return _find_asset('keep-code.lua')

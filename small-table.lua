@@ -324,6 +324,26 @@ local function first_chunk_lines(tbl)
   return math.ceil(lines)
 end
 
+-- Parágrafo de entrada: remata en «:» e presenta a táboa seguinte. Como en
+-- keep-with-next.lua, que trata os bloques de código e as listas, a reserva
+-- vai antes do parágrafo e inclúe as súas liñas estimadas.
+local LEAD_IN_CHARS_PER_LINE = 85
+local LEAD_IN_GAP = 2
+
+local function is_lead_in(block)
+  if not block or (block.t ~= 'Para' and block.t ~= 'Plain') then
+    return false
+  end
+  -- O texto enteiro, para recoñecer tamén «**Erros habituais:**».
+  return pandoc.utils.stringify(block):match(':%s*$') ~= nil
+end
+
+local function lead_in_lines(block)
+  local text = pandoc.utils.stringify(block)
+  local chars = utf8.len(text) or #text
+  return math.max(1, math.ceil(chars / LEAD_IN_CHARS_PER_LINE))
+end
+
 local function convert_large_table(tbl)
   if not FORMAT:match('latex') then return tbl end
   local latex = pandoc.write(pandoc.Pandoc({tbl}), 'latex')
@@ -440,6 +460,46 @@ function Blocks(blocks)
         out:insert(blocks[i + 3])
         i = i + 4
         goto continue
+      end
+    end
+
+    -- Parágrafo de entrada + Table, coa táboa directa ou envolvida polo
+    -- centrado de auto-table-widths.lua. A reserva vai antes do parágrafo
+    -- (e das cabeceiras que o precedan), non entre o parágrafo e a táboa:
+    -- alí deixaría o corte que se quere evitar e desincronizaría a longtable.
+    if FORMAT:match('latex') and is_lead_in(current) and next_block then
+      local wrapped = is_centering_prefix(next_block)
+        and blocks[i + 2] and blocks[i + 2].t == 'Table'
+        and is_group_suffix(blocks[i + 3])
+      local tbl = next_block.t == 'Table' and next_block
+        or (wrapped and blocks[i + 2]) or nil
+      if tbl then
+        local para = lead_in_lines(current)
+        local convertible, nrows = is_small_convertible_table(tbl)
+        local converted, needed
+        if convertible then
+          converted = convert_small_table(tbl, nrows + 5, false)
+          needed = nrows + 5 + para
+        else
+          converted = convert_large_table(tbl)
+          -- HEADING_LINES estima a cabeceira; dun parágrafo quedan dúas liñas
+          -- de separación antes da táboa.
+          needed = first_chunk_lines(tbl) - HEADING_LINES + LEAD_IN_GAP + para
+        end
+        if converted then
+          insert_needspace(out, needed)
+          out:insert(current)
+          if wrapped then
+            out:insert(next_block)
+            out:insert(converted)
+            out:insert(blocks[i + 3])
+            i = i + 4
+          else
+            out:insert(converted)
+            i = i + 2
+          end
+          goto continue
+        end
       end
     end
 

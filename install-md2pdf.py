@@ -23,6 +23,7 @@ Onde instala (Linux):
     ~/.local/share/md2pdf/hl-lines.lua               (filtro Lua resaltado liñas)
     ~/.local/share/md2pdf/compact-code.lua           (filtro Lua bloques de código compactos)
     ~/.local/share/md2pdf/keep-code.lua              (filtro Lua bloques de código curtos)
+    ~/.local/share/md2pdf/keep-with-next.lua         (filtro Lua parágrafos de entrada)
     ~/.local/share/md2pdf/br.lua                     (filtro Lua <br> → salto de liña)
     ~/.local/share/md2pdf/figure-captions.lua        (filtro Lua pés e referencias de figuras)
     ~/.local/share/md2pdf/reference.docx             (estilos DOCX, opcional)
@@ -61,6 +62,7 @@ DATA_FILES_OPTIONAL = [
     'hl-lines.lua',
     'compact-code.lua',
     'keep-code.lua',
+    'keep-with-next.lua',
     'br.lua',
     'figure-captions.lua',
     'reference.docx',
