@@ -348,10 +348,17 @@
   ]{tocline}{subsubsection}%
   \let\origtableofcontents\tableofcontents
   \renewcommand{\tableofcontents}{%
-    \par{\centering
-    \begin{minipage}{0.68\linewidth}%
-      \origtableofcontents
-    \end{minipage}\par}%
+    % A lista conserva a largura centrada e admite saltos de páxina.
+    \begin{list}{}{%
+      \setlength{\leftmargin}{0.16\linewidth}%
+      \setlength{\rightmargin}{0.16\linewidth}%
+      \setlength{\labelwidth}{0pt}%
+      \setlength{\labelsep}{0pt}%
+      \setlength{\topsep}{0pt}%
+      \setlength{\partopsep}{0pt}%
+    }%
+      \item[]\origtableofcontents
+    \end{list}%
   }%
 }
 % ── Iconas FontAwesome5 ───────────────────────────────────────

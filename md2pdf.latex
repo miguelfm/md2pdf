@@ -162,6 +162,11 @@ $else$
 \setcounter{secnumdepth}{-\maxdimen}  % eliminar numeración de seccións
 $endif$
 
+% Profundidade solicitada por --toc-depth; o valor por defecto segue en 3.
+$if(toc)$
+\setcounter{tocdepth}{$if(toc-depth)$$toc-depth$$else$3$endif$}
+$endif$
+
 % ── Metadatos KOMA (sen \maketitle — usamos portada propia) ──
 % Necesario para que \@title estea dispoñible nos snippets -B
 $if(title)$\title{$title$}$endif$%
