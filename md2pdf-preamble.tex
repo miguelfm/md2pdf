@@ -168,7 +168,7 @@
   tcbox raise base,
   md2pdf-inline-style
 }
-\let\oldtexttt\texttt
+\NewCommandCopy\oldtexttt\texttt
 \newif\ifmdpdfinlinepill
 \mdpdfinlinepillfalse  % Deshabilitado por defecto; activar con \mdpdfinlinepilltrue ou --inline-pill
 
