@@ -10,6 +10,10 @@
 --   - bloque de código de ata code-keep-lines liñas: todas as súas liñas;
 --   - bloque máis longo: as primeiras MIN_CODE_LINES;
 --   - lista: as liñas estimadas do primeiro elemento, como moito MAX_ITEM_LINES.
+-- As liñas do código cóntanse como saen no PDF: unha liña da fonte máis longa
+-- ca CODE_CHARS_PER_LINE parte nos espazos (breaklines de fvextra) e ocupa
+-- varias. Contar só as liñas da fonte deixaba a reserva curta: o parágrafo
+-- quedaba na páxina e o bloque, indivisíbel, pasaba enteiro á seguinte.
 -- Se a reserva non cabe, o salto vai antes do parágrafo. As táboas trátaas
 -- small-table.lua coa mesma regra, porque xa calcula a súa altura.
 --
@@ -20,6 +24,7 @@
 -- keep-with-next: false nos metadatos desactiva o filtro.
 
 local CHARS_PER_LINE = 85      -- texto do corpo en A4, con marxe
+local CODE_CHARS_PER_LINE = 66 -- código en A4: Source Code Pro de 10,8 pt
 local CODE_PADDING = 2         -- marco e separación do bloque de código
 local MIN_CODE_LINES = 4       -- comezo dun bloque que pode partirse
 local LIST_GAP = 1             -- separación antes da lista
@@ -64,13 +69,44 @@ local function is_diagram(block)
   return false
 end
 
+-- Liñas que ocupa no PDF unha liña de código: as palabras repártense no
+-- ancho, e unha palabra máis longa ca a liña parte en calquera punto
+-- (breakanywhere). A sangría conta na primeira liña.
+local function wrapped_lines(line)
+  local width = CODE_CHARS_PER_LINE
+  local indent = #line:match('^%s*')
+  local lines, used = 1, indent
+  for word in line:gmatch('%S+') do
+    local len = utf8.len(word) or #word
+    if used > indent then
+      if used + 1 + len > width then
+        lines = lines + 1
+        used = 0
+      else
+        used = used + 1
+      end
+    end
+    while used + len > width do
+      lines = lines + 1
+      len = len - (width - used)
+      used = 0
+    end
+    used = used + len
+  end
+  return lines
+end
+
 -- Liñas que hai que reservar para o comezo do bloque, ou nil se non se protexe.
 local function next_lines(block)
   if block.t == 'CodeBlock' then
     if is_diagram(block) then return nil end
-    local lines = 1
-    for _ in block.text:gmatch('\n') do lines = lines + 1 end
-    if keep_lines <= 0 or lines > keep_lines then
+    -- keep-code.lua decide coas liñas da fonte; a reserva, coas do PDF.
+    local source, lines = 0, 0
+    for line in (block.text .. '\n'):gmatch('([^\n]*)\n') do
+      source = source + 1
+      lines = lines + wrapped_lines(line)
+    end
+    if keep_lines <= 0 or source > keep_lines then
       lines = math.min(lines, MIN_CODE_LINES)
     end
     return lines + CODE_PADDING
@@ -87,7 +123,10 @@ end
 
 local function insert_needspace(out, needed)
   local pos = #out + 1
-  while pos > 1 and out[pos - 1].t == 'Header' do
+  -- Non sobe por riba dun título de nivel 1: con --shift-heading-level-by=-1
+  -- é o título do documento, e Pandoc só o toma como tal se é o primeiro
+  -- bloque. Unha reserva antes del deixaba o documento sen \title.
+  while pos > 1 and out[pos - 1].t == 'Header' and out[pos - 1].level > 1 do
     pos = pos - 1
     needed = needed + LINES_PER_EXTRA_HEADER
   end

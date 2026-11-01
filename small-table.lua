@@ -300,6 +300,28 @@ local function row_lines(row, colspecs)
   return ROW_LINES + EXTRA_LINE * (k - 1)
 end
 
+-- Reserva dunha táboa pequena: unha liña por fila e cinco para a cabeceira e
+-- as separacións, máis as liñas que suman as filas cuxas celas parten. Sen
+-- esas liñas, unha táboa de filas con dúas liñas non cabía na reserva: o
+-- título ou o parágrafo que a presenta quedaba ao pé da páxina, e o tabular,
+-- indivisíbel, pasaba enteiro á seguinte.
+local function small_table_lines(tbl, nrows)
+  local extra = 0
+  local function add(row)
+    local k = 1
+    for j, cell in ipairs(row.cells) do
+      local spec = tbl.colspecs[j]
+      k = math.max(k, cell_lines(cell, spec and spec[2], #tbl.colspecs))
+    end
+    extra = extra + EXTRA_LINE * (k - 1)
+  end
+  for _, row in ipairs(tbl.head.rows) do add(row) end
+  for _, body in ipairs(tbl.bodies) do
+    for _, row in ipairs(body.body) do add(row) end
+  end
+  return nrows + 5 + math.ceil(extra)
+end
+
 local function first_chunk_lines(tbl)
   -- enhance_longtable protexe con \\* as primeiras min_first filas, así que o
   -- primeiro corte posible vén despois da fila min_first + 1.
@@ -392,7 +414,10 @@ local LINES_PER_EXTRA_HEADER = 3
 
 local function insert_needspace(out, needed)
   local pos = #out + 1
-  while pos > 1 and out[pos - 1].t == 'Header' do
+  -- Non sobe por riba dun título de nivel 1: con --shift-heading-level-by=-1
+  -- é o título do documento, e Pandoc só o toma como tal se é o primeiro
+  -- bloque. Unha reserva antes del deixaba o documento sen \title.
+  while pos > 1 and out[pos - 1].t == 'Header' and out[pos - 1].level > 1 do
     pos = pos - 1
     needed = needed + LINES_PER_EXTRA_HEADER
   end
@@ -412,17 +437,19 @@ function Blocks(blocks)
     if current.t == 'Header' and next_block and next_block.t == 'Table' then
       local convertible, nrows = is_small_convertible_table(next_block)
       if convertible then
-        local needed = nrows + 5
+        local needed = small_table_lines(next_block, nrows)
         local converted = convert_small_table(next_block, needed, false)
         if converted then
-          insert_needspace(out, needed)
+          if current.level > 1 then insert_needspace(out, needed) end
           out:insert(current)
           out:insert(converted)
           i = i + 2
           goto continue
         end
       elseif FORMAT:match('latex') then
-        insert_needspace(out, first_chunk_lines(next_block))
+        if current.level > 1 then
+          insert_needspace(out, first_chunk_lines(next_block))
+        end
         out:insert(current)
         out:insert(convert_large_table(next_block))
         i = i + 2
@@ -441,10 +468,10 @@ function Blocks(blocks)
       local tbl = blocks[i + 2]
       local convertible, nrows = is_small_convertible_table(tbl)
       if convertible then
-        local needed = nrows + 5
+        local needed = small_table_lines(tbl, nrows)
         local converted = convert_small_table(tbl, needed, false)
         if converted then
-          insert_needspace(out, needed)
+          if current.level > 1 then insert_needspace(out, needed) end
           out:insert(current)
           out:insert(next_block)
           out:insert(converted)
@@ -453,7 +480,9 @@ function Blocks(blocks)
           goto continue
         end
       elseif FORMAT:match('latex') then
-        insert_needspace(out, first_chunk_lines(tbl))
+        if current.level > 1 then
+          insert_needspace(out, first_chunk_lines(tbl))
+        end
         out:insert(current)
         out:insert(next_block)
         out:insert(convert_large_table(tbl))
@@ -478,8 +507,9 @@ function Blocks(blocks)
         local convertible, nrows = is_small_convertible_table(tbl)
         local converted, needed
         if convertible then
-          converted = convert_small_table(tbl, nrows + 5, false)
-          needed = nrows + 5 + para
+          local lines = small_table_lines(tbl, nrows)
+          converted = convert_small_table(tbl, lines, false)
+          needed = lines + para
         else
           converted = convert_large_table(tbl)
           -- HEADING_LINES estima a cabeceira; dun parágrafo quedan dúas liñas
@@ -506,7 +536,7 @@ function Blocks(blocks)
     if current.t == 'Table' then
       local convertible, nrows = is_small_convertible_table(current)
       if convertible then
-        local needed = nrows + 5
+        local needed = small_table_lines(current, nrows)
         local converted = convert_small_table(current, needed, true)
         if converted then
           out:insert(converted)

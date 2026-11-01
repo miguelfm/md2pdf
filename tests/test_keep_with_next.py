@@ -61,6 +61,38 @@ class KeepWithNextTests(unittest.TestCase):
         latex = self.render('Programa:\n\n' + self.code(30))
         self.assertEqual(self.reserve_before(latex, 'Programa:'), 1 + 4 + 2)
 
+    def test_long_code_lines_count_as_they_wrap(self):
+        # 30 palabras de 7 letras: 8 por liña de 66 caracteres, catro liñas.
+        words = ' '.join(['palabra'] * 30)
+        latex = self.render(f'Saída:\n\n```text\n{words}\nfin\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 4 + 1 + 2)
+        # Unha palabra máis longa ca a liña parte en calquera punto.
+        latex = self.render('Saída:\n\n```text\n' + 'x' * 150 + '\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 3 + 2)
+        # A sangría conta na primeira liña.
+        line = '    ' + ' '.join(['abcdefghi'] * 7)
+        latex = self.render(f'Saída:\n\n```text\n{line}\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 2 + 2)
+
+    def test_wrapped_lines_do_not_change_the_keep_limit(self):
+        # keep-code.lua decide coas liñas da fonte: un bloque de 12 liñas
+        # segue sendo curto aínda que as súas liñas partan.
+        long_line = ' '.join(['palabra'] * 20)
+        block = '\n'.join([long_line] * 12)
+        latex = self.render(f'Saída:\n\n```text\n{block}\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 12 * 3 + 2)
+        block = '\n'.join([long_line] * 13)
+        latex = self.render(f'Saída:\n\n```text\n{block}\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 4 + 2)
+
+    def test_reserve_never_goes_before_the_document_title(self):
+        # md2pdf usa --shift-heading-level-by=-1: o # inicial é o título, e
+        # Pandoc só o toma se é o primeiro bloque.
+        md = '# Título\n\nCódigo:\n\n' + self.code(3)
+        latex = self.render(md, '-s', '--shift-heading-level-by=-1')
+        self.assertIn(r'\title{Título}', latex)
+        self.assertEqual(self.reserve_before(latex, 'Código:'), 1 + 3 + 2)
+
     def test_code_keep_lines_metadata(self):
         latex = self.render('Programa:\n\n' + self.code(8), '-M', 'code-keep-lines=5')
         self.assertEqual(self.reserve_before(latex, 'Programa:'), 1 + 4 + 2)
@@ -77,10 +109,11 @@ class KeepWithNextTests(unittest.TestCase):
         self.assertEqual(self.reserve_before(latex, 'Unha lista:'), 1 + 1 + 4)
 
     def test_reserve_goes_before_headers(self):
-        latex = self.render('# Sección\n\n## Apartado\n\nCódigo:\n\n' + self.code(2))
+        # Niveis 2 e 3, como as seccións de md2pdf: o nivel 1 é o título.
+        latex = self.render('## Sección\n\n### Apartado\n\nCódigo:\n\n' + self.code(2))
         # Entre a cabeceira e o parágrafo, \Needspace deixaría un punto de corte.
         self.assertIsNone(self.reserve_before(latex, 'Código:'))
-        self.assertEqual(self.reserve_before(latex, r'\section'), 1 + 2 + 2 + 3 + 3)
+        self.assertEqual(self.reserve_before(latex, r'\subsection'), 1 + 2 + 2 + 3 + 3)
 
     def test_nested_lists_and_callouts(self):
         md = ('1. Engade esta liña:\n\n   ```java\n   int x = 1;\n   ```\n\n'
@@ -105,6 +138,14 @@ class KeepWithNextTests(unittest.TestCase):
         # Dúas filas + 5, como small-table.lua, e a liña do parágrafo.
         self.assertEqual(self.reserve_before(latex, 'Unha táboa:'), 2 + 5 + 1)
         self.assertEqual(latex.count(r'\Needspace'), 1)
+        self.assertIn(r'\begin{tabular}', latex)
+
+    def test_small_table_with_wrapped_rows_before_lead_in(self):
+        long_text = 'texto longo que ocupa varias liñas na cela ' * 2
+        rows = ''.join(f'| {i} | {long_text} |\n' for i in range(3))
+        latex = self.render('Unha táboa:\n\n| A | B |\n|---|---|\n' + rows)
+        # Máis ca unha liña por fila: as celas parten.
+        self.assertGreater(self.reserve_before(latex, 'Unha táboa:'), 3 + 5 + 1)
         self.assertIn(r'\begin{tabular}', latex)
 
     def test_large_table_reserve_before_lead_in(self):

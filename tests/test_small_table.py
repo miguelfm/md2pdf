@@ -86,6 +86,32 @@ Texto anterior.
         self.assertIn(reserve, latex)
         self.assertLess(latex.index(reserve), latex.index(table))
 
+    def test_title_followed_by_table_keeps_the_title(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / 'test.md'
+            src.write_text('# Título\n\n| A | B |\n|---|---|\n| 1 | 2 |\n',
+                           encoding='utf-8')
+            result = subprocess.run(
+                ['pandoc', str(src), '-s', '-t', 'latex',
+                 '--shift-heading-level-by=-1', f'--lua-filter={self.filter}'],
+                cwd=self.root, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(r'\title{Título}', result.stdout)
+
+    def test_wrapped_rows_increase_the_small_table_reservation(self):
+        long_text = 'texto longo que ocupa varias liñas na cela ' * 2
+        rows = '\n'.join(f'| {i} | {long_text} |' for i in range(1, 4))
+        latex = self.render_latex(
+            '### Táboa pequena\n\n| A | B |\n|---|---|\n' + rows + '\n'
+        )
+        match = re.search(r'\\Needspace\{(\d+)\\baselineskip\}', latex)
+        self.assertIsNotNone(match)
+        # Tres filas + 5 se non partisen; as celas parten, e reserva máis.
+        self.assertGreater(int(match.group(1)), 3 + 5)
+        self.assertIn(r'\noindent\begin{tabular}', latex)
+        self.assertLess(latex.index(match.group(0)),
+                        latex.index(r'\subsubsection{Táboa pequena}'))
+
     def test_large_table_remains_longtable(self):
         rows = '\n'.join(f'| {i} | {i} |' for i in range(1, 8))
         latex = self.render_latex(

@@ -86,3 +86,24 @@ SHA-256 das fontes usadas:
 - A4_Repeticion.md: `930a6068d87e8da36b80fe756cccbcaf03395960764a15fd3e983ccfd21e61b1`
 - A3_Clases.md: `7ab3194604daa16bfdc4c5ee50876260625ea93e5e03ee82b661d6c2afafa493`
 - synthetic.md: `ef3744e6ed5c29b52672d36ac8ee4d2d607d4fc64f2c9f3a767e2d02fad0bec9`
+
+## Reserva do parágrafo de entrada con liñas que parten
+
+Revisión do 1 de novembro de 2026 sobre `93864ce`, cos filtros do repositorio idénticos aos instalados antes do cambio.
+
+Dous documentos de docencia (U2A1 e U2A5 de DWCS) deixaban o parágrafo que presenta un bloque ao pé da páxina, separado do bloque:
+
+- **Código.** Un bloque `text` de 5 liñas, unha de 217 caracteres, ocupa 9 liñas no PDF e 154 pt. `keep-with-next.lua` reservaba 9 liñas base (169 pt) para o parágrafo, de dúas liñas, e o bloque, porque contaba as liñas da fonte. A reserva pasaba, o parágrafo quedaba e o bloque, en KeepCodeBlock, saltaba enteiro.
+- **Táboa.** Unha táboa de 6 filas, case todas de dúas liñas, mide uns 275 pt. `small-table.lua` reservaba 6 + 5 + 2 = 13 liñas base (244 pt) para a táboa e o parágrafo, cunha liña por fila.
+
+Cambios:
+
+- `keep-with-next.lua`: as liñas de código cóntanse repartindo as palabras en 66 caracteres, o ancho medido no PDF para Source Code Pro de 10,8 pt (as liñas de 217 e 92 caracteres dan 4 e 2, como no PDF); unha palabra máis longa parte en calquera punto. O límite de `code-keep-lines` segue usando as liñas da fonte.
+- `small-table.lua`: as táboas pequenas suman 0,9 liñas por cada liña de máis dunha fila, coa estimación das celas que xa usaban as longas, nos catro sitios que reservaban `nrows + 5`.
+- Os bloques e as táboas sen liñas que parten reservan o mesmo ca antes.
+
+Resultado nos dous casos: 13 liñas base (244 pt) para un conxunto de uns 204 pt, e 19 (357 pt) para uns 330 pt; o parágrafo pasa á páxina seguinte co bloque.
+
+Verificación: catro probas novas en `tests/test_keep_with_next.py` e `tests/test_small_table.py`, que fallan cos filtros anteriores e pasan cos novos.
+
+Ao rexenerar o material de docencia apareceu outro erro, anterior a este cambio: un documento que empeza polo título e un parágrafo de entrada (`# U1T3. …`, «Parte deste programa…:» e un bloque) non se convertía, con «LaTeX Error: No \title given». `keep-with-next.lua` e `small-table.lua` levan a reserva por riba das cabeceiras anteriores, tamén do título de nivel 1; con `--shift-heading-level-by=-1`, Pandoc só toma ese título se é o primeiro bloque. Agora a reserva non sobe por riba dunha cabeceira de nivel 1, e unha táboa que vai xusto despois do título non reserva nada antes del. Dúas probas novas, que fallan cos filtros anteriores; `test_reserve_goes_before_headers` pasa a usar os niveis 2 e 3, os das seccións de md2pdf.
