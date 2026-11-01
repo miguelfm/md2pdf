@@ -572,7 +572,10 @@ function Blocks(blocks)
     if current.t == 'Table' then
       local convertible, nrows = is_small_convertible_table(current)
       if convertible then
-        local needed = small_table_lines(current, nrows)
+        -- Sen cabeceira nin parágrafo de entrada que protexer, o tabular
+        -- salta enteiro se non cabe: a reserva non suma as filas que parten,
+        -- porque só adiantaría o salto e deixaría a páxina medio baleira.
+        local needed = nrows + 5
         local converted = convert_small_table(current, needed, true)
         if converted then
           out:insert(converted)

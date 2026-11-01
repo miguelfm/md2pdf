@@ -86,6 +86,16 @@ Texto anterior.
         self.assertIn(reserve, latex)
         self.assertLess(latex.index(reserve), latex.index(table))
 
+    def test_standalone_wrapped_table_keeps_rows_plus_five(self):
+        # Como na rúbrica de DWCS: sen cabeceira nin parágrafo de entrada,
+        # o tabular salta enteiro se non cabe, e a reserva só pode adiantar
+        # o salto. As filas que parten non a aumentan.
+        long_text = 'texto longo que ocupa varias liñas na cela ' * 3
+        rows = '\n'.join(f'| {i} | {long_text} |' for i in range(1, 5))
+        latex = self.render_latex('Peso máximo: 4 puntos.\n\n| A | B |\n|---|---|\n'
+                                  + rows + '\n')
+        self.assertIn('\\Needspace{9\\baselineskip}\n\\noindent\\begin{tabular}', latex)
+
     def test_title_followed_by_table_keeps_the_title(self):
         with tempfile.TemporaryDirectory() as tmp:
             src = Path(tmp) / 'test.md'

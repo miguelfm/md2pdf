@@ -170,11 +170,11 @@ class KeepWithNextTests(unittest.TestCase):
         text = ('Todos os apartados levan as saídas reais da propia VM, '
                 'completas e pegadas como texto.')
         rows = ''.join(f'| {i} | {text} |\n' for i in range(4))
-        md = 'Peso máximo: 4 puntos.\n\n| Puntos | Descrición |\n|---|---|\n' + rows
+        md = '### Criterio A\n\n| Puntos | Descrición |\n|---|---|\n' + rows
         filters = ['auto-table-widths.lua', 'small-table.lua']
         latex = self.render(md, filters=filters)
-        # Catro filas de dúas liñas: 4 + 5 + ceil(4 × 0,9).
-        self.assertIn('\\Needspace{13\\baselineskip}\n\\noindent\\begin{tabular}', latex)
+        # Catro filas de dúas liñas: 4 + 5 + ceil(4 × 0,9), antes da cabeceira.
+        self.assertIn('\\Needspace{13\\baselineskip}\n\n\\subsubsection{Criterio A}', latex)
 
     def test_large_table_reserve_before_lead_in(self):
         rows = ''.join(f'| {i} | x |\n' for i in range(9))
