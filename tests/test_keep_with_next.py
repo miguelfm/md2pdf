@@ -148,6 +148,34 @@ class KeepWithNextTests(unittest.TestCase):
         self.assertGreater(self.reserve_before(latex, 'Unha táboa:'), 3 + 5 + 1)
         self.assertIn(r'\begin{tabular}', latex)
 
+    def test_code_cells_count_with_the_code_width(self):
+        # Como na tarefa U3T5 de DWCS: código de 45 caracteres nunha columna
+        # de media páxina. A 5 pt por carácter collería nunha liña; o
+        # código, a 7,1 pt, parte en dúas.
+        call = "`uploadError(['error' => 0, 'size' => 1000])`"
+        rows = ''.join(f'| {call} | `{i}` |\n' for i in range(3))
+        md = ('Os casos:\n\n| Chamada | Esperado |\n'
+              '|----------------------------------------------------|'
+              '----------------------------------------------|\n' + rows)
+        filters = ['auto-table-widths.lua', 'small-table.lua', 'keep-with-next.lua']
+        latex = self.render(md, filters=filters)
+        self.assertIn(r'\begin{tabular}', latex)
+        self.assertGreater(self.reserve_before(latex, 'Os casos:'), 3 + 5 + 1)
+
+    def test_header_styling_does_not_count_as_text(self):
+        # Como na rúbrica de DWCS: unha columna estreita de puntos. O LaTeX
+        # co que auto-table-widths destaca a cabeceira leva
+        # \color{heading-section}; contado coma texto, a cabeceira dunha
+        # columna estreita partía en tres liñas e a reserva pasaba de 13 a 15.
+        text = ('Todos os apartados levan as saídas reais da propia VM, '
+                'completas e pegadas como texto.')
+        rows = ''.join(f'| {i} | {text} |\n' for i in range(4))
+        md = 'Peso máximo: 4 puntos.\n\n| Puntos | Descrición |\n|---|---|\n' + rows
+        filters = ['auto-table-widths.lua', 'small-table.lua']
+        latex = self.render(md, filters=filters)
+        # Catro filas de dúas liñas: 4 + 5 + ceil(4 × 0,9).
+        self.assertIn('\\Needspace{13\\baselineskip}\n\\noindent\\begin{tabular}', latex)
+
     def test_large_table_reserve_before_lead_in(self):
         rows = ''.join(f'| {i} | x |\n' for i in range(9))
         latex = self.render('Unha táboa:\n\n| A | B |\n|---|---|\n' + rows)

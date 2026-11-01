@@ -246,6 +246,9 @@ end
 local TEXT_WIDTH_PT = 470
 local TABCOLSEP_PT = 6
 local CHAR_WIDTH_PT = 5.0
+-- O código das celas vai en Source Code Pro de 11,8 pt: 7,1 pt por carácter,
+-- medido no PDF. Contalo coma o texto deixaba as filas de código nunha liña.
+local CODE_CHAR_WIDTH_PT = 7.1
 local HEADING_LINES = 5
 local ROW_LINES = 1.4
 local EXTRA_LINE = 0.9
@@ -255,38 +258,58 @@ local CAPTION_LINES = 1.5
 -- porque auto-table-widths axusta as columnas estreitas á palabra máis longa.
 -- O ancho de cada p{} é a súa fracción de \linewidth menos os \tabcolsep
 -- entre columnas.
--- auto-table-widths converte o código das celas en LaTeX en bruto, que
--- stringify descarta. Para medilo quítanse as ordes e as chaves.
+-- auto-table-widths converte o código das celas en LaTeX en bruto. Para
+-- medilo quítanse as ordes e as chaves. O argumento de \color non é texto:
+-- a cabeceira leva \color{heading-section}, e contado coma unha palabra facía
+-- partir as cabeceiras das columnas estreitas.
 local function latex_text(s)
+  s = s:gsub('\\color%b{}', '')
   s = s:gsub('\\discretionary%b{}%b{}%b{}', '')
   s = s:gsub('\\[%a@]+%*?', '')
   return (s:gsub('[{}]', ''))
 end
 
-local function cell_text(cell)
-  return pandoc.utils.stringify(cell.contents:walk({
+-- Ancho en pt de cada palabra da cela: o texto a CHAR_WIDTH_PT por carácter
+-- e o código, que auto-table-widths converte en \texttt, a CODE_CHAR_WIDTH_PT.
+local function cell_words(cell)
+  local words = {}
+  local function add(text, char_width)
+    for word in text:gmatch('%S+') do
+      table.insert(words, (utf8.len(word) or #word) * char_width)
+    end
+  end
+  cell.contents:walk({
+    Str = function(str) add(str.text, CHAR_WIDTH_PT) end,
+    Code = function(code) add(code.text, CODE_CHAR_WIDTH_PT) end,
     RawInline = function(raw)
-      if raw.format:match('latex') then return pandoc.Str(latex_text(raw.text)) end
+      if raw.format:match('latex') then
+        local is_code = raw.text:match('\\texttt') ~= nil
+        add(latex_text(raw.text), is_code and CODE_CHAR_WIDTH_PT or CHAR_WIDTH_PT)
+      end
     end,
-  }))
+  })
+  return words
 end
 
 local function cell_lines(cell, width, ncols)
   -- Columnas de ancho natural: o texto non parte.
   if type(width) ~= 'number' or width <= 0 then return 1 end
   local avail = width * (TEXT_WIDTH_PT - 2 * TABCOLSEP_PT * (ncols - 1))
-  local per_line = math.max(1, math.floor(avail / CHAR_WIDTH_PT))
   local lines, used = 1, 0
-  for word in cell_text(cell):gmatch('%S+') do
-    local len = utf8.len(word) or #word
-    if used == 0 then
-      used = len
-    elseif used + 1 + len <= per_line then
-      used = used + 1 + len
-    else
+  for _, w in ipairs(cell_words(cell)) do
+    if used > 0 and used + CHAR_WIDTH_PT + w > avail then
       lines = lines + 1
-      used = len
+      used = 0
+    elseif used > 0 then
+      used = used + CHAR_WIDTH_PT
     end
+    -- Unha palabra máis longa ca a columna parte (as rutas, nas barras).
+    while used + w > avail do
+      lines = lines + 1
+      w = w - (avail - used)
+      used = 0
+    end
+    used = used + w
   end
   return lines
 end
