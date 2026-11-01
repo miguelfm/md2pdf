@@ -1,266 +1,173 @@
-# Instalación de md2pdf en Windows 11
+# Installing md2pdf on Windows 11
 
-Guía completa para instalar e configurar o contorno de conversión Markdown → PDF en Windows 11.
+This guide covers the PDF, HTML, and DOCX conversion environment on Windows 11. HTML and DOCX do not require LaTeX, but the assisted scripts below install a full PDF-capable environment.
 
-## Instalación semiautomática (scripts do repositorio)
+## Assisted installation
 
-Os scripts están en [`scripts/windows/`](../scripts/windows/). Non precisan
-que o repositorio estea nunha ruta concreta nin que o cartafol se chame `md2pdf`.
-Executa os comandos seguintes desde a raíz do repositorio clonado.
+The scripts live in [scripts/windows/](../scripts/windows/). They do not require a particular checkout path or directory name. Run the following commands from the cloned repository's root.
 
-Requisitos: Windows 11, PowerShell, Chocolatey instalado e conexión a internet.
-Se winget está dispoñible úsase para Pandoc e SumatraPDF; en caso contrario
-úsase Chocolatey. TeX Live instálase con Chocolatey e os seus paquetes con
-`tlmgr`. Python e Node.js instálanse se non se atopan no PATH. A instalación
-de TeX Live pode tardar bastante e ocupar varios GB.
+Requirements: Windows 11, PowerShell, Chocolatey, and internet access. The scripts use winget for Pandoc and SumatraPDF when available, otherwise Chocolatey. TeX Live is installed through Chocolatey, and TeX packages through `tlmgr`. Python and Node.js are installed when missing from `PATH`. TeX Live can take considerable time and several GB of disk space.
 
-### Paso 1: software e fontes, como administrador
+### Step 1: software and fonts, as administrator
 
-Desde **PowerShell normal**, situado na raíz do repositorio:
+From a **normal PowerShell** in the repository root:
 
 ```powershell
 $systemScript = (Resolve-Path .\scripts\windows\01-system.ps1).Path
 Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$systemScript`""
 ```
 
-Windows mostrará a solicitude de control de contas de usuario (UAC).
-Acéptaa, ou introduce as credenciais de administrador se as solicita.
-Abrirase unha nova xanela de PowerShell elevada que executará o script.
-Espera a que remate antes de iniciar o paso 2. A xanela queda aberta para
-poder ler os erros ou a mensaxe final.
+Accept Windows' UAC prompt, supplying administrator credentials if requested. A separate elevated PowerShell window runs the script and stays open for you to inspect the result. Wait for completion before step 2.
 
-**Se aparece «Executa este script nun PowerShell como Administrador»**, o
-terminal non está elevado. `-ExecutionPolicy Bypass` permite executar este
-script nese proceso, pero **non concede permisos de administrador**. Usa
-o comando `Start-Process ... -Verb RunAs` anterior. Non é preciso cambiar
-a política de execución permanentemente nin desactivar UAC.
+If the script reports that an administrator PowerShell is required, the terminal is not elevated. `-ExecutionPolicy Bypass` permits this script in that process; **it does not grant administrator privileges**. Use the `Start-Process ... -Verb RunAs` command above. No permanent execution-policy change or UAC disabling is needed.
 
-Alternativa: abre «Terminal (Administrador)» desde Windows + X, entra no
-repositorio con `cd` e executa:
+Alternatively, open **Terminal (Admin)** from Windows+X, change into the checkout, and run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows\01-system.ps1
 ```
 
-O script instala as dependencias e os paquetes TeX necesarios, descarga
-os ZIP das publicacións oficiais de Adobe e JetBrains e instala as fontes
-estáticas para todos os usuarios: Source Serif 4, Source Sans 3, Source Code
-Pro e JetBrains Mono. As descargas quedan en `scripts/windows/fonts/`.
-O código actual selecciona Source Code Pro para o texto monoespaciado;
-JetBrains Mono queda instalada tamén, pero non é seleccionada automaticamente.
+The script installs dependencies and TeX packages, downloads official Adobe/JetBrains release ZIPs, and installs static Source Serif 4, Source Sans 3, Source Code Pro, and JetBrains Mono fonts for all users. Downloads remain under `scripts/windows/fonts/`.
 
-### Paso 2: configuración do usuario e probas, sen administrador
+**Current font selection:** md2pdf uses Source Code Pro for monospaced text. JetBrains Mono is installed by the script too, but is not selected automatically by the current code.
 
-Abre unha nova xanela de **PowerShell normal co teu usuario habitual**, entra
-na raíz do repositorio e executa:
+### Step 2: user configuration and checks, without administrator privileges
+
+Open a new **normal PowerShell under your usual account**, change into the checkout, and run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows\02-user.ps1 -WithMermaid
 ```
 
-Podes omitir `-WithMermaid` se non precisas diagramas Mermaid. O script:
+Omit `-WithMermaid` if you do not need Mermaid diagrams. The script:
 
-- Crea un contorno Python en `scripts/windows/.venv/` e instala PyMuPDF,
-  Pillow, PyYAML, vl-convert-python e pypdf nel.
-- Instala Mermaid CLI con npm se se especifica `-WithMermaid`.
-- Configura `PYTHONUTF8=1` e engade as rutas necesarias ao PATH do usuario
-  sen copiar o PATH do sistema nin duplicar as entradas existentes.
-- Actualiza a caché de LuaLaTeX e comproba as catro familias tipográficas.
-- Executa `install-md2pdf.py` co Python do contorno, que queda fixado no
-  lanzador `%LOCALAPPDATA%\md2pdf\md2pdf.cmd`.
-- Converte `scripts/windows/proba.md` a PDF, HTML e DOCX e comproba que o
-  PDF ten páxinas e texto extraíble.
+- Creates `scripts/windows/.venv/` and installs PyMuPDF, Pillow, PyYAML, vl-convert-python, and pypdf there.
+- Installs Mermaid CLI through npm when requested.
+- Sets `PYTHONUTF8=1` and adds required user PATH entries without copying the system PATH or duplicating existing entries.
+- Updates LuaLaTeX's font cache and checks all four font families.
+- Runs `install-md2pdf.py` with the virtual environment's interpreter, pinning it in `%LOCALAPPDATA%\md2pdf\md2pdf.cmd`.
+- Converts `scripts/windows/proba.md` into PDF, HTML, and DOCX, and checks that the PDF has pages and extractable text.
 
-Este paso rexeita un terminal elevado para evitar configurar o usuario
-equivocado. Non borres nin movas `.venv` despois de instalar: o lanzador
-depende dese intérprete. Se moves o repositorio, repite o paso 2 na nova ruta.
-Os ficheiros descargados, o contorno e os documentos de proba están excluídos
-de Git mediante `scripts/windows/.gitignore`.
+This step rejects elevated terminals to avoid configuring the wrong account. Do not move or delete `.venv` after installation: the launcher depends on it. If you move the checkout, repeat step 2 in its new location. Downloads, the environment, and generated smoke documents are excluded by `scripts/windows/.gitignore`.
 
-### Verificación e resolución de erros
+### Verify and troubleshoot the scripts
 
-Cando ambos os scripts rematen correctamente, abre outro terminal:
+After both scripts finish successfully, open another terminal:
 
 ```powershell
 md2pdf --help
-md2pdf documento.md
+md2pdf document.md --lang en
 ```
 
-Os documentos de proba quedan en `scripts/windows/proba.pdf`, `proba.html`
-e `proba.docx`. Abre o PDF para comprobar tamén a súa aparencia.
+The generated smoke outputs are `scripts/windows/proba.pdf`, `proba.html`, and `proba.docx`. Open the PDF and inspect its appearance as well.
 
-A comprobación final de `02-user.ps1` abre o PDF con PyMuPDF, verifica que
-ten páxinas e que o texto extraído contén `Windows`, e mostra
-`PDF verificado: N paxinas`. O código pasado a Python con `-c` usa literais
-con comiñas simples para conservar as cadeas ao atravesar Windows PowerShell.
-As versións anteriores podían perder as comiñas dobres e fallar con
-`SyntaxError: unterminated string literal` aínda que os documentos xa estivesen
-xerados. Se atopas ese erro, actualiza o repositorio e repite o paso 2.
+The final step-2 check opens the PDF with PyMuPDF, checks pages and the text `Windows`, and reports `PDF verificado: N paxinas` (the current script message is Galician). Python `-c` code uses single-quoted literals to survive Windows PowerShell quoting. Older revisions could lose double quotes and raise `SyntaxError: unterminated string literal` even after generating the documents. Update the checkout and repeat step 2 if you encounter that old error.
 
-Os scripts detéñense ante erros e poden executarse de novo tras corrixilos.
-Se non se atopa un comando recentemente instalado, abre outro terminal e
-repíteo. A detección adicional de TeX Live busca `C:\texlive\*\bin\windows`;
-se usas outra ruta, engade o seu directorio de executables ao PATH.
-Se fallan as descargas, comproba a conexión, o proxy e o acceso a GitHub,
-Chocolatey e CTAN. Se o ZIP dunha publicación cambia e o script non atopa
-fontes estáticas, usa a instalación manual de fontes descrita máis abaixo.
+Scripts stop on errors and can be rerun after correction. Reopen the terminal if a newly installed command is missing. Extra TeX detection searches `C:\texlive\*\bin\windows`; add a different installation's executable directory to PATH yourself.
 
-A guía manual seguinte explica cada compoñente con máis detalle. Os scripts
-non instalan D2 nin Graphviz; esas ferramentas só son necesarias se usas
-os seus respectivos bloques de diagramas.
+For download failures, check network/proxy access to GitHub, Chocolatey, and CTAN. If an official font archive changes structure and the script cannot locate static files, use the manual font steps below.
 
+D2 and Graphviz are not installed by these scripts; they are only needed for their respective diagram blocks.
 
-## Requisitos previos
+## Manual installation
 
-- Windows 11
-- Chocolatey instalado (https://chocolatey.org/install)
-- Conexión a internet
+The following steps explain the components individually. They are an alternative to the assisted setup.
 
+### 1. Base software
 
-## 1. Instalar software base
-
-Todos estes comandos en **PowerShell como Administrador** (Windows + X → "Terminal (Administrador)", ou desde PowerShell: `Start-Process powershell -Verb RunAs`):
+In **PowerShell as Administrator**:
 
 ```powershell
-choco install pandoc -y
-choco install python -y
-choco install sumatrapdf -y
-```
-
-Ou nun só comando:
-
-```
 choco install pandoc vcredist140 python sumatrapdf -y
 ```
 
-SumatraPDF é o visor de PDF recomendado: non bloquea os ficheiros, permitindo rexenerar o PDF sen pechar o visor. Ademais actualiza a vista automaticamente ao rexenerar. 
+`vcredist140` supplies the Visual C++ runtime used by the Python installation. SumatraPDF is useful for previewing because it can reload a regenerated PDF without holding a blocking file lock.
 
-**Nota:** vcredist140 é necesario para instalar python.
+### 2. TeX Live
 
-
-## 2. Instalar TeX Live
-
-En **PowerShell como Administrador**:
+In an administrator PowerShell:
 
 ```powershell
 choco install texlive -y
 ```
 
-A instalación pode tardar **15-30 minutos**. É normal que pareza conxelada — está descargando e instalando paquetes. Podes verificar que segue activo no Task Manager (Ctrl+Shift+Esc) buscando procesos de `install-tl` ou `texlive`.
-
-**Pechar e abrir un novo terminal** despois da instalación.
-
-Verificar:
+Installation can take 15–30 minutes or longer depending on downloads and package selection. Inspect Task Manager for `install-tl`/TeX Live processes if it appears idle. Reopen the terminal afterward and verify:
 
 ```powershell
 lualatex --version
 tlmgr --version
 ```
 
+### 3. TeX packages
 
-## 3. Instalar paquetes de TeX Live
-
-En **PowerShell como Administrador**:
-
-### Opción A: Coleccións (recomendada, máis segura, ~2GB)
+Run system-wide TeX package installation from an administrator PowerShell. Collection installation is more comprehensive; exact download/disk sizes depend on the current distribution.
 
 ```powershell
 tlmgr install collection-luatex collection-latexextra collection-fontsextra collection-fontsrecommended collection-latexrecommended collection-langspanish
 ```
 
-Paquetes adicionais que poderían faltar:
+Additional packages that may be needed:
 
 ```powershell
-tlmgr install babel-galician hyphen-galician babel-english footnotebackref footnotehyper mdwtools zref luatexbase koma-script tcolorbox fontawesome5 fvextra needspace stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl setspace
+tlmgr install babel-galician hyphen-galician babel-english footnotebackref footnotehyper mdwtools zref luatexbase koma-script tcolorbox fontawesome5 fvextra needspace stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl setspace ragged2e
 ```
 
-### Opción B: Paquetes individuais (instalación mínima, ~500MB)
+For a more selective installation, the existing project dependency list is:
 
 ```powershell
-tlmgr install fontspec tcolorbox fontawesome5 fvextra needspace etoolbox microtype csquotes koma-script geometry hyperref graphicx fancyvrb babel babel-spanish babel-english babel-galician hyphen-spanish hyphen-english hyphen-galician footnotebackref footnotehyper mdwtools zref luatexbase luaotfload unicode-math amsmath tools booktabs longtable caption float xcolor environ trimspaces ly1 mweights footmisc pagecolor mdframed setspace lineno fancyhdr lastpage eso-pic stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl array multirow enumitem polyglossia tagpdf
+tlmgr install fontspec tcolorbox fontawesome5 fvextra needspace etoolbox microtype csquotes koma-script geometry hyperref graphicx fancyvrb babel babel-spanish babel-english babel-galician hyphen-spanish hyphen-english hyphen-galician footnotebackref footnotehyper mdwtools zref luatexbase luaotfload unicode-math amsmath tools booktabs longtable caption float xcolor environ trimspaces ly1 mweights footmisc pagecolor mdframed setspace lineno fancyhdr lastpage eso-pic stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl array multirow enumitem polyglossia tagpdf ragged2e
 ```
 
-### Se falta algún paquete
-
-Ao compilar, se aparece un erro `File 'xxx.sty' not found`, podes buscalo e instalalo:
+For a missing `xxx.sty`, search its owning package and install it:
 
 ```powershell
 tlmgr search --file xxx.sty
-tlmgr install nome-do-paquete
+tlmgr install package-name
 ```
 
-### Actualizar paquetes
+To inspect or update installed packages:
 
 ```powershell
-# Ver que hai dispoñible
 tlmgr update --list
-
-# Actualizar todo
 tlmgr update --all
 ```
 
+### 4. Node.js and Mermaid CLI — optional
 
-## 4. Instalar Node.js e Mermaid CLI (opcional)
-
-Mermaid CLI (`mmdc`) renderiza os bloques ` ```mermaid ` do Markdown como diagramas vectoriais incrustados no PDF. É **opcional**: sen el, os bloques mermaid renderízanse como código fonte e emítese un aviso. Se vas usar diagramas, instálao:
-
-En **PowerShell como Administrador**:
+Mermaid CLI (`mmdc`) renders Mermaid fences. Without it, blocks remain code with a warning; strict mode fails. To install, use administrator PowerShell for Node.js:
 
 ```powershell
 choco install nodejs-lts -y
 ```
 
-**Pechar e abrir un novo terminal** para que o PATH de Node.js estea dispoñible.
-
-Despois, en calquera terminal (xa non hai que ser Administrador):
+Reopen a normal terminal, then install the user-facing renderer:
 
 ```powershell
 npm install -g @mermaid-js/mermaid-cli
-```
-
-Verificar:
-
-```powershell
 mmdc --version
 ```
 
-A primeira vez que se execute `mmdc`, Puppeteer descarga Chromium (~150MB). Pode tardar uns minutos en iniciarse a primeira renderización; as seguintes serán rápidas. md2pdf cachea os diagramas xerados en `%TEMP%\md2pdf-mermaid\`, polo que un mesmo diagrama só se renderiza unha vez.
+Puppeteer/Chromium download and first-run behavior depend on the installed Mermaid package. Rendering can require a substantial browser download. Cached diagrams are stored under `%TEMP%\md2pdf-mermaid\`.
 
+### 5. Fonts
 
-## 5. Instalar fontes
-
-As fontes deben instalarse **para todos os usuarios** para que LuaLaTeX as atope.
-
-### 5.1. Descargar
-
-Abrir estes enlaces no navegador (descarga automática de ZIPs):
+Install static fonts **for all users** so LuaLaTeX can find them. Download Source Serif 4, Source Sans 3, and Source Code Pro:
 
 ```powershell
-Start-Process "https://fonts.google.com/download?family=Source+Serif+4"
-Start-Process "https://fonts.google.com/download?family=Source+Sans+3"
-Start-Process "https://fonts.google.com/download?family=Source+Code+Pro"
+Start-Process "https://fonts.google.com/specimen/Source+Serif+4"
+Start-Process "https://fonts.google.com/specimen/Source+Sans+3"
+Start-Process "https://fonts.google.com/specimen/Source+Code+Pro"
 ```
 
-JetBrains Mono (fonte monoespaciada principal) ten instalador propio:
+JetBrains Mono is optional for custom font configurations:
 
 ```powershell
 Start-Process "https://www.jetbrains.com/lp/mono/"
 ```
 
-Descargar o ZIP desde a páxina, descomprimir e instalar os `.ttf` da carpeta `fonts/ttf/`.
+Extract each ZIP, select the static `.ttf` files (often in `static/`; JetBrains uses `fonts/ttf/`), then choose **Show more options → Install for all users**. Avoid assuming variable-font files at the archive root are the static set. Windows Settings → Personalization → Fonts offers another installation interface; confirm that the intended all-user installation is available to LuaLaTeX.
 
-### 5.2. Instalar
-
-Para cada ZIP descargado:
-
-1. Descomprimir o ZIP
-2. Entrar no cartafol **`static`** (ignorar os ficheiros da raíz, que son variable fonts)
-3. Seleccionar todos os `.ttf` (`Ctrl+A`)
-4. `Shift + clic dereito` → **"Mostrar más opciones"** → **"Instalar para todos los usuarios"**
-
-Alternativa: arrastar os `.ttf` a **Configuración → Personalización → Fuentes**.
-
-Alternativa por PowerShell (en **PowerShell como Administrador**, axustar rutas):
+An administrator PowerShell alternative, with paths adjusted to your extracted archives:
 
 ```powershell
 $downloads = "$env:USERPROFILE\Downloads"
@@ -268,309 +175,205 @@ $downloads = "$env:USERPROFILE\Downloads"
 Get-ChildItem "$downloads\Source_Serif_4\static", "$downloads\Source_Sans_3\static", "$downloads\Source_Code_Pro\static", "$downloads\JetBrainsMono\fonts\ttf" -Filter "*.ttf" -ErrorAction SilentlyContinue | ForEach-Object {
     Copy-Item $_.FullName "C:\Windows\Fonts\" -Force
     New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" -Name "$($_.BaseName) (TrueType)" -Value $_.Name -PropertyType String -Force | Out-Null
-    Write-Host "  ✓ $($_.Name)"
+    Write-Host "Installed $($_.Name)"
 }
 ```
 
-Nota: os nomes dos cartafoles poden variar. Verificar con `dir "$downloads\Source*"` e `dir "$downloads\JetBrains*"`.
-
-### 5.3. Actualizar caché de fontes e verificar
+Archive directory names can differ. Inspect them before using the command. Refresh LuaLaTeX's cache:
 
 ```powershell
 luaotfload-tool --update --force
 luaotfload-tool --find="Source Serif 4"
 luaotfload-tool --find="Source Sans 3"
-luaotfload-tool --find="JetBrains Mono"
 luaotfload-tool --find="Source Code Pro"
 ```
 
-Cada un debe responder `Font "..." found!`. Se algún non se atopa, verificar que se instalou para todos os usuarios e executar `luaotfload-tool --update --force` de novo.
+Each lookup should report a found font. md2pdf prefers Source Sans 3 / Source Sans Pro for sans, Source Serif 4 / Source Serif Pro for serif, and currently selects Source Code Pro for mono. STIX Two Math is provided by the TeX `stix2-otf` package.
 
-O paquete md2pdf detecta automaticamente as fontes dispoñibles: usa `JetBrains Mono` como monoespaciada principal (con fallback a `Source Code Pro`), e `Source Sans 3` ou `Source Sans Pro` como sans-serif.
-
-
-## 6. Verificar o contorno
+### 6. Check the environment
 
 ```powershell
-echo '# Test' | pandoc --pdf-engine=lualatex -V "mainfont=Source Serif 4" -V "sansfont=Source Sans 3" -V "monofont=JetBrains Mono" -V fontsize=13pt -s -o test.pdf 2>&1
+echo '# Test' | pandoc --pdf-engine=lualatex -V "mainfont=Source Serif 4" -V "sansfont=Source Sans 3" -V "monofont=Source Code Pro" -V fontsize=13pt -s -o test.pdf 2>&1
 ```
 
-Se xera `test.pdf` sen erros, o contorno está correctamente configurado.
+A successful conversion checks the basic Pandoc/LuaLaTeX/font setup. It is not a full test of every md2pdf filter.
 
+### 7. Install md2pdf
 
-## 7. Instalar md2pdf
-
-### 7.1. Preparar ficheiros
-
-Colocar os ficheiros do proxecto nun directorio (por exemplo `C:\Users\TeuUsuario\Projects\md2pdf\`):
-
-```
-md2pdf\                    ← paquete Python (directorio)
-    __init__.py
-    __main__.py
-    config.py
-    assets.py
-    metadata.py
-    preprocess.py
-    lint.py
-    converter.py
-    engines\
-        lualatex.py
-        docx.py
-        html.py
-md2pdf-preamble.tex
-md2pdf.latex
-md2pdf.html
-md2pdf.css
-html.lua
-drake-jb.theme
-auto-table-widths.lua
-small-table.lua
-br.lua
-callouts.lua
-callouts-docx.lua
-hl-lines.lua
-install-md2pdf.py
-README.md
-```
-
-Se os ficheiros Lua ou o tema se descargaron con extensión alternativa, renomear:
+Keep the **complete checkout**, including the `md2pdf/` package, templates, preamble, theme, syntax definition, Lua filters, and installer. Copying a selected subset can omit new assets. For example:
 
 ```powershell
-cd C:\Users\TeuUsuario\Projects\md2pdf
-Rename-Item "drake-jb-theme.json" "drake-jb.theme" -ErrorAction SilentlyContinue
-Rename-Item "auto-table-widths.lua.txt" "auto-table-widths.lua" -ErrorAction SilentlyContinue
-Rename-Item "small-table.lua.txt" "small-table.lua" -ErrorAction SilentlyContinue
-Rename-Item "br.lua.txt" "br.lua" -ErrorAction SilentlyContinue
-Rename-Item "callouts.lua.txt" "callouts.lua" -ErrorAction SilentlyContinue
-Rename-Item "callouts-docx.lua.txt" "callouts-docx.lua" -ErrorAction SilentlyContinue
-Rename-Item "hl-lines.lua.txt" "hl-lines.lua" -ErrorAction SilentlyContinue
-Rename-Item "html.lua.txt" "html.lua" -ErrorAction SilentlyContinue
-```
-
-### 7.2. Executar o instalador
-
-```powershell
+cd C:\Users\YourUser\Projects\md2pdf
 python install-md2pdf.py
 ```
 
-### 7.3. Engadir ao PATH
+Use the Python environment containing the optional libraries you intend to use. If files were downloaded individually with unwanted `.txt` extensions, restore their repository names before installing; cloning or extracting a repository ZIP avoids that problem.
 
-Se o instalador avisa que o directorio non está no PATH, executar na consola **do teu usuario** (non como Administrador, para non modificar o PATH do usuario equivocado):
+If prompted, add the launcher directory to the **current user's** PATH in a normal PowerShell:
 
 ```powershell
 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-[Environment]::SetEnvironmentVariable("PATH", "$userPath;$env:LOCALAPPDATA\md2pdf", "User")
+$launcherPath = "$env:LOCALAPPDATA\md2pdf"
+if (($userPath -split ';') -notcontains $launcherPath) {
+    [Environment]::SetEnvironmentVariable("PATH", "$userPath;$launcherPath", "User")
+}
 ```
 
-**Pechar e abrir un novo terminal** para que o cambio teña efecto.
-
-### 7.4. Verificar
+Reopen the terminal:
 
 ```powershell
 md2pdf --help
 ```
 
-
-## 8. Probar
-
-### 8.1. Compilar un documento
+### 8. Convert and preview
 
 ```powershell
-md2pdf documento.md
+md2pdf document.md --lang en
+Start-Process sumatrapdf document.pdf
 ```
 
-A primeira compilación pode tardar algo máis (LuaLaTeX compila a caché de fontes). As seguintes serán rápidas.
+The first compilation can be slower while LuaLaTeX builds font caches. SumatraPDF can refresh the view when the file is regenerated.
 
-### 8.2. Abrir co visor recomendado
+### 9. Everyday use
 
 ```powershell
-Start-Process sumatrapdf documento.pdf
+# Default PDF
+md2pdf notes.md --lang en
+
+# Separate PDF title page
+md2pdf notes.md --lang en --titlepage
+
+# Disable callouts or decimal alignment
+md2pdf notes.md --lang en --no-callouts
+md2pdf notes.md --lang en --no-decimal-align
+
+# Multiple files or an explicit output
+md2pdf *.md --lang en
+md2pdf notes.md --lang en -o output.pdf
+
+# Self-contained HTML and editable Word output
+md2pdf notes.md --lang en -e html
+md2pdf notes.md --lang en -e docx
 ```
 
-SumatraPDF actualiza a vista automaticamente ao rexenerar o PDF con `md2pdf`.
+The document-language default remains Galician (`gl`). `--lang en` does not translate your text or all built-in labels/messages.
 
+## Troubleshooting
 
-## 9. Uso habitual
+### `No counter 'none' defined`
+
+This can occur with newer Pandoc/longtable combinations. The current `md2pdf.latex` contains the project's compatibility fix. Update the checkout and reinstall all assets:
 
 ```powershell
-# LuaLaTeX (por defecto, calidade máxima)
-md2pdf apuntes.md
-
-# Con portada separada
-md2pdf apuntes.md --titlepage
-
-# Sen callouts (blockquotes simples)
-md2pdf apuntes.md --no-callouts
-
-# Sen aliñamento decimal nas columnas numéricas das táboas
-md2pdf apuntes.md --no-decimal-align
-
-# Varios ficheiros
-md2pdf *.md
-
-# Nome de saída específico
-md2pdf apuntes.md -o saida.pdf
-
-# HTML5 autocontido
-md2pdf apuntes.md -e html
-
-# Word / LibreOffice
-md2pdf apuntes.md -e docx
+python install-md2pdf.py
 ```
 
+### Missing special characters / `UnicodeEncodeError`
 
-## 10. Resolución de problemas
-
-### "No counter 'none' defined"
-
-Erro de compatibilidade entre Pandoc 3.8+ e `longtable` v4.24+. Pandoc xera `\newcounter{none}` para táboas sen numeración pero longtable non o define previamente. O template `md2pdf.latex` inclúe a corrección; asegúrate de ter a versión actualizada instalada:
-
-```powershell
-Copy-Item md2pdf.latex "$env:LOCALAPPDATA\md2pdf\md2pdf.latex"
-```
-
-### Caracteres especiais non se mostran / `UnicodeEncodeError`
-
-A consola de Windows usa por defecto a codificación `cp1252` que non soporta caracteres Unicode como `→`. Engadir esta variable de entorno de forma permanente:
+A legacy Windows console encoding such as cp1252 cannot represent every Unicode character. Enable Python UTF-8 mode for the user, then reopen the terminal:
 
 ```powershell
 [Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "User")
 ```
 
-Pechar e abrir un novo terminal para que teña efecto.
+### `File 'xxx.sty' not found`
 
-### "File 'xxx.sty' not found"
-
-Se falta `ragged2e.sty` (requirido polo preámbulo de md2pdf), executa nun
-PowerShell como administrador:
+Search/install the owning package with `tlmgr`; for `ragged2e.sty`:
 
 ```powershell
 tlmgr install ragged2e
 ```
 
-Buscar e instalar o paquete que falta:
+### `Font 'Source ...' not found`
 
-```powershell
-tlmgr search --file xxx.sty
-tlmgr install nome-do-paquete
-```
-
-### "Font 'Source ...' not found"
-
-Reinstalar as fontes para todos os usuarios e actualizar a caché:
+Confirm an all-user static-font installation and refresh the font cache:
 
 ```powershell
 luaotfload-tool --update --force
 luaotfload-tool --find="Source Serif 4"
 ```
 
-### "Permission denied" ao xerar o PDF
+### `Permission denied` when writing a PDF
 
-O ficheiro PDF está aberto nalgún visor que bloquea ficheiros (Acrobat, Edge). Pechar o visor ou usar SumatraPDF que non bloquea.
+Some PDF viewers lock files. Close the document or use a viewer such as SumatraPDF that permits replacement.
 
-### "Error producing PDF" pero o PDF existe
+### `Error producing PDF`, but a file exists
 
-Ás veces LuaLaTeX xera avisos (warnings) que Pandoc interpreta como erros. Verificar:
+A nonempty file alone does **not** establish that the build is valid. Inspect the error, check that the file was freshly generated, open it, and review its pages before distributing it. A `Missing character` message can indicate unsupported emoji or unavailable glyphs.
 
-```powershell
-Test-Path documento.pdf
-```
+### `TeX capacity exceeded` or a hung build
 
-Se existe e ten tamaño > 0, é válido. Os avisos `Missing character` significan que hai emojis no Markdown que non están no mapeamento do script.
+A recursive `p{}` redefinition such as `\newcolumntype{p}[1]{...p{#1}}` can loop with LuaLaTeX/fontspec/polyglossia. Do not add it to the preamble; the table filter handles top alignment.
 
-### "TeX capacity exceeded" ou compilación colgada indefinidamente
+Large raster images or vector PDFs without explicit size can also hang in the current pipeline. Give them `{width=100%}` or another suitable explicit width; see [the image guide](README.md#images-and-figures).
 
-En LuaLaTeX con `polyglossia` e `fontspec`, a redefinición de `p{}` mediante `\newcolumntype{p}[1]{...p{#1}}` causa recursión infinita. Non usar esta construción en `md2pdf-preamble.tex`. O aliñamento superior das celas está xestionado polo filtro `auto-table-widths.lua` con `\leavevmode\strut`, que non require redefinir `p{}`.
+### `Undefined control sequence`
 
-### "Undefined control sequence"
+Check the reported command, document structure, and whether the expected preamble/filter assets are installed. Reinstall after updating the checkout. An unclosed source block can also cause misleading downstream LaTeX errors.
 
-O preámbulo (`md2pdf-preamble.tex`) non se está aplicando. Reinstalar:
+### PowerShell cannot find `lualatex`, `tlmgr`, or another command
 
-```powershell
-cd C:\Users\TeuUsuario\Projects\md2pdf
-python install-md2pdf.py
-```
+Reopen the terminal after installation. If needed, add the actual installation's executable directory to PATH; the scripts search `C:\texlive\*\bin\windows`.
 
-### PowerShell non atopa `lualatex` / `tlmgr` / outro comando
+### `curl` rejects `-L`
 
-Pechar e abrir un **novo terminal**. Tras instalar software, o PATH actualízase só en novos terminais.
-
-### `curl` dá erro de parámetro `-L`
-
-PowerShell ten un alias `curl` → `Invoke-WebRequest`. Usar `curl.exe`:
+Windows PowerShell may alias `curl` to `Invoke-WebRequest`. Call the native executable explicitly:
 
 ```powershell
-curl.exe -L -o ficheiro.zip "https://..."
+curl.exe -L -o archive.zip "https://example.com/archive.zip"
 ```
 
-### "Unknown option 'galician'" en babel
+### Babel reports `Unknown option 'galician'`
 
-Instalar soporte de galego para LaTeX:
+The default language is Galician; install its support even if you are testing the default command:
 
 ```powershell
 tlmgr install babel-galician hyphen-galician
 ```
 
-### Executar comandos como Administrador
+### Administrator operations
 
-Moitas operacións de TeX Live e instalación de fontes requiren admin:
+Use Windows+X → **Terminal (Admin)**, or `Start-Process powershell -Verb RunAs`. Font and system-wide TeX installation require elevation; user setup and the md2pdf launcher should normally run as your usual user.
 
-- Windows + X → **"Terminal (Administrador)"**
-- Ou desde PowerShell normal: `Start-Process powershell -Verb RunAs`
-- O título da xanela debe dicir **"Administrador"**
-
-### Ver historial de paquetes instalados
+To inspect the current PowerShell session's package-install commands:
 
 ```powershell
 Get-History | Where-Object { $_.CommandLine -like "tlmgr install*" }
 ```
 
-### Actualizar todo o software
+For deliberate maintenance, review the changes requested by your package manager:
 
 ```powershell
-# Chocolatey (Pandoc, Python, SumatraPDF)
 choco upgrade all -y
-
-# TeX Live
 tlmgr update --all
 ```
 
+## Differences from Arch Linux
 
-## 11. Diferenzas con Linux (Arch)
-
-| Aspecto | Arch Linux | Windows 11 |
+| Component | Arch Linux | Windows 11 |
 |---|---|---|
-| Xestor de paquetes | `pacman` | `choco` + `tlmgr` |
-| TeX Live | `pacman -S texlive texlive-*` | `choco install texlive` + `tlmgr install ...` |
-| Mermaid CLI (opcional) | `pacman -S mermaid-cli` | `choco install nodejs-lts` + `npm install -g @mermaid-js/mermaid-cli` |
-| Fontes do sistema | `pacman -S adobe-source-*-fonts ttf-jetbrains-mono` | Descarga manual desde Google Fonts + jetbrains.com |
-| Fonte sans-serif | `Source Sans 3` ou `Source Sans Pro` (auto-detectado) | `Source Sans 3` (auto-detectado) |
-| Fonte monoespaciada | `JetBrains Mono` (fallback: `Source Code Pro`) | `JetBrains Mono` (fallback: `Source Code Pro`) |
-| Fontes matemáticas | `pacman -S otf-stix` | `tlmgr install stix2-otf` |
-| Visor PDF | Okular / Zathura / Evince | SumatraPDF |
-| Shell | Fish / Bash | PowerShell |
-| Admin para instalar | `sudo` | PowerShell como Administrador |
-| Instalación md2pdf | `~/.local/bin/md2pdf` | `%LOCALAPPDATA%\md2pdf\md2pdf.cmd` |
-| Alias de curl | Non hai conflito | `curl` = Invoke-WebRequest; usar `curl.exe` |
+| Package manager | `pacman` | Chocolatey / winget; `tlmgr` for TeX |
+| TeX | Distribution packages | TeX Live plus `tlmgr` |
+| Mermaid | `mermaid-cli` | Node.js plus npm Mermaid CLI |
+| Fonts | System font packages | Static font files installed for all users |
+| Current code font | Source Code Pro | Source Code Pro |
+| Math font | `otf-stix` | `stix2-otf` |
+| PDF preview | Okular / Zathura / Evince | SumatraPDF |
+| Launcher | `~/.local/bin/md2pdf` | `%LOCALAPPDATA%\md2pdf\md2pdf.cmd` |
+| Shell | Bash / Fish / Zsh | PowerShell |
+| `curl` | Usually the native executable | Use `curl.exe` to bypass the PowerShell alias |
 
+## TeX distribution choice
 
-## 12. Nota sobre MiKTeX
+The documented Windows workflow uses **TeX Live**, matching the project's tested setup. Other distributions, including MiKTeX, are not covered by these installation steps. Package names, update policies, and administrator requirements differ.
 
-Esta guía usa **TeX Live** en vez de MiKTeX. MiKTeX require que un administrador faga un "check for updates" antes de poder compilar, e este paso pode ser problemático en contornos con permisos restrinxidos. TeX Live non ten este requisito e funciona de forma máis predicible, similar á experiencia en Linux.
+## Other renderers and validation
 
-## Outros gráficos e comprobacións de fiabilidade
-
-Ademais de Mermaid, md2pdf admite D2, Graphviz (dot) e Vega-Lite. D2 e dot
-deben estar no PATH. Os compoñentes Python opcionais instálanse co mesmo
-Python usado polo instalador:
+D2 and Graphviz executables must be on PATH when used. Install optional Python components into the same environment used by the installer:
 
 ```powershell
 python -m pip install PyMuPDF Pillow PyYAML "vl-convert-python>=1.7,<2"
 python install-md2pdf.py
 ```
 
-O instalador informa dos compoñentes detectados e fixa ese intérprete no
-lanzador .cmd. Se cambias de Python, reinstala md2pdf. Consulta DIAGRAMAS.md
-para os niveis de validación, a caché e `--strict`; VEGA-LITE.md describe
-as restricións de datos. A caché danada rexenérase automaticamente.
+The installer reports detected components and pins that interpreter in the `.cmd` launcher. Reinstall when changing Python. See [DIAGRAMS.md](DIAGRAMS.md) for validation levels, caching, and strict mode, and [VEGA-LITE.md](VEGA-LITE.md) for chart data restrictions. Damaged cache entries are regenerated automatically.

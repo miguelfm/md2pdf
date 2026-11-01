@@ -1,24 +1,23 @@
 ---
-author: Miguel Morales
-lang: gl
+author: "Example author"
 ---
 
-# Proba de md2pdf en Windows
+# md2pdf smoke test on Windows
 
-Tipografía e caracteres galegos: á, é, í, ó, ú, ñ. Unha ligazón a [Pandoc](https://pandoc.org).
+Unicode character check: á, é, í, ó, ú, ñ. A link to [Pandoc](https://pandoc.org).
 
-## Exemplo de código
+## Code example
 
 ```python
-print("Ola, Windows!")
+print("Hello, Windows!")
 ```
 
 > [!NOTE]
-> A instalación debe conservar as fontes, os acentos e esta caixa de información.
+> The installation should preserve fonts, accented characters, and this information box.
 
-| Compoñente | Función |
+| Component | Purpose |
 |---|---|
-| Pandoc | Conversión |
+| Pandoc | Conversion |
 | LuaLaTeX | PDF |
 
-Unha fórmula: $E = mc^2$.
+An equation: $E = mc^2$.

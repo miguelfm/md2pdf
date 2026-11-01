@@ -1,893 +1,39 @@
-# md2pdf
-
-Conversor de Markdown a PDF, DOCX e HTML5 multiplataforma (Linux e Windows) baseado en Pandoc. Dispón de tres motores de saída: **LuaLaTeX con template propio** (por defecto, calidade tipográfica máxima), **DOCX** (Word) e **HTML5 autocontido** (responsive, accesible e sen dependencias de execución no navegador).
-
-Deseñado para producir documentación técnica de alta calidade a partir de ficheiros `.md`, con resaltado de sintaxe optimizado para linguaxes web (PHP, HTML, CSS, JavaScript, Bash, SQL, JSON), tipografía profesional e preprocesamento automático do Markdown.
-
-
-## Características
-
-### Conversión automática
-
-Un só comando converte un ficheiro `.md`, varios ficheiros, ou un directorio completo a PDF, DOCX ou HTML5.
-
-### Preprocesamento intelixente do Markdown
-
-Antes de pasalo a Pandoc, o script preprocesa o Markdown:
-
-- Eliminación automática de índices manuais (`## Índice` + listas de ligazóns) e marcadores `[TOC]` de Typora, xa que Pandoc xera o seu propio TOC.
-- Eliminación de separadores horizontais (`---`) entre seccións.
-- Eliminación de numeración manual nas cabeceiras (`## 1. Título` → `## Título`), xa que Pandoc numera automaticamente con `--number-sections`.
-- Substitución de emojis por iconas vectoriais FontAwesome5 no texto (LuaLaTeX) e por texto plano dentro de bloques de código, onde os comandos LaTeX non son posibles.
-- Conversión de callouts estilo GitHub/Obsidian (`> [!NOTE]`, `> [!WARNING]`, etc.) á sintaxe nativa de Pandoc (`::: note`).
-- Admonitions automáticos en cabeceiras: as cabeceiras que conteñan "Tarefa", "Exercicio", "Reto" ou "Exemplo" reciben automaticamente un emoji identificativo.
-- Corrección automática de bloques de código sen linguaxe: os bloques ` ``` ` sen especificar linguaxe (que desactivarían o resaltado de sintaxe) son detectados e rexistrados coma advertencias; co flag `--strict` considéranse erro.
-- Enforce de liña en branco antes de callouts: garante a separación sintáctica que Pandoc require para interpretalos correctamente.
-- Eliminación do YAML front matter antes do procesamento: o front matter extráese por separado para a xeración de metadatos e non se pasa como contido ao motor de renderizado.
-- Protección do contido dentro de bloques de código: ningún dos preprocesamentos anteriores modifica o interior de bloques delimitados por ```.
-
-### Callouts (bloques de aviso)
-
-O filtro `callouts.lua` converte bloques de tipo callout en caixas visuais con cor e etiqueta, usando `tcolorbox`. Soporta a sintaxe de GitHub/Obsidian e a nativa de Pandoc:
-
-Sintaxe GitHub/Obsidian (convertida automaticamente polo preprocesador):
-
-```markdown
-> [!NOTE]
-> Lembra que `session_start()` debe ir antes de calquera saída HTML.
-
-> [!WARNING]
-> Nunca almacenes contrasinais en texto plano.
-```
-
-Sintaxe nativa Pandoc (tamén funciona):
-
-```markdown
-::: note
-Lembra que `session_start()` debe ir antes de calquera saída HTML.
-:::
-```
-
-Tipos dispoñibles (en inglés ou galego):
-
-| Tipo | Aliases | Cor | Uso |
-|---|---|---|---|
-| `note` | `nota` | Azul | Información xeral |
-| `tip` | `consello` | Verde | Boas prácticas |
-| `warning` | `atención`, `atencion` | Laranxa | Precaución |
-| `danger` | `perigo` | Vermello | Erros críticos |
-| `info` | — | Cian | Datos técnicos |
-| `task` | `tarefa`, `task-box`, `taskbox` | Índigo | Tarefa interactiva con formulario PDF (AcroForms) e cadro editable |
-
-### Callouts interactivos con formularios PDF (AcroForms) e persistencia HTML
-
-Para actividades prácticas, entregables e autoavaliacións, `md2pdf` soporta callouts interactivos de tipo tarefa (`task`, `tarefa`, `task-box`):
-
-Sintaxe básica con blockquote:
-
-```markdown
-> [!TASK] Exercicio 1: Configuración de rede
-> Indica a máscara de subrede e a porta de enlace correspondentes.
-```
-
-Ou especificando identificador e altura personalizada con fenced divs:
-
-```markdown
-::: {.task id="ex1" height="4cm" placeholder="Escribe aquí a túa resposta..."}
-
-**Tarefa 1:** Explica a diferenza entre TCP e UDP.
-:::
-```
-
-**Comportamento segundo o formato:**
-- **LuaLaTeX (PDF):** Xera un formulario interactivo PDF estándar (*AcroForm*) con `\TextField[multiline=true]`. O alumnado pode escribir, editar e gardar (`Ctrl+S`) as súas respostas directamente dentro do documento PDF utilizando calquera visor PDF estándar (Evince, Okular, Acrobat Reader, Chrome, Firefox, Edge, etc.) sen depender de aplicacións externas.
-- **HTML5 (`-e html`):** Xera un elemento `<textarea class="task-box-input">` con persistencia automática en `localStorage` do navegador para que o texto non se perda ao recargar a páxina ou pechar a pestana. En modo impresión (`@media print` ou `--print`), renderízase cun marco punteado limpo preparado para a escritura manuscrita.
-- **DOCX (`-e docx`):** Converte o bloque con cabeceira en negra (`🎯 Tarefa:`) e un espazo delimitado de resposta.
-
-### Admonitions automáticos en cabeceiras
-
-O script detecta palabras clave nos títulos das cabeceiras e engade automaticamente un emoji identificativo. Configuración no dicionario `HEADING_ADMONITIONS` de `preprocess.py`:
-
-| Patrón | Emoji | Icona LaTeX | Uso |
-|---|---|---|---|
-| Tarefa | 🎯 | `\faIcon[regular]{clipboard}` | Entregable obrigatorio |
-| Exercicio | ✏️ | `\faPencilAlt` | Práctica guiada |
-| Reto | 🏆 | `\faTrophy` | Desafío extra |
-| Exemplo | ▶️ | `\faIcon[regular]{play-circle}` | Demostración |
-
-Se a cabeceira xa ten un emoji, non se duplica. As iconas escálanse ao 90% (`\scalebox{0.9}`) para non dominar visualmente.
-
-### Metadatos do documento
-
-A saída incorpora metadatos estándar cando o formato os admite (título, idioma, autor, palabras clave) lexibles por lectores de PDF, buscadores e ferramentas de accesibilidade.
-
-O **título** extráese automaticamente do primeiro `# Heading` do documento. O **idioma** tómase do argumento `--lang` (por defecto `gl`).
-
-Os campos de metadatos extráense por orde de prioridade:
-
-1. **Ficheiro `metadata.yaml`** no mesmo directorio do `.md`. O script busca primeiro `<prefixo-unidade>-metadata.yaml` (ex: `u3-metadata.yaml` para `U3A*.md`), despois `metadata.yaml` (tamén `.yml`).
-2. **YAML front matter** no propio ficheiro `.md`, que **sobreescribe campo a campo** os valores do ficheiro externo.
-
-#### Campos recoñecidos
-
-| Campo | Onde aparece | Uso típico |
-|---|---|---|
-| `module` | Portada (`--titlepage`) | Módulo profesional (ex: "Desenvolvemento web en contorno servidor") |
-| `subject` | Portada — título principal | Unidade didáctica (ex: "UD3: Introdución a PHP") |
-| `activity` | Portada + primeira páxina de contido | Actividade concreta (ex: "A01: Estruturas de control") |
-| `school` | Portada — bloque inferior | Nome do centro (ex: "CIFP Rodolfo Ucha Piñeiro") |
-| `author` | Metadatos internos do PDF | Nome do docente; na portada úsase como alternativa a `school` se non hai centro definido |
-| `course` | Portada — bloque inferior | Curso académico (ex: "Curso 2025-2026") |
-| `keywords` | Metadatos internos do PDF | Palabras clave para buscadores |
-| `decimal-align` | Táboas do PDF | `false` desactiva o aliñamento decimal das columnas numéricas (como `--no-decimal-align`) |
-| `terminal-blocks` | Bloques de código (PDF/HTML) | `false` desactiva o fondo diferenciado de comandos de terminal (como `--no-terminal-blocks`) |
-| `code-compact-threshold` | Bloques de código (PDF/HTML) | Limiar de liñas (ex: `25`) para compactar automaticamente bloques longos (por defecto `0`: desactivado) |
-| `code-keep-lines` | Bloques de código (LuaLaTeX) | Máximo de liñas para manter o bloque enteiro na mesma páxina (por defecto `12`; `0` desactívao) |
-| `keep-with-next` | Paxinación (LuaLaTeX) | `false` desactiva a reserva que mantén un parágrafo de entrada co bloque, a lista ou a táboa que presenta |
-
-O campo `subtitle` acepta como alias de `activity` para compatibilidade con documentos anteriores.
-
-Esta combinación permite compartir `author`, `school`, `keywords` e `course` nun `metadata.yaml` de directorio, e definir `module`, `subject` e `activity` en cada ficheiro `.md`:
-
-```yaml
-# metadata.yaml (compartido por todos os .md do curso)
-author: "Miguel Morales"
-school: "CIFP Rodolfo Ucha Piñeiro"
-keywords: "PHP, DAW, Backend"
-course: "Curso 2025-2026"
-```
-
-```markdown
----
-module: "Desenvolvemento web en contorno servidor"
-subject: "UD3: Introdución a PHP"
-activity: "A01: Estruturas de control"
----
-
-# A01: Estruturas de control
-```
-
-Se non hai ningunha das dúas fontes, o documento xérase igualmente sen eses campos. A opción `--no-metadata` desactiva completamente a extracción.
-
-Para verificar os metadatos dun PDF:
-
-```bash
-pdfinfo documento.pdf | grep -E "Title|Author|Keywords|Creator"
-```
-
-### Modo impresión
-
-A opción `--print` aplica unha paleta optimizada para impresión en branco e negro. En PDF afecta á composición LaTeX; en HTML aplica a mesma aparencia na pantalla e mantén ademais regras `@media print`:
-
-- **Ligazóns en negro** — tanto URLs coma ligazóns internas (en pantalla son azuis).
-- **Fondos de código eliminados** — bloques de código con fondo branco e borde gris; código en liña totalmente transparente (sen fondo de cor) con texto negro puro.
-- **Táboas sen filas alternas** — elimina o sombreado gris das filas pares.
-- **Callouts con fondo branco** — mantén o borde pero elimina o fondo de cor (LuaLaTeX).
-
-```bash
-md2pdf apuntes.md --print
-md2pdf apuntes.md --print -o apuntes-imprimir.pdf
-```
-
-O ficheiro de pantalla e o de impresión pódense xerar en paralelo:
-
-```bash
-md2pdf apuntes.md && md2pdf apuntes.md --print -o apuntes-print.pdf
-```
-
-### Modo nocturno
-
-A opción `--night` aplica ao PDF e ao HTML unha paleta de cores cálida, sen compoñente azul dominante, pensada para lectura con pouca luz:
-
-- **Fondo xeral**: crema cálido `#F5F0E8`
-- **Texto**: marrón escuro `#2C1A0E` (non negro puro, menos contraste extremo)
-- **Bloques de código**: crema lixeiramente máis escuro `#EDE8DC`
-- **Código en liña**: fondo crema cálido `#EDE8DC` (idéntico ao dos bloques de código) con texto marrón medio `#7A4F2E`
-- **Ligazóns, callouts e título do TOC**: laranxa apagado `#8B6347`
-- **Iconas** (tarefas, exercicios, avisos, etc.): redefinidas con catro tons marrón-laranxa segundo a súa función:
-
-| Ton | Hex | Iconas |
-|---|---|---|
-| Laranxa apagado | `#8B6347` | consello, info, correcto, globo, reproducir, nota, foguete, obxectivo |
-| Marrón medio | `#7A4F2E` | chave, cartafol, lapis, trofeo |
-| Siena | `#A0522D` | aviso, erro, bug, parar, crítico |
-| Beixe cálido | `#9E8872` | escritorio, bloqueo, configuración, portátil |
-
-```bash
-md2pdf apuntes.md --night
-md2pdf apuntes.md --night -o apuntes-noite.pdf
-```
-
-A paleta aplícase a todos os elementos do documento: fondo, código, ligazóns, callouts, título do índice e todas as iconas. Ningún compoñente azul ou verde en toda a páxina.
-
-### Motor DOCX (Word)
-
-A opción `-e docx` xera un ficheiro `.docx` (Word/LibreOffice) directamente desde o mesmo Markdown, sen necesidade de ningún motor LaTeX — só Pandoc.
-
-```bash
-md2pdf apuntes.md -e docx
-md2pdf apuntes.md -e docx -o apuntes.docx
-md2pdf *.md -e docx
-```
-
-**Que funciona:**
-- Cabeceiras, parágrafos, listas, táboas, notas ao pé → correctos
-- Metadatos (título, autor) → propiedades do documento Word
-- Callouts → convértense en texto con prefixo bold (`📝 Nota:`, `⚠️ Atención:`, etc.) mediante o filtro `callouts-docx.lua`
-- TOC e numeración de seccións → xerados por Pandoc
-
-**Limitacións:**
-- Sen resaltado de sintaxe (DOCX non soporta o sistema de highlighting de Pandoc)
-- As referencias propias `@fig:`/`@tbl:` de `figure-captions.lua` non se resolven en DOCX
-- `--print` e `--titlepage` non aplican (ignóranse con aviso)
-
-**Estilos personalizados (opcional):** se existe un ficheiro `reference.docx` no directorio de md2pdf, úsase como modelo de estilos (Heading 1, Normal, Source Code, etc.). Xerar un de base:
-
-```bash
-pandoc -o reference.docx --print-default-data-file reference.docx
-# Editar en LibreOffice/Word os estilos desexados e gardar como reference.docx
-```
-
-### Motor HTML5
-
-A opción `-e html` xera un único ficheiro `.html` autocontido mediante o writer HTML5 de Pandoc. O CSS, as imaxes locais e os diagramas SVG quedan embebidos co propio documento (`--embed-resources`), polo que o resultado pode abrirse ou distribuírse como un único ficheiro, igual que un PDF.
-
-```bash
-md2pdf apuntes.md -e html
-md2pdf apuntes.md -e html -o apuntes.html
-md2pdf *.md -e html
-```
-
-O motor reutiliza o mesmo preprocesamento e a mesma semántica do Markdown que LuaLaTeX:
-
-- TOC compacto e centrado, sen puntos guía, con ligazóns internas.
-- Numeración automática de seccións delegada en Pandoc (`--number-sections`), compartindo a mesma xerarquía co TOC.
-- Callouts semánticos e responsive coas mesmas categorías (`note`, `tip`, `warning`, `danger`, `info`).
-- Resaltado de sintaxe de Pandoc e soporte de `hl="..."` para destacar liñas concretas.
-- Figuras e táboas numeradas con referencias `@fig:` e `@tbl:`/`@tab:` navegables; tamén se normalizan os pés de figura herdados do formato `*Figura N. ...*` para evitar duplicar a numeración.
-- Mermaid, D2, Graphviz e Vega-Lite en **SVG vectorial** cando o renderizador correspondente está dispoñible.
-- Ecuacións en MathML, sen depender de MathJax nin doutro JavaScript externo.
-- `--night`, `--print`, `--plain`, `--no-toc`, `--no-number`, `--watch` e `--strict`.
-- Deseño responsive para móbil/escritorio e regras específicas de impresión con CSS Paged Media básico.
-
-O HTML usa `md2pdf.html`, `md2pdf.css` e `html.lua`. As decisións de paxinación exclusivas de LaTeX (`needspace`, `longtable`, táboas pequenas, etc.) non se trasladan ao HTML de pantalla; para impresión úsanse propiedades CSS como `break-after: avoid-page` e `break-inside: avoid-page`.
-
-`--titlepage` non aplica a HTML: o título intégrase na propia páxina.
-
-### Paquetes IMS para Moodle
-
-`md2pdf` pode empaquetar varios Markdown como **IMS Content Package** para Moodle, reutilizando o motor HTML5 autocontido:
-
-```bash
-md2pdf U1/ --ims U1-moodle.zip
-md2pdf U1/*.md --ims U1-moodle.zip --ims-title "UD1. Introdución á programación"
-```
-
-O ZIP contén `imsmanifest.xml` na raíz e un HTML autocontido por documento. A orde do menú IMS respecta a orde dos ficheiros; os títulos toman `activity`, `title`, o primeiro H1 ou, como fallback, o nome do ficheiro. As ligazóns entre `.md` incluídos no mesmo paquete convértense automaticamente a ligazóns entre os HTML. Con `--strict`, unha ligazón local a un Markdown non incluído impide publicar o paquete.
-
-IMS é unha capa de empaquetado, non un motor adicional: PDF, DOCX e HTML continúan sendo os tres motores de renderizado. Máis detalles en [IMS.md](IMS.md).
-
-### Resaltado de liñas en bloques de código
-
-O atributo `hl="..."` permite destacar liñas específicas dentro dun bloque de código. En LuaLaTeX aplícao `hl-lines.lua`; en HTML Pandoc conserva o atributo como `data-hl` e o template marca as liñas correspondentes no navegador. DOCX non implementa esta característica.
-
-Sintaxe:
-
-```markdown
-```php {hl="1,3,5-7"}
-<?php
-$usuario = $_POST['usuario'];   // ← liña 1 destacada
-$hash = password_hash($pass, PASSWORD_DEFAULT);
-echo $usuario;                  // ← liña 3 destacada
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$hash]);        // ← liñas 5-7 destacadas
-$result = $stmt->fetch();
-```
-```
-
-A cor de fondo das liñas destacadas é un amarelo suave por defecto. Para personalizala, engadir en `md2pdf-preamble.tex`:
-
-```latex
-\colorlet{hl-line-bg}{yellow!18!white}
-\fvset{highlightcolor=hl-line-bg}
-```
-
-Nota: a implementación usa `highlightlines` nativo de `fvextra`, polo que é compatible co resaltado de sintaxe de Pandoc.
-
-### Diagramas: Mermaid, D2, Graphviz e Vega-Lite
-
-Tamén se admiten gráficos de datos con [Vega-Lite](VEGA-LITE.md):
-histogramas, liñas, puntos, regresións e sectores (con soporte de 14 temas visuais,
-tipografía integrada Source Sans 3 e xeración sen navegador mediante vl-convert-python).
-Exemplos en [exemplos-vega-lite.md](exemplos-vega-lite.md).
-
-Consulta [Diagramas configurables](DIAGRAMAS.md) para seleccionar layout,
-engadir pés e referencias e establecer valores predeterminados por documento.
-
-Os bloques de código con linguaxe `mermaid` renderízanse automaticamente como diagramas vectoriais incrustados no PDF:
-
-````markdown
-```mermaid
-flowchart LR
-    A[Inicio] --> B{Decisión}
-    B -->|Si| C[Resultado A]
-    B -->|Non| D[Resultado B]
-```
-````
-
-A renderización faina o paquete `md2pdf/diagrams/` (coa API de compatibilidade `md2pdf/mermaid.py`) chamando a `mmdc` (Mermaid CLI) e substituíndo cada bloque pola imaxe xerada antes de pasar o documento a Pandoc. O formato escóllese segundo o motor:
-
-- **LuaLaTeX** → PDF vectorial axustado ao diagrama. `mmdc` 12 xa o axusta por defecto e retirou `--pdfFit`; md2pdf consulta `mmdc --help` unha vez e só engade a opción ás versións que a teñen
-- **DOCX** → PNG
-- **HTML5** → SVG vectorial embebido no ficheiro final
-
-Soporta todos os tipos de diagrama de Mermaid: `flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram`, `gantt`, `pie`, `mindmap`, `timeline`, `quadrantChart`, `sankey-beta`, `xychart-beta`, `usecase-beta`, `kanban`, `architecture-beta`, etc., xunto con opcións configurables de `layout` (`elk`, `dagre`), `theme` (como `neo`, `forest`, `dark`, `redux`) e `look` (`classic`, `handDrawn`).
-
-#### Caché por hash
-
-Cada diagrama almacénase con nome `<hash-SHA1>.<formato>` en `/tmp/md2pdf-mermaid/` (Linux/macOS) ou `%TEMP%\md2pdf-mermaid\` (Windows). Os diagramas idénticos non se re-renderizan entre execucións sucesivas, polo que `--watch` con documentos con moitos diagramas é case instantáneo a partir da segunda compilación.
-
-A invocación de `mmdc` usa `subprocess.run()` con `stdin=DEVNULL`, env controlado, timeout de 60s e un ficheiro de configuración de Puppeteer con `--no-sandbox` (necesario en moitos entornos onde Chromium non pode usar o sandbox).
-
-A imaxe inserida leva un ancho explícito calculado a partir das dimensións (sobrescribible con `width=...`) para evitar un problema coñecido de LuaLaTeX onde imaxes vectoriais sen tamaño definido fan que o motor se colgue indefinidamente.
-
-#### Requisitos
-
-- **Arch Linux**: `sudo pacman -S mermaid-cli`
-- **Windows**: ver `INSTALL_WINDOWS.md`, sección 4
-- **Outros**: `npm install -g @mermaid-js/mermaid-cli`
-
-Se `mmdc` non está instalado, os bloques mantéñense como código fonte no documento e emítese un aviso en stderr (sen fallo de compilación; con `--strict` aborta).
-
-O mesmo motor acepta bloques `d2`, `dot` e `graphviz`. Cada ferramenta é
-opcional e independente: só se comproba o executable cando o documento contén
-un bloque desa linguaxe. D2 emprégase para diagramas conceptuais, esquemas SQL e de
-arquitectura; admite opcións de `layout` (`dagre`, `elk`, `tala`), `theme` (identificadores numéricos), `sketch` (estilo debuxado a man), `pad` (marxe arredor do diagrama) e `dark-theme`. DOT/Graphviz resulta especialmente útil para grafos, árbores e
-autómatas (con todos os motores: `dot`, `neato`, `fdp`, `sfdp`, `circo`, `twopi`, `osage`, `patchwork`).
-
-````markdown
-```{.d2 layout=elk sketch}
-cliente -> servidor: HTTP
-servidor -> base_de_datos: SQL
-```
-
-```dot
-digraph automata {
-    rankdir=LR;
-    q0 -> q1 [label="1"];
-}
-```
-````
-
-En Arch Linux pódense instalar con `sudo pacman -S d2 graphviz`. Os resultados
-usan o mesmo esquema de caché e os mesmos formatos por motor que Mermaid.
-
-### Ecuacións matemáticas
-
-Pandoc converte a sintaxe LaTeX estándar (`$...$` e `$$...$$`). A fonte matemática está configurada para emparellar coa tipografía do documento.
-
-**Fonte:** STIX Two Math. Encaixa con Source Serif 4 porque ambas son serifs transicionais modernizadas para medios dixitais, con proporcións e contraste de trazo similares.
-
-Require instalar a fonte:
-```bash
-sudo pacman -S otf-stix
-```
-
-Sintaxe:
-
-```markdown
-Ecuación en liña: $E = mc^2$
-
-Ecuación en bloque:
-
-$$\int_a^b f(x)\,dx = F(b) - F(a)$$
-
-```
-
-As ecuacións en bloque represéntanse coa numeración e o comportamento propios de LaTeX/Pandoc, pero md2pdf non resolve actualmente referencias `@eq:`.
-
-No motor HTML as ecuacións saen en MathML: con `--math-method=mathml` desde Pandoc 3.11, que marcou `--mathml` como obsoleta, e con `--mathml` en versións anteriores.
-
-### Referencias cruzadas
-
-md2pdf resolve referencias de **figuras e táboas** sen depender de `pandoc-crossref`: `figure-captions.lua` faino en LuaLaTeX e `html.lua` en HTML5.
-
-Sintaxe no Markdown:
-
-```markdown
-![Diagrama do sistema](img/diagrama.png){#fig:diagrama}
-
-Como se mostra na @fig:diagrama, o proceso consta de tres fases.
-
-| Motor    | Velocidade | Calidade |
-|----------|------------|----------|
-| LuaLaTeX | lenta      | máxima   |
-| DOCX     | rápida     | media    |
-
-: Comparativa de motores {#tbl:motores}
-
-Como mostra a @tbl:motores...
-```
-
-Admítense `@fig:...` para figuras e `@tbl:...`/`@tab:...` para táboas. A forma coa inicial maiúscula (`@Fig:...`, `@Tbl:...`) produce «Figura»/«Táboa» en vez de «figura»/«táboa». En HTML as referencias son ligazóns internas clicables. As referencias `@sec:`, `@eq:` e `@lst:` non se resolven automaticamente polo pipeline actual. En DOCX tampouco se aplica este sistema propio de referencias.
-
-### Validación do Markdown
-
-A validación execútase automaticamente antes de cada conversión. Informa de problemas estruturais como:
-
-- marca BOM ao inicio do ficheiro;
-- front matter YAML sen pechar ou que abrangue accidentalmente parte do corpo;
-- bloques de código sen linguaxe ou sen pechar;
-- callouts `:::tipo` sen a liña baleira requirida, sen pechar ou con peches soltos;
-- múltiples cabeceiras de nivel 1 (`#`).
-
-Por defecto estes problemas móstranse como avisos e a conversión continúa. Con `--strict`, calquera deles fai abortar antes de executar Pandoc e devolve código de saída distinto de cero:
-
-```bash
-md2pdf apuntes.md --strict
-md2pdf *.md --strict
-```
-
-Despois de cada conversión amósanse tamén os avisos `[WARNING]` de Pandoc (opcións obsoletas, recursos que non atopa…), sen repetir e ata dez. Non deteñen a conversión nin dependen de `--strict`.
-
-### Tipografía profesional
-
-Familia tipográfica baseada na familia Source de Adobe, configurada vía variables de Pandoc:
-
-- **Source Sans 3** ou **Source Sans Pro** — corpo do texto e títulos por defecto (sans-serif); optimizada para lectura en pantalla, coherencia con código técnico e accesibilidade educativa
-- **Source Serif 4** — modo serif para o corpo do texto mediante a opción `--serif` (ou metadatos `body-font: serif`), recomendado para documentos pensados para impresión en papel
-- **Source Code Pro** / **JetBrains Mono** — código fonte (monoespaciada, Scale=0.85, sen ligaduras)
-
-Cifras Lining aplícanse automaticamente dentro de táboas mediante `\AtBeginEnvironment`.
-
-### Cabeceiras con cor
-
-As cabeceiras de sección reciben cor para reforzar a xerarquía visual. En modo día úsase unha paleta de **azul pizarra** de tres tons; en modo nocturno (`--night`) substitúese por **tostado ámbar** coherente coa paleta cálida:
-
-| Nivel | Modo día | Modo nocturno |
-|---|---|---|
-| `##` (section) | `#1C2F4A` (pizarra escuro) | `#6B3A1F` (tostado escuro) |
-| `###` (subsection) | `#2E4B72` (pizarra medio) | `#8B5230` (tostado medio) |
-| `####` (subsubsection) | `#4A6A96` (pizarra claro) | `#A86A42` (tostado claro) |
-
-En modo impresión (`--print`) todas as cabeceiras van en negro.
-
-### Microtipografía
-
-O paquete `microtype` configúrase con:
-
-- **Character protrusion**: puntuación e guións sobresaen lixeiramente das marxes, creando unha marxe óptica máis uniforme.
-- **Font expansion**: axuste microscópico do ancho dos glifos (±1%) para mellor xustificación.
-- Resultado: menos "ríos brancos" no texto xustificado e menos hifenacións innecesarias.
-
-### Espazado vertical tipográfico
-
-Baseado nos principios de Bringhurst (*The Elements of Typographic Style*) e Müller-Brockmann:
-
-- **Parskip** (0.45em): ~50% do interliñado, para separar parágrafos sen indentación.
-- **Cabeceiras**: espazo antes ≥ 2× espazo despois (principio de proximidade de Gestalt — a cabeceira está máis preto do contido que introduce que do anterior).
-- **Listas**: `topsep` 0.1em (espazo antes/despois da lista ≈ parskip), `itemsep` 0.25em entre ítems de viñeta ordinarios e `0.5em` nas listas procedementais numeradas (`enumerate`).
-- **Bloques de código**: `after skip` (0.7em) > `before skip` (0.45em) porque o borde inferior crea unha fronteira visual ríxida.
-- **Blockquotes**: `after skip` (0.6em) > `before skip` (0.45em) polo mesmo motivo.
-
-Xerarquía de espazado en LuaLaTeX (con `\parskip` 0.45em engadido):
-
-| Elemento | beforeskip | afterskip | Espazo real antes | Espazo real despois | Ratio |
-|---|---|---|---|---|---|
-| Section | 1.2em | 0.4em | ~1.65em | ~0.85em | ~1.9× |
-| Subsection | 1.0em | 0.3em | ~1.45em | ~0.75em | ~1.9× |
-| Subsubsection | 0.8em | 0.3em | ~1.25em | ~0.75em | ~1.7× |
-
-### Listas procedementais («Paso a paso»)
-
-Nas guías prácticas, titoriais e documentación técnica con pasos numerados (`1.`, `2.`, `3.`), `md2pdf` optimiza a lexibilidade do fluxo de traballo:
-
-- **Resaltado en negra coa cor corporativa (`heading-section`):** os números e marcadores (`1.`, `2.`, `a.`, `b.`) destacan visualmente sobre o texto da instrución, permitindo ao estudante situarse instantaneamente na secuencia sen perder o fío.
-- **Separación vertical ampliada (`itemsep=0.5em`):** engade un desafogo vertical entre pasos sucesivos, evitando que pasos con dúas ou máis liñas de texto se confundan visualmente cos pasos contiguos. As sublistas anidadas aplican `itemsep=0.25em`.
-- **Listas de viñetas compactas:** as listas non numeradas ordinarias (`<ul>` / `itemize`) conservan o seu interliñado compacto para listas breves de características ou conceptos.
-- **Paridade multiformato e modos visuais:** configurado en LuaLaTeX mediante `enumitem` (cunha xestión de `\tightlist` consciente do tipo de lista) e en HTML5 con pseudo-elementos `::marker` e espazamento relativo, adaptando automaticamente as cores tanto ao modo nocturno (`--night`, onde os números adoptan o ton cálido `#6B3A1F`) coma ao modo impresión (`--print`, negro puro `#000000`).
-
-### Protección de orfas, viúvas e cabeceiras
-
-- **Orfas e viúvas**: `\widowpenalty=3000`, `\clubpenalty=3000` e `\displaywidowpenalty=2000` desaconsellan liñas solitarias ao inicio/final de páxinas sen bloquear de maneira absoluta a composición.
-- **Cabeceiras**: `\Needspace` vía `\pretocmd` reserva 8, 7 e 6 liñas base antes de `section`, `subsection` e `subsubsection`, respectivamente. Se a cabeceira vai xusto despois doutra (sección + subsección), non se reserva nada: `\Needspace` forzaría o salto entre as dúas e deixaría a primeira soa ao final da páxina. Detéctase con `\if@nobreak`, que LaTeX mantén activo desde unha cabeceira ata o primeiro parágrafo; a reserva da primeira cabeceira xa protexe o conxunto.
-- **Cabeceira + táboa pequena**: cando unha táboa de ata 6 filas aparece inmediatamente despois dunha cabeceira, `small-table.lua` fai unha única reserva conxunta antes da cabeceira: unha liña por fila e cinco máis, e 0,9 liñas por cada liña de máis dunha fila cuxas celas parten, coa mesma estimación ca nas táboas longas. Sen esas liñas, unha táboa de filas dobres non cabía na reserva, e o tabular, indivisíbel, pasaba á páxina seguinte deixando a cabeceira soa. Así evita que a cabeceira quede soa ao final da páxina sen aumentar globalmente as reservas 8/7/6. Se hai varias cabeceiras seguidas (sección + subsección + táboa), a reserva vai antes da primeira e suma tres liñas por cada cabeceira anterior; se fose só antes da última, o salto quedaría entre elas.
-- **Cabeceira + táboa longa**: se a táboa ten 7 ou máis filas, segue como `longtable`, e `small-table.lua` reserva antes da cabeceira o primeiro bloque que non se pode partir: a cabeceira de columnas e as cinco primeiras filas, xa que as catro primeiras van protexidas con `\\*`. Sen esta reserva, a cabeceira quedaba soa ao final da páxina: `\longtable` desactiva `\if@nobreak` e `\LT@start` deixa un punto de corte entre a cabeceira e a táboa. A altura é unha estimación: cada fila mide 1,4 liñas base e 0,9 máis por cada liña de texto adicional. As liñas de cada cela calcúlanse repartindo as palabras no ancho da columna, a uns 5 pt por carácter de texto e 7,1 pt por carácter de código, que `auto-table-widths.lua` converte en LaTeX e vai en Source Code Pro de 11,8 pt; unha palabra máis longa ca a columna, como unha ruta, parte. Do LaTeX das celas só conta o texto: non as ordes nin o argumento de `\color`, co que se destacan as cabeceiras. Se a estimación se pasa, a cabeceira salta antes do necesario.
-- **Parágrafo de entrada + bloque**: un parágrafo que remata en dous puntos e vai xusto antes dun bloque de código, dunha lista ou dunha táboa non queda só ao pé da páxina. `keep-with-next.lua` reserva antes del, con `\Needspace`, as súas liñas estimadas, a uns 85 caracteres por liña, e o comezo do bloque: todo o bloque de código se é curto (ata `code-keep-lines` liñas), as catro primeiras liñas se é longo, e o primeiro elemento da lista, ata catro liñas. As liñas do código cóntanse como saen no PDF: unha liña da fonte con máis de 66 caracteres parte nos espazos e ocupa varias. Se só se contasen as da fonte, a reserva quedaría curta: o parágrafo seguiría na páxina e o bloque curto, indivisíbel, pasaría enteiro á seguinte. O límite de `code-keep-lines` segue contando as liñas da fonte. As táboas trátaas `small-table.lua` coa mesma regra e a súa propia estimación. Se o parágrafo vai despois dunha cabeceira, a reserva vai antes da cabeceira, como na táboa, agás se é o título de nivel 1: Pandoc só o toma como título do documento se é o primeiro bloque, e unha reserva antes del deixaba o PDF sen `\title`. Se a estimación se pasa, o parágrafo salta antes do necesario; `keep-with-next: false` desactiva a reserva.
-- **Táboas pequenas independentes**: manteñen a súa propia reserva `número de filas + 5` antes do `tabular`, sen as liñas das filas que parten: un `tabular` que non cabe xa salta enteiro, e unha reserva maior só adiantaría o salto; as táboas de 7 ou máis filas seguen como `longtable` e poden partir entre páxinas.
-- **Filas orfas e viúvas en táboas longas**: `small-table.lua` protexe as primeiras 4 filas e a penúltima fila con `\\*` (fila inseparable da seguinte), evitando tanto cortes prematuros que amosen só 1-3 filas de datos na primeira páxina como filas viúvas illadas na última. Véxase [Táboas longas](#táboas-longas) para máis detalles.
-
-### Hifenación multilingüe
-
-- **Lingua principal**: galego (vía `-V lang=gl`)
-- **Linguas secundarias**: inglés e castelán (vía `-V babel-otherlangs=english,spanish`)
-- **Tolerancia**: `\tolerance=1500` permite espazos lixeiramente máis amplos para reducir hifenacións innecesarias.
-- **Excepcións manuais**: ~40 termos técnicos frecuentes en desenvolvemento web con hifenación correcta (func-tion, con-trol-ler, mid-dle-ware, frame-work, java-script, tem-plate, etc.)
-
-### Resaltado de sintaxe
-
-Tema personalizado `drake-jb.theme` baseado na paleta GitHub Light con 13 cores diferenciables optimizadas para linguaxes web. Todas as cores cumpren **WCAG AA** (ratio de contraste ≥ 4.5:1) sobre o fondo de código `#f6f8fa`. O script detecta automaticamente o ficheiro `.theme` no directorio do script ou de traballo.
-
-O tema pásase con `--syntax-highlighting` desde Pandoc 3.8, que marcou `--highlight-style` como obsoleta; con versións anteriores úsase a opción antiga. md2pdf le a versión con `pandoc --version` unha vez por execución.
-
-`javadoc.xml` substitúe a sintaxe Javadoc incorporada en Pandoc (`--syntax-definition`, motores LuaLaTeX e HTML). A orixinal marca as palabras ASCII dos comentarios `/** */` como texto normal e deixa os tiles e a puntuación co estilo de comentario, de modo que `Saúda` saía con `ú` en cursiva e gris. A copia engade dúas regras, marcadas con `md2pdf`, para que todo o texto do Javadoc sexa comentario.
-
-### Anchos de táboas proporcionais ao contido
-
-Filtro Lua (`auto-table-widths.lua`) que substitúe os anchos arbitrarios que Pandoc calcula a partir dos guións do Markdown. O filtro:
-
-- Analiza o contido real de cada cela.
-- Se todo o contido cabe sen partir liñas en como moito o 85 % da liña, a táboa queda co seu ancho natural e centrada, en vez de estirarse deixando ocos entre columnas. As táboas con algunha columna baleira no corpo (para que o alumnado a encha) ocupan sempre toda a liña.
-- Limita a lonxitude efectiva por cela a 60 caracteres (evita que código moi longo nunha columna espreme as demais).
-- Garante un ancho mínimo baseado no texto da cabeceira (as cabeceiras non deben romper liñas).
-- Garante un ancho mínimo para código monoespaciado curto (como `@deprecated`) para evitar hifenacións forzadas.
-- Garante que cada columna colle a palabra máis longa sen espazos de calquera das súas celas (por exemplo «Enteiro» ou «Decimal»), para que LaTeX non a divida con guión. Os anchos estímanse con táboas de ancho por glifo medidas en `\small` (`Source Sans 3` regular no corpo por defecto, ou `Source Serif 4` en modo `--serif`, `Source Sans 3` negra na cabeceira, `Source Code Pro` no código). As palabras que TeX non pode dividir (menos de catro letras seguidas, como `CA1.8` ou unha ruta `/etc/php/8.5/cli/php.ini` escrita como texto) non se parten: só invaden o espazo entre columnas, así que só obrigan a axustar se invadirían máis de 8 pt. O código conta ata o seu primeiro punto de corte.
-- O espazo que falte sae das outras columnas punto a punto: cada vez da que menos altura engade á táboa, simulando o reparto das palabras en liñas de cada cela, e en empate da que máis lle sobra sobre o seu propio mínimo, que adoita ser a de máis texto. Como a estimación pode errar un par de puntos, cada columna valórase 2 pt máis estreita do que quedaría, para non recortar as que teñen algunha liña xusto no límite.
-- Como o mínimo pola cabeceira, o mínimo por palabras non se aplica se pasaría do 60 % da liña. Se os mínimos non caben todos, cúmprense os máis pequenos e as columnas de palabras máis longas repártense o resto: esas partirán a palabra, pero as outras non.
-
-#### Anchos manuais
-
-Se a liña separadora ten guións de lonxitude distinta, Pandoc calcula anchos relativos a partir deles e o filtro respéctaos: só aplica o estilo da cabeceira.
-
-```markdown
-| Tipo | Descrición | Exemplo |
-|------|--------------------------|------------|
-```
-
-Pandoc só calcula estes anchos cando algunha liña da táboa pasa de 72 caracteres; nas táboas estreitas non hai anchos que respectar. Ademais conta tamén os dous puntos de aliñamento como parte da columna, así que `|:---:|---|---:|` dá anchos 5:3:4 aínda que os guións sexan iguais. Para distinguir ese caso dun ancho manual, o filtro busca un número de guións *d* común a todas as columnas que explique os anchos (ancho proporcional a *d* + dous puntos, con 2 para centrado, 1 para esquerda ou dereita e 0 sen aliñamento). Se o atopa, os guións son iguais e segue o cálculo automático.
-
-### Táboas longas
-
-As táboas que non caben nunha soa páxina continúan automaticamente na seguinte con a cabeceira repetida. Pandoc xera `longtable` con `\endhead`, polo que a repetición de cabeceira é nativa.
-
-O filtro `small-table.lua` aplica dúas melloras esenciais ás táboas longas (> 6 filas) para mellorar a lectura en documentos paxinados:
-
-#### Cabeceira repetida sutil
-
-Cando unha táboa longa rompe entre páxinas, o filtro xestiona a continuidade de xeito sutil e eficiente para a distribución vertical da páxina:
-
-- **Na páxina seguinte:** a cabeceira de columnas repítese nun estilo visualmente máis discreto (peso normal, cursiva e tonalidade suave `heading-section!65`), permitindo identificar cada columna sen recargar a páxina nin competir coa cabeceira principal.
-- **Sen filas adicionais nin pé artificial:** non se engaden filas de pé nin avisos textuais de continuación, aforrando espazo vertical, evitando cortes prematuros e mantendo o patrón de cores alternas (*zebra striping*) limpo e natural.
-
-#### Protección contra filas orfas e viúvas en táboas
-
-Para evitar cortes prematuros que deixen poucas filas antes ou despois dun salto de páxina, o filtro protexe automaticamente:
-
-- **As primeiras 4 filas** do corpo (despois da cabeceira) con `\\*`, que impide que LaTeX corte a táboa antes de amosar polo menos 4 filas de datos.
-- **A penúltima fila** (en táboas de 6 ou máis filas) tamén con `\\*`, para evitar que a última fila quede soa na páxina seguinte (viúva).
-
-O preámbulo corrixe un problema de `\rowcolors`: usa un contador de estado global que non se resetea entre táboas. Sen a corrección, as cores de filas alternas desincronízanse entre táboas consecutivas. O reset en `\AtBeginEnvironment{longtable}` garante que cada táboa comeza co patrón correcto (fila 1 = cabeceira sen cor, fila 2 = gris, fila 3 = branco...).
-
-Nota: nunha táboa moi longa que salte varias páxinas, as cores poden lixeiramente desfasarse na páxina de continuación. É un efecto cosmético menor sen solución sinxela en LuaLaTeX.
-
-### Saltos de liña en celas de táboa
-
-O filtro `br.lua` converte as etiquetas HTML `<br>` dentro de celas de táboa en `\newline{}` de LaTeX, permitindo forzar saltos de liña dentro dunha mesma cela. Esta conversión só afecta ao interior de táboas; no resto do documento `<br>` trátase normalmente por Pandoc.
-
-### Aliñamento vertical de táboas
-
-Pandoc xera columnas de tipo `p{}` para todas as columnas con ancho calculado. `p{}` aliña o contido cara arriba por defecto, que é o comportamento correcto para documentación técnica.
-
-O único problema era que o **código en liña** (`\mbox{\texttt{...}}`) dentro de celas altas aliñaba pola liña base en vez de pola parte superior. O filtro `auto-table-widths.lua` corrixe isto engadindo `\leavevmode` antes de cada `\mbox`, que ancora o contido á parte superior do `\parbox` de forma consistente co texto normal.
-
-> **Nota técnica:** `\newcolumntype{p}[1]{...p{#1}}` causa recursión infinita en LuaLaTeX con `polyglossia` e `fontspec`. Non se usa esta redefinición.
-
-### Estilo de táboas técnicas
-
-O preámbulo e o filtro `auto-table-widths.lua` aplican automaticamente un conxunto de melloras tipográficas en todas as táboas:
-
-- **Fonte reducida**: `\small` (11,86 pt con 13 pt de base, medido); entreliña de 17,14 pt, 1,45 veces o tamaño, a mesma proporción ca o corpo (`\setstretch{1.2083}`)
-- **Separación entre filas**: `\arraystretch{1.5}` — entre filas queda media liña máis ca entre as liñas dunha cela (8,57 pt), a mesma proporción ca `\parskip` entre parágrafos. No HTML, a táboa herda o `line-height` do corpo (1,56; 1,52 en pantallas estreitas) e o `padding` vertical, `.37rem` (`.36rem` en pantallas estreitas), tamén é media liña
-- **Padding horizontal**: `\tabcolsep{6pt}` — espazo a cada lado das celas
-- **Cabeceiras en sans-serif bold con cor**: o filtro `auto-table-widths.lua` envolve cada cela de cabeceira en `\textsf{\bfseries\color{heading-section}{...}}`, usando o mesmo ton que as cabeceiras de sección (azul pizarra en día, tostado ámbar en noite, negro en impresión) e eliminando o `\textbf` que Pandoc xa inxecta para evitar dobre bold
-- **Sen liñas horizontais**: `\toprule`, `\midrule` e `\bottomrule` están suprimidos; coas cabeceiras en cor e o zebra striping as liñas son redundantes e ademais `\toprule` repetiríase incorrectamente en cada páxina de continuación de táboas longas
-- **Zebra striping**: filas alternas en `gray!6!white` para facilitar a lectura horizontal
-- **Aliñamento decimal**: nunha columna na que todas as celas son números (`9`, `-2`, `3.5`, `0,75`; as baleiras permítense) e polo menos un ten parte decimal, as unidades e o separador decimal quedan na mesma vertical. Cada cela ocupa o mesmo ancho, así que o aliñamento que marque o Markdown move o bloque enteiro: con `|:-:|` a columna queda centrada pero aliñada polo decimal. Só no PDF. Desactívase con `--no-decimal-align` ou con `decimal-align: false` no front matter ou no `metadata.yaml`
-
-```markdown
-| Operador | Operación | Exemplo | Resultado |
-|:-:|---|:-:|:-:|
-| `*` | Multiplicación | `7 * 2` | 14 |
-| `/` | División | `7 / 2` | 3.5 |
-```
-
-### Código en liña intelixente
-
-O filtro Lua e o preámbulo xestionan conxuntamente o código en liña en LaTeX para garantir unha renderización limpa e uniforme:
-
-- **Comportamento por defecto (sen fondo):**
-  - Todo o código en liña amósase con tipografía monoespazada na cor temática axeitada (azul `#0550ae` en día, marrón `#7A4F2E` en noite, negro puro en impresión) sen caixas nin fondos de cor, asegurando total coherencia visual en calquera documento.
-- **Modo opcional tipo «píldora» (`--inline-pill`):**
-  - O fondo tipo «píldora» pódese activar coa opción de comando `--inline-pill`, engadindo `inline-pill: true` nos metadatos YAML/front matter, ou con `\mdpdfinlinepilltrue` no preámbulo LaTeX.
-  - **Cantos lixeiramente redondeados** (`1.5 pt`) e recheo lateral microscópico (`1.5 pt`).
-  - **Recheo vertical nulo** (`0 pt`, con `tcbox raise base`): non altera a entreliña dos parágrafos nin deforma o ritmo vertical.
-  - **Cores adaptadas a cada modo:** fondo gris neutro tenue `#F0F2F5` en modo día, crema cálido `#EDE8DC` en noite e transparente (`blankest`) en impresión.
-- **División e rotura de liñas intelixente:**
-  - Código curto (≤ 8 caracteres ou ≤ 15 sen separadores) como `$price`, `int`, `@deprecated`, `true` → envólvese en `\leavevmode\mbox{}` para mantelo indivisible e ancoralo á parte superior en celas de táboa. O guión baixo non conta como separador: identificadores como `PHP_INI_SYSTEM` ou `$_SERVER` non se parten, e a columna da táboa ensánchase para que caiban. O código máis longo si pode partirse no guión baixo.
-  - Fóra das táboas, o código de ata 20 caracteres (`BODY_MBOX_LEN`) tampouco se parte, aínda que leve espazos ou separadores: unha expresión curta como `$c ? $a : $b` vai enteira á liña seguinte en vez de quedar partida en dúas. Nas táboas mantense a regra anterior, porque os anchos das columnas calcúlanse con ela.
-  - Nas táboas, se un código protexido non cabe no ancho finalmente asignado á cela, permítense primeiro cortes en espazos, operadores e separadores; o guión baixo úsase como recurso secundario. Os anchos automáticos recalcúlanse coa mesma segmentación que se usa na saída LaTeX. Os anchos manuais respéctanse. Se ningún corte dispoñible permite que o código caiba, emítese un aviso para revisar os anchos ou a estrutura da táboa; non se introducen guións visibles nin cortes arbitrarios dentro dos identificadores. A estimación segue usando as métricas de fonte e páxina do sistema.
-  - Rutas longas e comandos (`/etc/php/8.3/...`, `$a && $b`) → o filtro `auto-table-widths.lua` engade puntos de corte automáticos (`\discretionary`, `\allowbreak`). O estilo LaTeX detecta estes puntos e evita encapsular a ruta nunha caixa ríxida indivisible, garantindo que as rutas rompan con naturalidade sen desbordar a marxe dereita nin en prosa nin en táboas.
-
-**Limitación coñecida (LuaLaTeX):** as secuencias con barra invertida (`\n`, `\t`, `\\`) dentro de código en liña (acentos graves) na prosa renderízanse incorrectamente porque `\texttt{}` interpreta a barra como inicio de comando LaTeX (por exemplo, `\n` aparece como `\{}n`). Dentro de bloques de código fenced non hai problema. A solución é describir o carácter con palabras na prosa ou usar un bloque de código.
-
-### Rotura de liñas e páxinas en bloques de código
-
-O paquete `fvextra` redefine `verbatim` para que liñas longas rompan automaticamente con un indicador visual `↪` (gris discreto), evitando que o texto se saia da páxina en bloques de código sen linguaxe especificada.
-
-En LuaLaTeX, os bloques de **ata 12 liñas de fonte, incluídas as baleiras**, mantéñense enteiros: se non caben no espazo dispoñible, pasan á páxina seguinte. O limiar lese dos metadatos coa mesma convención que `code-compact-threshold`:
-
-```yaml
-code-keep-lines: 12  # 0 desactiva a protección dos bloques curtos
-```
-
-A protección aplícase tamén a `text`, aos bloques de terminal, aos bloques con `hl`, aos compactos e aos situados en listas ou callouts. É independente de `.compact` e do seu limiar, e funciona tamén con `--print` e `--night`. Conta liñas de fonte, non as liñas visuais producidas ao dobrar liñas longas: evita limiares excesivos ou bloques de poucas liñas pero moi longas que poidan superar a altura dunha páxina. Manter un bloque enteiro pode deixar espazo en branco ao final da páxina anterior; baixa o limiar se prefires unha composición máis densa.
-
-Os bloques que superan o limiar **poden cortarse na marxe inferior e continuar na páxina seguinte**, mediante `tcolorbox[breakable]`. A caixa queda aberta no corte, sen bordo horizontal. Mantense `lines before break=3`, que controla o fragmento anterior ao corte; **non se garante un mínimo de tres liñas no fragmento final**. Non se engade control de viúvas mediante parches internos de `tcolorbox` ou `fvextra`, nin se usa `\Needspace` no propio código, pois pode desincronizar `longtable`. A reserva do parágrafo que presenta un bloque vai antes dese parágrafo: véxase [Protección de orfas, viúvas e cabeceiras](#protección-de-orfas-viúvas-e-cabeceiras).
-
-HTML e DOCX conservan o comportamento anterior. En HTML, o CSS de impresión xa inclúe `pre { break-inside: avoid-page; }`.
-
-A [verificación de paxinación](VERIFICACION-CODIGO.md) recolle o caso sintético, a comparación antes/despois en tres documentos docentes e os ocos observados co limiar de 12 liñas.
-
-### Diferenciación de bloques de código e terminal
-
-Para evitar que o alumnado confunda ordes de consola co código fonte dun programa ou aplicación web (un erro pedagóxico e técnico habitual en informática), os bloques de código que conteñen comandos de terminal (`bash`, `sh`, `shell`, `zsh`, `console`, `terminal`, `powershell`, `pwsh`, `cmd`, `bat`, `fish`) preséntanse automaticamente cun fondo e bordo sutilmente diferenciados:
-
-- **Modo día:** fondo gris/ardósia fresco `#EEF1F5` con bordo `#D0D7DE` (fronte ao `#F6F8FA` e `#E1E4E8` do código estándar).
-- **Modo nocturno (`--night`):** fondo area/tostado cálido `#E2DDD0` con bordo `#C5B99E` (fronte a `#EDE8DC` e `#D4C8B0`).
-- **Modo impresión (`--print`):** fondo gris moi sutil `#F2F2F2` cun bordo definido `#8C8C8C` (fronte ao fondo branco do código normal), garantindo a diferenza sobre papel sen gastar tóner innecesario.
-
-**Criterio de deseño limpo e prevención de erros:**
-Non se inxectan símbolos de *prompt* (`$`, `>`, `#`, `>_`) nin cabeceiras adicionais no bloque. Deste xeito asegúrase que, ao seleccionar e copiar comandos desde o PDF ou HTML para pegalos no terminal, non se copien caracteres estraños que poidan causar fallos de execución (`command not found`).
-
-Pódese desactivar coa opción `--no-terminal-blocks` na CLI ou engadindo `terminal-blocks: false` nos metadatos YAML.
-
-### Bloques de código compactos para listados longos
-
-Por defecto, os bloques de código utilizan a **configuración pedagóxica recomendada**: letra de **10,8 pt** con interliñado folgado de **15,4 pt (1,43×)** e capacidade de ~71 columnas por liña. Esta proporción ofrece máximo confort visual e evita a fatiga cognitiva na asimilación de novas linguaxes e sintaxes.
-
-Porén, para **listados longos** (clases completas, ficheiros de configuración extensos ou saídas de terminal volumosas), `md2pdf` permite activar un formato máis compacto que reduce a altura vertical nun 16% e amplía a capacidade horizontal a **~77 columnas** (evitando partidas de liña `↪` prematuras) sen resultar visualmente asfixiante:
-
-* **Tamaño compacto:** 10,0 pt con interliñado equilibrado de 13,0 pt (ratio 1,30×).
-
-#### Activación manual por bloque
-
-Pódese activar engadindo a clase `.compact` (ou `.compacto`) ou o atributo `compact=true`:
-
-````markdown
-```python {.compact}
-class RepositorioAlumnos:
-    def __init__(self, conexion):
-        self.conexion = conexion
-    # código longo aquí...
-```
-````
-
-Tamén é compatible con bloques de terminal e con resaltado de liñas:
-````markdown
-```bash {.compact hl="1"}
-docker run -d --name db -p 5432:5432 postgres:16
-docker logs -f db
-```
-````
-
-#### Interliñado proporcional ao tamaño da letra
-
-Para conservar a proporción do formato normal ao reducir a letra, engade
-`compact-leading="proportional"` ao bloque compacto:
-
-````markdown
-```php {.compact compact-leading="proportional"}
-<?php for ($i = $total + 1; $i <= $maxTotal; $i++): ?>
-    <td></td>
-<?php endfor; ?>
-```
-````
-
-En PDF mantén os 10 pt do modo compacto e reduce o interliñado na mesma
-proporción que a letra do código normal, arredor dun 7,7 % co formato
-predeterminado. En HTML tamén conserva a proporción do formato normal.
-O axuste é local ao bloque e é compatíbel co resaltado de liñas e cos bloques
-de terminal. Sen este atributo, `.compact` conserva o interliñado máis denso
-de 13 pt. O atributo por si só non activa o modo compacto.
-
-#### Limiar automático opcional
-
-Se nun documento ou curso prefires que calquera bloque que supere certo número de liñas se faga compacto de xeito automático sen ter que marcalo a man, podes indicar o limiar no front matter YAML ou en `metadata.yaml`:
-
-```yaml
----
-title: "Tema 2: Acceso a datos"
-code-compact-threshold: 25
----
-```
-
-Calquera bloque de código con 25 liñas ou máis compactarase automaticamente; os bloques curtos manterán a configuración pedagóxica estándar.
-
-### Continuación en saltos de páxina (caixa aberta)
-
-Cando un bloque de código extenso rompe entre dúas páxinas, a caixa adáptase con apertura seccionada (motor `enhanced` de `tcolorbox` con `toprule at break=0pt` e `bottomrule at break=0pt`):
-- **Ao final da páxina anterior:** a caixa mantén as esquinas superiores redondeadas, pero presenta esquinas inferiores rectas e sen bordo inferior, sinalando que a estrutura foi seccionada.
-- **Ao inicio da seguinte páxina:** a caixa comeza directamente sen bordo superior e con esquinas rectas, pechándose con esquinas redondeadas e bordo estándar unicamente ao rematar o código.
-
-Deste xeito indícase de forma inequívoca que se trata do mesmo bloque continuo sen invadir as marxes físicas nin xerar franxas baleiras.
-
-### Portada e etiqueta de actividade
-
-O script xera dous modos de presentación do título, ambos construídos en LaTeX puro:
-
-**Modo por defecto (sen `--titlepage`):**
-- Antes do TOC vai o título do documento (o primeiro `#` ou `title`), centrado en `\LARGE\bfseries`.
-- A etiqueta `activity` abre a primeira páxina de contido, antes do primeiro `##`: centrada en `\LARGE\bfseries`, con **liñas decorativas** arriba e abaixo axustadas ao ancho do texto (`\sbox`/`\wd`). Se non cabe nunha liña, a etiqueta pártese e as liñas decorativas quedan no ancho da liña.
-- Un espazo non separábel (U+00A0) no valor de `activity` pasa a `~`: serve para que as dúas últimas palabras dunha etiqueta longa non queden separadas.
-- Antes da etiqueta vai un `\Needspace` de 14 liñas base: as seis da etiqueta e as oito que reserva a cabeceira seguinte. Sen el, unha etiqueta ao pé da páxina quedaba soa, porque a cabeceira non collía e pasaba á seguinte. Se a etiqueta vai ao final do documento, por non haber ningún `##`, reserva só as seis. O bloque leva a marca `% md2pdf:activity-label`, e as reservas de `keep-with-next.lua` e `small-table.lua` para a primeira cabeceira van antes da etiqueta e suman as súas seis liñas.
-- A cor da etiqueta e das liñas decorativas usa o ton `heading-section` (`#1C2F4A` en día, tostado en noite, negro en impresión).
-- Sen `activity`, non se xera ningunha etiqueta.
-
-**Modo con `--titlepage`:**
-- Portada completa con xerarquía tipográfica pura (sen liñas nin caixas decorativas):
-  - `module` en versaletas con tracking amplo, muted — identificador de contexto
-  - `subject` en `\Huge\bfseries` — título principal
-  - `activity` en `\Large` — subtítulo inmediato
-  - `school` e `course` no bloque inferior á dereita
-  - `author` úsase como alternativa a `school` na portada se non hai centro definido
-- A etiqueta `activity` aparece tamén ao inicio da primeira páxina de contido.
-
-O espazo en branco superior (~28% da altura da páxina) é o elemento de deseño principal da portada. En modo `--night`, todos os elementos adaptan a paleta cálida mantendo a coherencia co resto do documento.
-
-### Cabeceiras limpas
-
-Sen texto nin liñas separadoras nas cabeceiras de páxina; número de páxina na esquina inferior, desprazado á marxe exterior (á dereita en páxinas impares/simples, á esquerda en pares). Configurado vía `\AfterEndPreamble` con KOMA-Script (`\clearpairofpagestyles`, `\rofoot`, `\lefoot`).
-
-### Imaxes e figuras
-
-As imaxes limítanse automaticamente ao ancho da liña de texto (`max width=\linewidth`), evitando que imaxes grandes sobresaian das marxes.
-
-> **Imaxes moi grandes (>800 px de ancho) ou PDF vectoriais sen tamaño intrínseco** poden colgar LuaLaTeX indefinidamente. Isto ocorre porque a combinación de `\pandocbounded{}` (Pandoc 3.x), `adjustbox` con `max width=\linewidth` e `float{H}` entra nun bucle calculando o tamaño. **Solución**: redimensionar a imaxe a ≤800 px (`magick img.png -resize 800x img.png`) ou forzar o ancho no Markdown con `{width=100%}`:
->
-> ```markdown
-> ![Texto alternativo](img/diagrama-grande.png){width=100%}
-> ```
-
-Os pés de figura (`![Texto](img.png)`) amósanse centrados, en fonte pequena, con a etiqueta "Figura N." en negra e punto separador. O estilo aplícase mediante o paquete `caption` en `\AtBeginDocument`.
-
-> **Pendente:** Bordes para capturas de pantalla. A aproximación con `cfbox` vía `adjustbox` compila correctamente pero o borde non é visible no PDF. Require investigación con un enfoque diferente (posiblemente un entorno `figure` personalizado con `tcolorbox`).
-
-### Tres motores de saída
-
-- **LuaLaTeX con template propio** (por defecto): calidade tipográfica máxima, fonte a 13pt (~80-86 chars/liña), microtipografía, táboas con cabeceiras sans-serif bold e aliñamento superior, filas alternas de cor, iconas FontAwesome5 vectoriais, notas ao pé elegantes, ecuacións con STIX Two Math. Tempo de compilación ~3-5s.
-- **DOCX**: xera `.docx` (Word/LibreOffice) directamente. Non require LaTeX. Útil para entregar materiais en formato editable ou para Xefatura de Estudos. Callouts convertidos a texto con prefixo bold.
-- **HTML5**: xera un único `.html` responsive e autocontido. Mantén TOC, callouts, resaltado, `hl=`, referencias de figuras/táboas, SVG vectorial e modos nocturno/impresión mediante tecnoloxías web nativas.
-
-### Melloras pendentes (TODOs)
-
-Quedan rexistradas as seguintes melloras técnicas e pedagóxicas identificadas para futuras iteracións de `md2pdf`:
-
-#### Melloras pedagóxicas e de interacción
-
-1. **Listas de comprobación e tarefas marcables interactivas (`- [ ]` / `\CheckBox`):**
-   - Integrar a sintaxe de listas de tarefas estándar (`- [ ] Paso pendente`, `- [x] Paso realizado`) coa infraestrutura de formularios AcroForms en LuaLaTeX mediante `\CheckBox`.
-   - Permite que o alumnado marque os fitos ou requisitos cumpridos nunha práctica de laboratorio (*checklist* de pre-entrega) e garde o estado directamente no PDF (`Ctrl+S`).
-   - Paridade en HTML5 mediante elementos `<input type="checkbox">` interactivos con persistencia en `localStorage` e representación limpa en DOCX (`☐`/`☑`).
-   - Implementación moi sinxela, robusta e con soporte universal en todos os visores PDF e navegadores web.
-2. **Ficheiros e código de inicio incrustados no PDF (*Embedded Files* / `embedfile`):**
-   - Permitir a incrustación directa de código fonte, scripts de proba, esquemas `.sql` ou conxuntos de datos dentro do propio documento PDF mediante `embedfile` ou `attachfile2` (p. ex., mediante ligazóns de tipo `[Descargar código](attachment:src/inicio.py)`).
-   - O documento faise 100% autónomo e autocontido para prácticas de laboratorio, garantindo que o alumnado teña os ficheiros de partida aínda sen conexión a Internet nin risco de ligazóns externas rotas.
-   - Paridade en HTML5 convertendo o anexo en descarga local embebida vía data URI base64.
-   - Ampla compatibilidade nativa en visores PDF (Adobe Reader, Okular, Evince, Firefox e Chrome, que contan con panel de anexos integrado) e soporte por liña de ordes en Zathura (`:attachments`).
-3. **Bloques de solución e pistas graduadas colapsables (*Scaffolding* / OCG / `<details>`):**
-   - Incorporar callouts especiais para autoavaliación e axuda guiada (por exemplo, `::: {.solution hidden=true}` ou `::: hint`) para exercicios prácticos.
-   - En HTML5 mediante a etiqueta semántica nativa `<details><summary>Amosar solución</summary>...</details>`.
-   - En LuaLaTeX (PDF) mediante capas OCG (*Optional Content Groups* con `ocgx2`) con botón interactivo para desvelar a resposta, con degradación elegante a bloque delimitado estándar para visores minimalistas sen soporte de capas por clic.
-   - Evita o *spoiler* visual involuntario nos exercicios de autoavaliación e permite construír itinerarios de aprendizaxe guiados con pistas graduadas.
-4. **Opción de maquetación asimétrica para guías de estudo / Método Cornell (`--notes`):**
-   - Ofrecer como opción de liña de comandos (`--notes` ou `--cornell`) unha marxe exterior ampliada (40–45 mm) e liña de texto reducida a ~65 CPL para materiais pensados especificamente para a toma de notas manuscritas intensivas en papel ou tabletas con estilete dixital, preservando a simetría estándar de 22 mm para documentos técnicos xerais con código fonte.
-
-#### Melloras tipográficas e técnicas
-
-1. **Reforzo semántico en caixas de aviso (*Callouts*):**
-   - En `callouts.lua`, xerar títulos formais en negra por defecto cando o autor non especifique un explícito (por exemplo, `⚠️ ATENCIÓN: ERRO HABITUAL`, `💡 CONSELLO PRÁCTICO`, `🎯 OBXECTIVO DA TAREFA`).
-   - Facilita a lectura rápida en diagonal antes de iniciar tarefas prácticas.
-2. **Soporte tipográfico para teclas e atallos (`<kbd>`):**
-   - Filtro Lua para procesar etiquetas `<kbd>` e renderizalas coma teclas físicas tridimensionais con cantos redondeados e bordo sutil (estilo GitHub / MDN).
-   - Diferencia claramente as accións físicas de teclado (`Ctrl + C`, `Alt + Shift + F`) do código en liña común.
-3. **Estabilización de código en liña con fondo («píldora»):**
-   - Resolver a interacción entre `\newtcbox` e os puntos de quebra intelixentes (`\discretionary`, `\allowbreak`) xerados por `auto-table-widths.lua` en rutas longas, de xeito que `--inline-pill` poida activarse por defecto con estabilidade total.
-4. **Bordes para capturas de pantalla e imaxes con fondo claro:**
-   - Crear unha contorna de figura con marco sutil mediante `tcolorbox` para evitar que imaxes con fondo branco se fundan coa páxina (a alternativa con `cfbox` vía `adjustbox` non resultaba visible no PDF).
-5. **Tratamento de barras invertidas en código en liña (`\n`, `\t`, `\\`):**
-   - Resolver o conflito polo cal `\texttt{}` interpreta as barras invertidas no texto corrido como macros LaTeX en vez de caracteres literais.
-
-
-## Uso con asistentes de IA
-
-O ficheiro `docs/md2pdf-ai-reference.md` é a referencia única para pasarlle a unha IA (Claude, ChatGPT, etc.) no prompt do sistema ou ao inicio dunha conversa, de xeito que xere materiais docentes en Markdown directamente compatibles con md2pdf. Reúne nun só documento:
-
-- **Parte I. Criterios pedagóxicos e editoriais:** secuencia de aprendizaxe, estrutura das actividades, terminoloxía, elección entre táboa, diagrama e gráfico, uso semántico dos callouts, tarefas e solucionarios, accesibilidade.
-- **Parte II. Sintaxe e convencións de md2pdf:** front matter, cabeceiras, callouts, código, diagramas (Mermaid, D2, Graphviz, Vega-Lite), táboas, figuras, referencias, ligazóns e IMS, coas diferenzas entre PDF, HTML e DOCX.
-- **Parte III. Validación e entrega:** avisos, `--strict`, erros de LaTeX e lista de comprobación final.
-
-### Por que é necesario
-
-Os modelos de linguaxe xeran Markdown de estilo GitHub que, sen contexto adicional, choca co pipeline:
-
-- Escriben listas e táboas sen liña baleira antes, que Pandoc converte en texto plano.
-- Escriben `## 1. Sección` cando md2pdf numera automaticamente, e `## Índice` ou `---` que md2pdf elimina.
-- Usan bloques de código sen linguaxe, diagramas sen pé (aviso de accesibilidade en HTML) ou referencias `@sec:`/`@eq:` que non se resolven.
-- Descoñecen os callouts (`::: note`, `::: warning`…) e o campo `activity` do front matter.
-
-### Como usalo
-
-Inclúe o contido de `docs/md2pdf-ai-reference.md` no prompt do sistema ou como primeira mensaxe da conversa, xunto coa guía da unidade ou os materiais existentes se os hai:
-
-```
-[Contido de md2pdf-ai-reference.md]
-
-Xera a actividade [tema] seguindo estritamente a referencia anterior.
-```
-
-### Limitacións que a IA non pode resolver por ti
-
-Aínda coa referencia, hai decisións que requiren criterio docente:
-
-- **Que liñas resaltar con `hl=`** — depende de cal é o punto pedagóxico de cada bloque.
-- **Que información merece un callout e de que tipo** — `warning` vs `danger` require xuízo sobre a gravidade.
-- **Estrutura das seccións** — a xerarquía de `##`/`###` debe reflectir a lóxica do contido.
-- **Lexibilidade das figuras** — md2pdf avisa de texto pequeno nos diagramas, pero hai que revisar visualmente o resultado.
-
-
-## Ficheiros do proxecto
-
-```
-md2pdf/
-├── md2pdf/                    Paquete Python (módulo principal)
-│   ├── __init__.py            Inicialización do paquete
-│   ├── __main__.py            Punto de entrada CLI (inclúe --watch)
-│   ├── config.py              Constantes e rutas base
-│   ├── assets.py              Busca de ficheiros de recursos
-│   ├── metadata.py            Extracción de metadatos YAML
-│   ├── preprocess.py          Preprocesamento do Markdown
-│   ├── lint.py                Validación previa e modo --strict
-│   ├── diagrams/              Arquitectura modular de diagramas
-│   │   ├── base.py            Clase base BaseRenderer e protocolo Renderer
-│   │   ├── renderers.py       Adaptadores de Mermaid, D2 e Graphviz
-│   │   ├── vegalite.py        Adaptador illado de Vega-Lite (vl-convert)
-│   │   └── processor.py       Procesamento nunha soa pasada e caché
-│   ├── mermaid.py             API de compatibilidade Mermaid
-│   ├── converter.py           Orquestración limpa da conversión
-│   └── engines/
-│       ├── lualatex.py        Motor LuaLaTeX (comandos, preámbulos e snippets)
-│       ├── docx.py            Motor DOCX
-│       └── html.py            Motor HTML5 autocontido
-├── md2pdf-preamble.tex        Personalizacións LaTeX
-├── md2pdf.html                Template HTML5 de Pandoc
-├── md2pdf.css                 Deseño responsive, nocturno e impresión HTML
-├── html.lua                   Callouts, captions e referencias HTML
-├── drake-jb.theme             Tema de resaltado de sintaxe
-├── javadoc.xml                Sintaxe Javadoc corrixida (tiles nos comentarios /** */)
-├── auto-table-widths.lua      Filtro Lua para táboas e código en liña
-├── small-table.lua            Filtro Lua: táboas pequenas (tabular + Needspace), continuidade e orfas en longtable
-├── br.lua                     Filtro Lua para <br> en celas de táboa
-├── callouts.lua               Filtro Lua para callouts/admonitions (LuaLaTeX)
-├── callouts-docx.lua          Filtro Lua para callouts en DOCX
-├── hl-lines.lua               Filtro Lua para resaltado de liñas (LuaLaTeX)
-├── compact-code.lua           Filtro Lua para bloques de código compactos
-├── keep-code.lua              Filtro Lua para manter xuntos os bloques curtos (PDF)
-├── terminal-blocks.lua        Filtro Lua para fondo diferenciado de terminal
-├── term-pairs.lua             Filtro Lua para pares de terminal/código
-├── figure-captions.lua        Filtro Lua para pés de figura e referencias
-├── install-md2pdf.py          Instalador multiplataforma
-├── docs/md2pdf-ai-reference.md  Referencia para asistentes de IA
-└── README.md                  Este ficheiro
-```
-
-
-## Instalación
-
-### Dependencias
-
-**Pandoc** é necesario para os tres motores:
-
-```bash
+# md2pdf user guide
+
+md2pdf converts Markdown into PDF, DOCX, and self-contained HTML5 on Linux and Windows. It combines Pandoc with custom templates, Lua filters, preprocessing, and validation for technical documentation and teaching materials.
+
+See the [project introduction](../README.md) for use cases and a short example. This guide covers installation, authoring, output differences, command-line options, typography, and customization.
+
+## Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Command-line options](#command-line-options)
+- [Metadata](#metadata)
+- [Markdown preprocessing](#markdown-preprocessing)
+- [Callouts and interactive tasks](#callouts-and-interactive-tasks)
+- [Code](#code)
+- [Diagrams and charts](#diagrams-and-charts)
+- [Equations and cross-references](#equations-and-cross-references)
+- [Tables](#tables)
+- [Images and figures](#images-and-figures)
+- [Output formats and reading modes](#output-formats-and-reading-modes)
+- [Typography and pagination](#typography-and-pagination)
+- [Validation](#validation)
+- [Using AI assistants](#using-ai-assistants)
+- [Project structure](#project-structure)
+- [Design decisions](#design-decisions)
+- [Customization](#customization)
+- [Possible future work](#possible-future-work)
+- [License](#license)
+
+## Installation
+
+### Dependencies
+
+Install Python and Pandoc for all three output engines. Pandoc 3.8 or later is recommended; md2pdf selects older compatibility flags when needed (`--highlight-style` before 3.8 and `--mathml` before 3.11).
+
+```sh
 # Arch Linux
 sudo pacman -S pandoc
 
@@ -898,442 +44,868 @@ sudo apt install pandoc
 winget install JohnMacFarlane.Pandoc
 ```
 
-Recoméndase Pandoc 3.8 ou posterior. Con versións anteriores md2pdf usa as opcións antigas (`--highlight-style`, `--mathml`), que Pandoc 3.8 e 3.11 marcaron como obsoletas.
+For **PDF**, install LuaLaTeX, the TeX packages used by the template, and the document fonts. The following is the Arch Linux dependency set used by this project; package names and distribution packaging can change:
 
-**Motor LuaLaTeX** (por defecto):
-
-```bash
-# Arch Linux
+```sh
 sudo pacman -S texlive texlive-latexextra texlive-fontsrecommended \
                texlive-luatex texlive-binextra \
                texlive-langspanish texlive-langenglish \
-               texlive-fontsextra                   # FontAwesome5
-sudo pacman -S adobe-source-serif-fonts             # Source Serif 4 (sistema)
-sudo pacman -S ttf-jetbrains-mono                   # JetBrains Mono (mono principal)
-sudo pacman -S adobe-source-code-pro-fonts          # Source Code Pro (fallback)
-sudo pacman -S otf-stix                             # STIX Two Math (ecuacións)
+               texlive-fontsextra
+sudo pacman -S adobe-source-sans-fonts adobe-source-serif-fonts \
+               adobe-source-code-pro-fonts otf-stix
 ```
 
-Nota: `texlive-fontsextra` instala as fontes para TeX, pero `adobe-source-serif-fonts`, `ttf-jetbrains-mono` e `adobe-source-code-pro-fonts` rexístranas en `fontconfig` (necesario para LuaLaTeX con `luaotfload`).
+Source Sans 3 is the default body and heading font; Source Serif 4 is used with `--serif`, Source Code Pro for code, and STIX Two Math for equations. TeX font packages and system font registration are different: LuaLaTeX/luaotfload must be able to find the OpenType fonts. The current code selects Source Code Pro for monospaced text; installing JetBrains Mono alone does not make it the default.
 
-**Mermaid CLI** (opcional, para renderizar bloques ` ```mermaid ` como diagramas vectoriais):
+For **Windows**, follow [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md), which includes assisted scripts and manual installation steps.
 
-```bash
-# Arch Linux
-sudo pacman -S mermaid-cli
+For **HTML and DOCX**, LaTeX is not required. Optional renderers may have their own format-specific requirements.
 
-# Outros sistemas (require Node.js)
+Install only the diagram tools you need:
+
+```sh
+# Arch Linux: external diagram executables
+sudo pacman -S mermaid-cli d2 graphviz
+
+# Mermaid on other systems with Node.js
 npm install -g @mermaid-js/mermaid-cli
+
+# Optional Python chart renderer and validation libraries
+python -m pip install PyMuPDF Pillow PyYAML 'vl-convert-python>=1.7,<2'
 ```
 
-Se está instalado, os bloques mermaid renderízanse automaticamente. Se non, mantéñense como código fonte no PDF e emítese un aviso.
+Use a virtual environment when Python is system-managed. PyYAML is needed for nested `diagrams:` settings. PyMuPDF and Pillow improve output validation; pypdf provides a PDF structural fallback. The installer checks dependencies and does not install them.
 
-### Instalación de md2pdf
+### Install md2pdf
 
-O instalador copia todos os ficheiros necesarios a directorios estándar do sistema e crea un executábel accesible desde calquera directorio:
+Run from the repository root using the intended Python interpreter:
 
-```bash
+```sh
 python install-md2pdf.py
 ```
 
-**Linux:**
+On Linux, the launcher is installed at `~/.local/bin/md2pdf`; the package, templates, filters, and theme are copied to `~/.local/share/md2pdf/`. On Windows they are placed in `%LOCALAPPDATA%\md2pdf\`, with a `md2pdf.cmd` launcher.
 
-```text
-~/.local/bin/md2pdf                                ← lanzador: importa o paquete
-~/.local/share/md2pdf/md2pdf/                      ← paquete Python
-~/.local/share/md2pdf/md2pdf.latex                 ← template LaTeX
-~/.local/share/md2pdf/md2pdf-preamble.tex          ← preámbulo LaTeX
-~/.local/share/md2pdf/md2pdf.html                   ← template HTML5
-~/.local/share/md2pdf/md2pdf.css                    ← estilos HTML
-~/.local/share/md2pdf/html.lua                      ← semántica HTML
-~/.local/share/md2pdf/drake-jb.theme               ← cores de resaltado
-~/.local/share/md2pdf/auto-table-widths.lua        ← filtro Lua para táboas e código en liña
-~/.local/share/md2pdf/small-table.lua              ← filtro Lua para paxinación de táboas
-~/.local/share/md2pdf/br.lua                       ← filtro Lua para <br> en celas
-~/.local/share/md2pdf/callouts.lua                 ← filtro Lua para callouts
-~/.local/share/md2pdf/callouts-docx.lua            ← filtro Lua para callouts en DOCX
-~/.local/share/md2pdf/hl-lines.lua                 ← filtro Lua para resaltado de liñas
-~/.local/share/md2pdf/figure-captions.lua          ← filtro Lua para pés de figura
-~/.local/share/md2pdf/compact-code.lua             ← filtro Lua para bloques de código compactos
-~/.local/share/md2pdf/keep-code.lua                ← filtro Lua para bloques de código curtos
-~/.local/share/md2pdf/terminal-blocks.lua          ← filtro Lua para bloques de terminal
-~/.local/share/md2pdf/term-pairs.lua               ← filtro Lua para pares de terminal/código
-~/.local/share/md2pdf/javadoc.xml                  ← sintaxe Javadoc corrixida
-~/.local/share/md2pdf/reference.docx               ← estilos DOCX, se existe
-```
+The launcher uses the Python interpreter selected during installation. Do not delete or move its virtual environment. If you move it or select a different Python, reinstall md2pdf.
 
-Os recursos lense desta copia, non do repositorio: despois de cambiar calquera ficheiro do repositorio hai que volver executar o instalador.
+Installed resources are read from the installed copy, not from your checkout. After changing source code or assets, rerun the installer.
 
-Se `~/.local/bin` non está no PATH (o instalador avisa):
+If necessary, add the Linux launcher directory to `PATH`:
 
-```bash
+```sh
 # Fish
 fish_add_path ~/.local/bin
 
-# Bash/Zsh
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+# Bash: add to ~/.bashrc; Zsh: add to ~/.zshrc
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-**Windows:**
+Reopen your terminal after persistent PATH changes. See the Windows guide for user-level PATH configuration.
 
-```text
-%LOCALAPPDATA%\md2pdf\md2pdf_runner.py       ← lanzador: importa o paquete
-%LOCALAPPDATA%\md2pdf\md2pdf.cmd              ← wrapper que chama ao lanzador
-%LOCALAPPDATA%\md2pdf\md2pdf\                ← paquete Python
-%LOCALAPPDATA%\md2pdf\(templates, tema e filtros)
-```
+### Uninstall
 
-### Desinstalación
-
-```bash
+```sh
 python install-md2pdf.py --remove
 ```
 
+### Run from a checkout
 
-## Uso
+Without installing a launcher:
 
-```bash
-# Un ficheiro (LuaLaTeX por defecto, sen portada)
-md2pdf apuntes.md
-
-# Con portada separada (xerarquía tipográfica)
-md2pdf apuntes.md --titlepage
-
-# Especificar nome de saída
-md2pdf apuntes.md -o saida.pdf
-
-# Varios ficheiros (cada un xera o seu PDF)
-md2pdf *.md
-
-# Directorio completo
-md2pdf docs/
-
-# Sen índice de contidos
-md2pdf apuntes.md --no-toc
-
-# Sen numeración de seccións
-md2pdf apuntes.md --no-number
-
-# Exportar a Word (.docx)
-md2pdf apuntes.md -e docx
-md2pdf *.md -e docx
-
-# Exportar a HTML5 autocontido
-md2pdf apuntes.md -e html
-md2pdf *.md -e html
-
-# Profundidade do TOC
-md2pdf apuntes.md --toc-depth=2
-
-# Outro estilo de resaltado
-md2pdf apuntes.md --highlight=tango
-
-# Sen aliñamento decimal nas columnas numéricas das táboas
-md2pdf apuntes.md --no-decimal-align
-
-# Modo vixilancia: recompila automaticamente ao detectar cambios
-md2pdf apuntes.md --watch
+```sh
+python md2pdf_runner.py notes.md -e html --lang en
 ```
 
-### Modo vixilancia (`--watch`)
+## Usage
 
-O modo `--watch` mantén o proceso en execución e recompila automaticamente cada vez que se detecta un cambio nos ficheiros `.md` de entrada ou nos seus ficheiros de metadatos asociados. É ideal para editar e previsualizar ao mesmo tempo en SumatraPDF (Windows) ou Zathura/Evince (Linux), que recargan o PDF automaticamente ao cambialo.
+```sh
+# One file: PDF through LuaLaTeX, without a separate title page
+md2pdf notes.md --lang en
 
-```bash
-md2pdf apuntes.md --watch
+# A separate PDF title page
+md2pdf notes.md --lang en --titlepage
+
+# An explicit output filename; one input only
+md2pdf notes.md --lang en -o output.pdf
+
+# Several files, each producing its own output
+md2pdf *.md --lang en
+
+# All Markdown files collected from a directory
+md2pdf course/ --lang en
+
+# Omit the table of contents or section numbering
+md2pdf notes.md --lang en --no-toc
+md2pdf notes.md --lang en --no-number
+
+# Editable Word / LibreOffice output
+md2pdf notes.md -e docx --lang en
+
+# A self-contained HTML5 file
+md2pdf notes.md -e html --lang en
+
+# Table-of-contents depth and highlighting theme
+md2pdf notes.md --lang en --toc-depth=2 --highlight=tango
+
+# Disable decimal alignment in PDF tables
+md2pdf notes.md --lang en --no-decimal-align
+
+# Rebuild while editing
+md2pdf notes.md --lang en --watch
 ```
 
-O modo `--watch` admite un ou varios ficheiros. Se hai varios, calquera cambio provoca a recompilación de todos. A detección usa polling cada segundo (stdlib pura, sen dependencias externas). Premer `Ctrl+C` para deter.
+**The default document language is `gl` (Galician).** Pass `--lang en` for English language metadata and typesetting. This does not translate source content, CLI messages, or all generated labels. Galician callout labels and keyword-based heading icons remain part of the current implementation.
 
-### Metadatos opcionais
+### Watch mode
 
-Para que o PDF inclúa autor, palabras clave e portada con información do curso, hai dúas opcións combinables:
+`--watch` keeps running and recompiles when input Markdown or associated metadata changes. It uses standard-library polling once per second. With several inputs, any detected change rebuilds all of them. Press `Ctrl+C` to stop.
 
-**Opción 1 — Ficheiro `metadata.yaml`** no mesmo directorio (recomendado para compartir datos entre documentos dunha unidade):
+A viewer that reloads updated PDFs, such as SumatraPDF on Windows or Zathura/Evince on Linux, can be used alongside the editor. Watch mode is not implemented for IMS packaging.
+
+## Command-line options
+
+| Option | Purpose | Default / scope |
+|---|---|---|
+| `-o`, `--output` | Output filename; requires one input | Input basename with `.pdf`, `.docx`, or `.html` |
+| `-e`, `--engine` | `lualatex`, `docx`, or `html` | `lualatex` |
+| `--no-toc` | Omit the table of contents | TOC enabled |
+| `--no-number` | Disable section numbering | Numbering enabled |
+| `--titlepage` | Generate a separate title page | PDF only; off |
+| `--listings` | Legacy option, accepted but ignored with a warning | Deprecated |
+| `--print` | Print palette: black links, reduced backgrounds | PDF/HTML; off |
+| `--night` | Warm sepia reading palette | PDF/HTML; off |
+| `--serif` | Use Source Serif 4 for body text | Default body is sans-serif |
+| `--inline-pill` | Add a subtle background to inline code | Experimental; off |
+| `--watch` | Rebuild when Markdown/metadata changes | Off |
+| `--plain` | Omit TOC, styled title, activity label, and numbering | Off |
+| `--debug` | Keep temporary files and print the Pandoc command | Off |
+| `--strict` | Fail on structural Markdown and diagram errors; also validate HTML/IMS targets | Off |
+| `--no-callouts` | Disable callout filtering | Callouts enabled |
+| `--no-decimal-align` | Disable decimal alignment in numeric table columns | PDF alignment enabled |
+| `--no-terminal-blocks` | Disable distinct terminal-block styling | Styling enabled |
+| `--no-metadata` | Ignore metadata files and front matter | Metadata enabled |
+| `--toc-depth` | Table-of-contents depth | `3` |
+| `--lang` | Document language | `gl` |
+| `--paper` | Paper size | `a4` |
+| `--highlight` | Syntax theme | `drake-jb.theme` when found, otherwise `pygments` |
+| `--template` | Custom LuaLaTeX/HTML template | Automatic lookup; not applicable to DOCX |
+| `--ims PACKAGE.zip` | Package input documents as HTML in an IMS ZIP | Off |
+| `--ims-title TITLE` | IMS organization title | ZIP filename without extension |
+
+Use `md2pdf --help` for the installed CLI's available options. For IMS, set the output through `--ims`, rather than `-o`.
+
+## Metadata
+
+The document title is taken from its first level-one heading. Standard metadata, including author, keywords, and language, is included where supported by the output format.
+
+Metadata is loaded from an external file, then overridden field by field by the Markdown file's YAML front matter. md2pdf looks first for a unit-specific name such as `u3-metadata.yaml` for `U3A1.md`, then `metadata.yaml`; `.yml` is also supported.
 
 ```yaml
-author: "Miguel Morales"
-school: "CIFP Rodolfo Ucha Piñeiro"
-keywords: "PHP, Laravel, DAW"
-course: "Curso 2025-2026"
+# metadata.yaml shared by a directory of course documents
+author: "Your name"
+school: "Your institution"
+keywords: "PHP, web development, backend"
+course: "2026–2027"
 ```
 
-O script busca automaticamente `<prefixo>-metadata.yaml` (ex: `u3-metadata.yaml` para `U3A1.md`, `U3A2.md`...), ou `metadata.yaml` (tamén `.yml`).
+````markdown
+---
+module: "Server-side web development"
+subject: "Unit 3: Introduction to PHP"
+activity: "A01: Control structures"
+---
 
-**Opción 2 — YAML front matter** no propio ficheiro `.md` (sobreescribe campos do ficheiro externo):
+# A01: Control structures
+````
+
+| Field | Use |
+|---|---|
+| `module` | Context line on a PDF title page |
+| `subject` | Main title-page text; HTML description metadata |
+| `activity` | PDF title page and content-opening label; IMS navigation title |
+| `subtitle` | Compatibility alias for `activity` |
+| `school` | Lower title-page block |
+| `author` | Document metadata; title-page fallback when `school` is absent |
+| `course` | Academic year / course text on the title page |
+| `keywords` | Comma-separated metadata string |
+| `body-font` | `serif` selects serif body text |
+| `decimal-align` | `false` disables PDF decimal alignment |
+| `terminal-blocks` | `false` disables distinct terminal backgrounds |
+| `inline-pill` | `true` enables the optional inline-code background |
+| `code-compact-threshold` | Source-line count at which code becomes compact; `0` disables automatic compaction |
+| `code-keep-lines` | Maximum source lines for keeping an entire PDF code block together; default `12`, `0` disables |
+| `keep-with-next` | `false` disables the reservation keeping an introductory paragraph with its following block |
+| `diagrams` | Nested defaults for individual diagram renderers; requires PyYAML |
+
+Use single-line scalar values for ordinary fields; lists and multiline values are not supported by the simple metadata reader. The nested `diagrams:` section is handled separately. Omit metadata entirely if not needed, or pass `--no-metadata` to disable loading it.
+
+Inspect PDF metadata with:
+
+```sh
+pdfinfo document.pdf
+```
+
+## Markdown preprocessing
+
+Before Pandoc conversion, md2pdf:
+
+- Removes manual TOC sections recognized by the preprocessor, plus Typora `[TOC]` markers, so Pandoc can generate the output TOC.
+- Removes `---` body separators, including within callouts, while handling front matter separately.
+- Strips manual heading numbering, such as `## 1. Heading` becoming `## Heading`.
+- Converts GitHub/Obsidian callouts into Pandoc fenced divs and ensures the required blank line after their opening.
+- Extracts YAML front matter instead of rendering it as body text.
+- Adds icons to headings containing configured Galician keywords.
+- Converts supported emoji to FontAwesome5 icons for LuaLaTeX, and to plain-text equivalents inside code when preparing PDF output.
+- Detects missing code languages; these become warnings and cause strict-mode failure rather than automatic syntax inference.
+
+Fenced examples are protected from ordinary prose transformations. PDF emoji replacement in code is a deliberate format-specific exception.
+
+Use one `#` title per document, sections beginning at `##`, and blank lines around block elements. A heading beginning with a number followed by a space can lose that number: prefer `## Results for 2024` over `## 2024 results`.
+
+### Automatic heading icons
+
+The current case-sensitive substring patterns are Galician and do not change with `--lang`:
+
+| Pattern | Icon | Intended use |
+|---|---|---|
+| `Tarefa` | 🎯 | Required task |
+| `Exercicio` | ✏️ | Guided exercise |
+| `Reto` | 🏆 | Challenge |
+| `Exemplo` | ▶️ | Example |
+
+An existing emoji is not duplicated. LaTeX icons are scaled to 90%. Substring matching also means `Retorno` matches `Reto`; reword a heading if that icon is unintended. Edit `HEADING_ADMONITIONS` in `md2pdf/config.py` to customize these patterns.
+
+## Callouts and interactive tasks
+
+Use English type names for the most consistent behavior across outputs:
 
 ```markdown
----
-module: "Desenvolvemento web en contorno servidor"
-subject: "UD3: Introdución a PHP"
-activity: "A01: Estruturas de control"
----
+::: note
 
-# A01: Estruturas de control
+Call `session_start()` before sending HTML output.
+
+:::
 ```
 
-Ambas opcións son opcionais e combinables. Sen ningún dos dous, o PDF xérase sen eses campos.
+GitHub/Obsidian syntax also works:
 
-### Opcións
+```markdown
+> [!WARNING]
+> Never store passwords in plain text.
+```
 
-| Opción | Descrición | Defecto |
-|---|---|---|
-| `-o`, `--output` | Nome do ficheiro de saída (só con 1 input) | `<nome>.pdf` / `.docx` / `.html` |
-| `-e`, `--engine` | Motor: `lualatex`, `docx` ou `html` | `lualatex` |
-| `--no-toc` | Non incluír índice de contidos | con TOC |
-| `--no-number` | Non numerar as seccións | numeradas |
-| `--titlepage` | Portada completa con xerarquía tipográfica (só PDF) | sen portada |
-| `--listings` | Obsoleta: acéptase pero ignórase con aviso. O modelo non cargaba `listings` e Pandoc 3.8 marcou a opción como obsoleta | — |
-| `--print` | Modo impresión: sen cores, ligazóns en negro (PDF/HTML) | con cores |
-| `--night` | Modo nocturno: paleta cálida (PDF/HTML) | desactivado |
-| `--watch` | Modo vixilancia: recompila ao detectar cambios nos Markdown/metadatos | desactivado |
-| `--strict` | Abortar se a validación previa detecta problemas | desactivado |
-| `--no-callouts` | Desactivar o filtro de callouts | activado |
-| `--no-decimal-align` | Non aliñar polo separador decimal as columnas numéricas das táboas | activado |
-| `--no-terminal-blocks` | Desactivar o fondo diferenciado para bloques de código de terminal | activado |
-| `--no-metadata` | Non cargar metadatos de `.yaml` nin front matter | cargados |
-| `--toc-depth` | Profundidade do índice | `3` |
-| `--lang` | Idioma do documento | `gl` |
-| `--paper` | Tamaño de páxina | `a4` |
-| `--highlight` | Estilo de resaltado | auto (`drake-jb.theme` se existe, senón `pygments`) |
-| `--template` | Ruta ao template (LuaLaTeX/HTML; non aplica a DOCX) | auto-detectado |
-
-
-## Decisións de deseño
-
-### Por que Pandoc e non exportar directamente desde Typora?
-
-Typora exporta PDF mediante o motor do navegador (Chromium), que ten limitacións significativas na xestión de saltos de páxina, viúvas/orfas, e numeración. Pandoc permite usar motores tipográficos profesionais (LaTeX) que producen documentos de calidade editorial.
-
-### Por que LuaLaTeX como motor por defecto?
-
-LuaLaTeX produce a mellor calidade tipográfica dispoñible. O paquete usa un **template e preámbulo propios** construídos sobre KOMA-Script (`scrartcl`), o que ofrece control total sobre o resultado visual: táboas con cores alternas, cabeceiras con cor, xestión de ligazóns, notas elegantes, e sen as limitacións ou dependencias externas dun template de terceiros.
-
-O tamaño de letra pásase á clase como `fontsize=13pt`. Coa forma curta `13pt`, KOMA-Script trata o documento como antigo e cambia a compatibilidade a `version=first`, un modo ao que os seus autores non dan soporte.
-
-### Por que se retirou o motor Typst?
-
-Typst estivo no proxecto como alternativa rápida (~100 ms por compilación fronte aos segundos de LuaLaTeX) e sen dependencia de TeX. O problema foi a paridade: de seis filtros Lua só cargaba un, polo que a súa saída quedaba sen callouts, sen `<br>` en celas, sen resaltado de liñas e sen pés de figura; as referencias cruzadas `@fig:`/`@tbl:` facían que o documento nin compilase, e coas versións recentes de Pandoc o código en liña tamén o rompía. Cada funcionalidade nova había que implementala dúas veces e na práctica só se implementaba unha, así que o motor producía o mesmo formato que LuaLaTeX pero peor. O PDF sae agora só por LuaLaTeX, o formato editable por DOCX e a publicación web por HTML5 nativo de Pandoc, que reutiliza o AST e non duplica un segundo motor de composición de PDF.
-
-### Por que STIX Two Math para ecuacións?
-
-STIX Two foi encargada polo consorcio STI Pub (AMS, IEEE, Elsevier) e rediseñada por Tiro Typeworks. O encaixe con Source Serif 4 non é accidental: ambas son serifs transicionais modernizadas para medios dixitais, con proporcións e contraste de trazo similares. `unicode-math` substitúe o sistema matemático clásico de LaTeX (amsmath/amssymb) por un motor OpenType coherente con `fontspec`, o que garante coherencia de rendering en LuaLaTeX.
-
-### Por que a familia Source de Adobe?
-
-En vez de mesturar familias tipográficas inconexas, unificamos todo coa familia Source. As tres foron deseñadas como familia polo mesmo equipo en Adobe. Son compactas e moi lexibles a 13pt, ideais para documentación técnica.
-
-### Por que 13pt e marxes de 22mm?
-
-A 13pt con marxes laterais de 22mm, o ancho total dispoñible entre marxes é de 166 mm (472.3 pt). As marxes establécense en 22 mm e as verticais calibradas (top 14mm, bottom 16mm, footskip 7mm) por razóns de deseño consciente:
-
-- **Espazo para táboas e figuras:** as marxes de 22 mm proporcionan 166 mm de caixa de texto, permitindo que táboas anchas (como as táboas de 4–5 columnas de PHP ou bases de datos), os bloques de código con indentación fonda e os diagramas técnicos aproveiten o espazo dispoñible sen comprimir celas nin reducir imaxes.
-- **Teito de liña na prosa a 75–80 caracteres:** as marxes de 22 mm, xunto coa tolerancia de corte dereito de `ragged2e`:
-  ```latex
-  \setlength{\RaggedRightRightskip}{0pt plus 3.8em}
-  ```
-  sitúan a lonxitude media de liña arredor dos 75–80 caracteres. Isto permite cumprir a recomendación de accesibilidade WCAG 1.4.8 (≤ 80 caracteres/liña) e aproximarse ao rango óptimo de Bringhurst e Hartley, reducindo nun 58 % as liñas que superan os 85 caracteres sen fatigar a vista.
-- **Distribución vertical e densidade óptima:** as marxes verticais de `top=14mm, bottom=16mm` garanten unha densidade media ideal de 35 liñas/páxina (no centro do canon de 32–40 liñas de Hartley) sen inflar a cantidade de páxinas dos materiais docentes. Achegan máis de 12 mm de desafogo superior ás cabeceiras e sitúan o pé de páxina a máis de 7.5 mm reais do bordo inferior, eliminando riscos de corte mecánico en impresoras domésticas e facilitando o agarre con polgar.
-- **Prevención de palabras soltas ao final de parágrafo (*runts*):**
-  Para evitar que a última liña dun parágrafo quede cunha única palabra illada (como *«web.»* ou *«resposta.»* ocupando menos do 10 % da liña), md2pdf limita a elasticidade do espazo final en LuaLaTeX:
-  ```latex
-  \RaggedRightParfillskip=0pt plus 0.75\textwidth
-  ```
-  Ao esixir que o espazo en branco final non supere o 75 % do ancho (`\textwidth`), TeX penaliza colas de menos do ~25 % do ancho (~15–20 caracteres) e o seu algoritmo de corte redistribúe o parágrafo de forma harmónica, facendo descender dúas ou máis palabras sen forzar cortes artificiais nin caixas ríxidas (`\mbox`/`~`). No formato HTML, este mesmo comportamento garántese co estándar nativo `text-wrap: pretty` en CSS.
-- **Sen cabeceiras superiores (Running headers):** descartáronse expresamente as cabeceiras correntes superiores por dous motivos prácticos:
-  1. Evitar que ao seleccionar e copiar código fonte continuo que salta de páxina se copie o título da cabeceira no portapapeis do estudante.
-  2. Evitar ruído visual e elementos repetitivos innecesarios en materiais docentes habitualmente curtos (< 30 páxinas). O número de páxina sitúase na marxe da esquina inferior (`\rofoot`, `\lefoot` con desprazamento cara fóra de 12 mm, a 10 mm do bordo da folla e 7,6 mm da base), despexando totalmente a caixa de texto e os bloques de código que parten entre páxinas sen interferir coa área de impresión nin coa suxeición manual do documento.
-
-### Cifras OldStyle vs. Lining
-
-Source Serif 4 permite cifras OldStyle (3, 5, 7 con descendentes), que se integran mellor no texto corrido. Nas táboas, as cifras Lining (todas á mesma altura) aliñan mellor en columnas. No PDF o cambio é automático; HTML emprega as familias Source mediante CSS cando están instaladas no sistema e fallbacks web seguros.
-
-### Contraste WCAG AA
-
-Todas as cores do tema cumpren o estándar WCAG AA (ratio ≥ 4.5:1) sobre o fondo de código `#f6f8fa`:
-
-| Token | Cor | Ratio | Elemento |
+| Type | Accepted aliases | PDF color | Purpose |
 |---|---|---|---|
-| Normal | `#24292e` | 13.8:1 | Texto base |
-| Keyword | `#cf3544` | 4.7:1 | `if`, `function`, `class` |
-| Operator | `#cf222e` | 5.0:1 | `=`, `=>`, `&&` |
-| Variable | `#b54700` | 5.1:1 | `$variables` PHP |
-| DataType | `#005cc5` | 5.9:1 | `int`, `string`, `bool` |
-| Function | `#6f42c1` **bold** | 6.1:1 | definicións de función |
-| String | `#0a3069` | 12.0:1 | `"texto"` |
-| Comment | `#6a737d` *itálica* | 4.5:1 | `// comentario` |
-| Preprocessor | `#8250df` **bold** | 4.7:1 | `<?php` |
-| Attribute | `#953800` | 6.9:1 | atributos HTML |
-| Other | `#1b7c83` | 4.6:1 | propiedades CSS |
+| `note` | `nota` | Blue | Clarification or reminder |
+| `tip` | `consello` | Green | Recommended practice |
+| `warning` | `atención`, `atencion` | Orange | Common mistake or caution |
+| `danger` | `perigo` | Red | Serious failure or data/security risk |
+| `info` | — | Cyan | Additional technical context |
+| `task` | `tarefa`, `task-box`, `taskbox` | Indigo | Editable answer area |
 
-### Por que substituír emojis por iconas FontAwesome5?
+Not every Galician alias is styled in DOCX: `nota` and accented `atención` are not recognized there, while `atencion` is supported. Generated labels such as `Nota`, `Atención`, and `Tarefa` currently remain Galician.
 
-LuaLaTeX pode renderizar emojis Unicode en cor mediante `fontspec` con `Renderer=HarfBuzz` e a fonte NotoColorEmoji (dispoñible desde TeX Live 2020). Sen embargo, md2pdf converte os emojis a iconas FontAwesome5 por razóns técnicas e de deseño:
+A blockquote starting with ⚠️, 💡, 📘, 📝, ⛔, or 🎯 can also become a corresponding callout. Use ordinary quotes without these leading emoji when you intend a quotation.
 
-- **Compatibilidade con `--print` e `--night`** — As fontes de emoji en cor (NotoColorEmoji, Segoe UI Emoji) usan os formatos COLR/CBDT, onde a cor está integrada nos propios glifos e é procesada por HarfBuzz. O comando `\color{}` de LaTeX **non ten efecto** sobre elas: non se poden converter a negro para impresión nin adaptar á paleta cálida do modo nocturno. As iconas FontAwesome5, ao ser vectoriais LaTeX normais, responden a `\color{}` como calquera outro elemento.
-- **Soporte monocromo nativo** — Existen fontes de emoji monocromas (Noto Emoji sen cor, Symbola, DejaVu Sans), pero teñen un estilo visual diferente á versión en cor, o que obrigaría a xestionar dúas fontes condicionalmente segundo o modo de saída.
-- **Consistencia visual** — FontAwesome5 produce iconas que encaixan co estilo tipográfico do documento sen romper o fluxo visual.
-- **Independencia de fontes** — Non require NotoColorEmoji no sistema; FontAwesome5 está incluída en `texlive-fontsextra`.
+### Interactive tasks
 
-Se só precisas saída en cor (sen `--print` nin `--night`), podes usar emojis Unicode nativos vaciando `EMOJI_MAP` en `preprocess.py` e engadindo ao preámbulo:
+```markdown
+::: {.task id="exercise-1" height="4cm" placeholder="Write your answer here..."}
+
+Explain the difference between TCP and UDP.
+
+:::
+```
+
+- **PDF:** an AcroForm multiline `\TextField` allows editing and saving answers in viewers with compatible form support. Check the intended viewer before distributing a worksheet.
+- **HTML:** a `<textarea class="task-box-input">` saves answers in browser `localStorage` per document/task. Printing uses a bordered writing area. Storage is local to the browser; there is no answer-submission service.
+- **DOCX:** a bold task heading and an answer-space placeholder replace the interactive field.
+
+Task attributes include `id`, `height` (for example `4cm`, `7em`, or `120px`), and `placeholder`. GitHub-style `> [!TASK]` is also accepted.
+
+## Code
+
+### Syntax highlighting and line highlighting
+
+Always declare a language, including `text` for output or directory trees. The bundled `drake-jb.theme` uses a GitHub Light-inspired palette. Pandoc syntax definitions cover common web and programming languages.
+
+````markdown
+```php {hl="1,3,5-7"}
+$user = $_POST['user'];
+$hash = password_hash($pass, PASSWORD_DEFAULT);
+echo $user;
+$stmt = $pdo->prepare($sql);
+$stmt->execute([$hash]);
+$result = $stmt->fetch();
+```
+````
+
+`hl` accepts individual lines and ranges, counting from the first line inside the block, including blank lines. LuaLaTeX uses `hl-lines.lua` and fvextra's native `highlightlines`; HTML retains the attribute as `data-hl` and marks lines in the browser. DOCX does not implement this feature. Highlight only the lines discussed in the explanation, and identify them in prose too.
+
+Customize the PDF highlight background in the preamble:
+
+```latex
+\colorlet{hl-line-bg}{yellow!18!white}
+\fvset{highlightcolor=hl-line-bg}
+```
+
+The bundled `javadoc.xml` adjusts Pandoc's Javadoc syntax so accented comment text receives consistent comment styling. It is loaded with `--syntax-definition` in PDF and HTML.
+
+### Terminal blocks
+
+Shell languages such as `bash`, `sh`, `zsh`, `powershell`, `console`, and `cmd`, or the `.terminal` class, receive subtly different borders and backgrounds in PDF and HTML. Day, night, and print palettes are supported. md2pdf does not inject prompts or headers that would interfere with copying commands.
+
+Use `--no-terminal-blocks` or `terminal-blocks: false` to disable the distinction. Keep commands and their output in separate language-tagged blocks when this improves clarity.
+
+### Compact code
+
+Normal PDF code is approximately 10.8 pt with 15.4 pt leading and room for about 71 columns. Compact mode uses 10 pt with 13 pt leading, about 77 columns, reducing listing height by roughly 16% under the default layout.
+
+````markdown
+```python {.compact}
+class StudentRepository:
+    def __init__(self, connection):
+        self.connection = connection
+```
+````
+
+`.compacto` and `compact=true` are also accepted. Compact blocks can combine terminal styling and line highlighting:
+
+````markdown
+```bash {.compact hl="1"}
+docker run -d --name db -p 5432:5432 postgres:16
+docker logs -f db
+```
+````
+
+For compact text with the normal mode's leading ratio, use:
+
+````markdown
+```php {.compact compact-leading="proportional"}
+<?php for ($i = $total + 1; $i <= $maxTotal; $i++): ?>
+    <td></td>
+<?php endfor; ?>
+```
+````
+
+In PDF this keeps 10 pt type and reduces normal leading proportionally, about 7.7% with the defaults. HTML similarly retains the normal ratio. The attribute alone does not activate compact mode; without it, `.compact` uses the denser 13 pt leading.
+
+To compact every listing with at least 25 source lines:
+
+```yaml
+code-compact-threshold: 25
+```
+
+The default threshold is `0` (disabled).
+
+### Code pagination
+
+In PDF, blocks of up to 12 source lines, including blank lines, are kept together. Set `code-keep-lines` to change the inclusive threshold, or `0` to disable protection. This works with terminal blocks, compact mode, highlights, lists, callouts, and print/night palettes.
+
+Longer listings can split across pages. Their boxes open at the break: the first fragment has no bottom border and the continuation has no top border; the final fragment closes normally. `lines before break=3` controls the initial fragment, but does not guarantee three lines in the final fragment.
+
+The threshold counts source lines, rather than wrapped visual lines. Avoid a threshold that could create a box taller than the page. Moving a short block may leave blank space; lower the threshold if needed. Do not add ad hoc `\Needspace` commands around code near long tables.
+
+### Inline code and marked text
+
+By default, inline code is monospaced, with a theme-colored foreground and no background. `--inline-pill`, `inline-pill: true`, or `\mdpdfinlinepilltrue` enables the experimental pill background: subtle gray `#F0F2F5` by day, cream `#EDE8DC` at night, and transparent in print. Rounded corners and horizontal padding are 1.5 pt, with no vertical padding to disturb paragraph leading.
+
+Short inline code is protected from splitting: at most 8 characters, or at most 15 without separators, with a separate 20-character rule outside tables. An underscore does not by itself split a protected identifier. Longer paths and expressions can break at separators without visible hyphens.
+
+In tables, if protected code does not fit the assigned cell, it can break at spaces, operators, and separators, then underscores as a secondary option. Automatic widths use the same segmentation; manual widths are respected. A warning indicates code that still cannot fit. There are no arbitrary breaks inserted into identifiers to hide a width problem.
+
+Write backslashes, accents, tildes, and carets literally inside Markdown backticks; the filters escape them for LaTeX. Do not add LaTeX escapes yourself. To highlight a word or inline expression in PDF and HTML:
+
+```markdown
+The comparison is [strict]{.mark}.
+
+Check [`x < 0 || x > 100`]{.mark}.
+```
+
+These spans do not act inside fenced code. Code blocks do not support numbered captions or `@lst:` references; introduce them in prose and link to their containing section.
+
+## Diagrams and charts
+
+Supported fences are `mermaid`, `d2`, `dot`/`graphviz`, and `vega-lite`/`vegalite`. Each renderer is optional and is checked only when its block type is used.
+
+````markdown
+```{.mermaid #fig:flow caption="Request processing"}
+flowchart LR
+    A[Request] --> B{Valid?}
+    B -->|Yes| C[Response]
+    B -->|No| D[Error]
+```
+
+See @fig:flow.
+````
+
+Use a caption for every informative diagram. It supplies the figure description and HTML alternative text. Do not add a second manual “Figure N.” caption. Captions are literal text, not rich Markdown.
+
+- **Mermaid:** flows, sequences, classes, states, ER diagrams, and other types supported by the installed CLI. Attributes include `layout`, `theme`, and `look`; availability depends on that version.
+- **D2:** architecture, conceptual diagrams, and SQL structures. Supports `layout=dagre|elk|tala`, numeric themes, `sketch`, `pad`, and `dark-theme`.
+- **Graphviz:** graphs, trees, and automata. Layouts include `dot`, `neato`, `fdp`, `sfdp`, `circo`, `twopi`, `osage`, and `patchwork`.
+- **Vega-Lite:** quantitative charts from inline JSON data, including bars, lines, scatter plots, histograms, and regression fits. Outputs are static, without interactive tooltips.
+
+````markdown
+```{.d2 layout=elk sketch caption="Client and database services"}
+client -> server: HTTP
+server -> database: SQL
+```
+
+```{.dot caption="State transitions"}
+digraph {
+    rankdir=LR;
+    q0 -> q1 [label="1"];
+}
+```
+````
+
+The shared pipeline requests vector PDF for LuaLaTeX, PNG for DOCX, and SVG for HTML. Mermaid CLI 12 removed `--pdfFit`; md2pdf queries `mmdc --help` and uses the flag only when supported.
+
+Rendering uses subprocesses with timeouts and validated caches. Missing tools or failed diagrams leave source code and warnings in normal mode, and fail conversion with `--strict`. Renderer attributes do not provide a sandbox; use trusted sources.
+
+See [DIAGRAMS.md](DIAGRAMS.md) for options, per-document YAML defaults, paths, caching, validation levels, sizing, and architecture; [VEGA-LITE.md](VEGA-LITE.md) for chart dependencies and data restrictions; and [vega-lite-examples.md](vega-lite-examples.md) for runnable charts.
+
+## Equations and cross-references
+
+Pandoc accepts standard inline `$...$` and display `$$...$$` mathematics:
+
+```markdown
+Inline: $E = mc^2$.
+
+$$
+\int_a^b f(x)\,dx = F(b) - F(a)
+$$
+```
+
+PDF uses STIX Two Math through `unicode-math`. HTML uses MathML: `--math-method=mathml` with Pandoc 3.11 or later, and `--mathml` with earlier versions.
+
+md2pdf resolves figure and table references in LuaLaTeX (`figure-captions.lua`) and HTML (`html.lua`) without `pandoc-crossref`:
+
+```markdown
+![System diagram](img/diagram.png){#fig:system width=80%}
+
+The process is shown in @fig:system.
+
+| Engine | Editable |
+|--------|----------|
+| LuaLaTeX | No |
+| DOCX | Yes |
+
+: Output comparison {#tbl:engines}
+
+See @tbl:engines.
+```
+
+Use `@fig:`, `@tbl:`, or `@tab:`. Initial-capital forms (`@Fig:`, `@Tbl:`) capitalize the generated label. Current generated labels are Galician. In HTML the references are clickable internal links.
+
+`@sec:`, `@eq:`, and `@lst:` are not resolved. DOCX does not resolve this custom figure/table reference system either. For sections, use explicit IDs and normal Markdown links:
+
+```markdown
+## Explicit conversion {#explicit-conversion}
+
+See [Explicit conversion](#explicit-conversion).
+```
+
+Preprocessing removes heading numbering but does not rewrite link fragments. An old `#1-conversion` link can therefore break when the output heading becomes `conversion`. Declare stable IDs for references within and between documents. Pandoc's automatic IDs can retain accented letters.
+
+## Tables
+
+### Content-based widths
+
+`auto-table-widths.lua` calculates widths from cell content instead of relying on arbitrary Markdown separator lengths:
+
+- A table that fits without wrapping within 85% of the line is centered at natural width. Columns left empty for student answers force full text width.
+- Effective cell length is capped at 60 characters so a long listing does not consume all width.
+- Header text, short monospaced code, and long words contribute minimum widths. Glyph-width tables use the selected body font, bold Source Sans headings, and Source Code Pro.
+- Space is taken from the column whose shrinkage adds the least table height, using a 2 pt lookahead margin. Ties prefer the column with more spare width.
+- Minimums are not imposed above 60% of a line. When all minimums cannot fit, the smallest are satisfied first and the remaining columns share the rest.
+- Unbreakable prose may overrun a cell slightly; the estimator allows 8 pt before forcing adjustment. Long code uses its available break points.
+
+### Manual widths
+
+Different dash counts in a separator request proportional widths; the filter then preserves Pandoc's calculated widths and applies heading styling only:
+
+```markdown
+| Type | Description | Example |
+|------|--------------------------|------------|
+```
+
+Pandoc calculates relative widths only when a table line exceeds 72 characters. Alignment colons also affect its calculation. The filter detects equal dash counts despite their colons so an ordinary centered/right-aligned table can still receive automatic sizing.
+
+### Long tables and page breaks
+
+PDF tables of up to six rows use an unbreakable `tabular` with reserved space. Longer tables remain `longtable`, repeating column headings on continuation pages in a subdued, normal-weight italic style (`heading-section!65`). No extra continuation/footer rows are inserted.
+
+The first four body rows and the penultimate row are protected with `\\*`, reducing very short initial fragments and a lone final row. Zebra-striping state is reset at the start of each long table. Minor color-pattern shifts can still occur on continuation pages of very long tables.
+
+### Table styling
+
+- `\small` text: about 11.86 pt with 17.14 pt leading under the default 13 pt layout.
+- `\arraystretch{1.5}` adds row spacing; horizontal `\tabcolsep` is 6 pt.
+- Bold sans-serif column headings use `heading-section`, matching the current day/night/print palette.
+- Alternating rows use `gray!6!white`; redundant horizontal `\toprule`, `\midrule`, and `\bottomrule` rules are suppressed.
+- HTML tables inherit body line-height with vertical padding of `.37rem` (`.36rem` on narrow screens), and live in responsive scrolling wrappers.
+- PDF numeric columns with at least one decimal align on the decimal separator when all nonempty cells contain numbers. Both dot and comma decimal forms are accepted. Units or inline-code formatting prevent numeric detection. Markdown alignment positions the aligned group as a whole.
+
+```markdown
+| Operator | Operation | Result |
+|:-:|---|:-:|
+| `*` | Multiplication | 14 |
+| `/` | Division | 3.5 |
+```
+
+Disable PDF decimal alignment with `--no-decimal-align` or `decimal-align: false`.
+
+### Line breaks and vertical alignment
+
+Use `<br>` within cells for a deliberate line break. `br.lua` converts it to LaTeX `\newline{}` only inside tables; HTML handles it natively, while DOCX does not implement this custom behavior.
+
+Pandoc's `p{}` columns are top-aligned. Inline-code boxes are anchored with `\leavevmode` so they align with other cell content. Do not redefine `p{}` recursively using `\newcolumntype`: that can cause infinite recursion with LuaLaTeX/fontspec/polyglossia.
+
+## Images and figures
+
+Images are limited to text width. In PDF, figures are placed at their source position rather than floating freely. Captions are centered, in smaller type, with a bold numbered label.
+
+```markdown
+![Application architecture](img/architecture.png){#fig:architecture width=80%}
+```
+
+Informative images need descriptive text. Purely decorative images can use `![](logo.png){.decorative}`. In HTML and IMS, local images are embedded into the output.
+
+**Large raster images (roughly over 800 px wide) and vector PDFs without explicit dimensions can make LuaLaTeX hang in the current sizing pipeline.** Set a width, such as `{width=100%}`, or resize the source. If resizing, work on a copy when the original must be preserved:
+
+```sh
+magick large.png -resize 800x smaller.png
+```
+
+The problem involves the interaction of Pandoc's `\pandocbounded{}`, `adjustbox`, and fixed-position figures. Diagram preprocessing supplies explicit dimensions to avoid it.
+
+Screenshot borders are not implemented reliably; see [possible future work](#possible-future-work).
+
+## Output formats and reading modes
+
+### PDF / LuaLaTeX
+
+The default output uses a project-owned KOMA-Script template and preamble: body typography, table layout, code blocks, vector FontAwesome5 icons, footnotes, and STIX Two Math equations. Compilation time depends on the document, fonts, diagrams, and TeX environment; previous short-document runs typically took several seconds.
+
+### DOCX
+
+```sh
+md2pdf notes.md -e docx --lang en
+```
+
+DOCX is generated by Pandoc without LaTeX. Headings, paragraphs, lists, tables, footnotes, metadata, and a Pandoc TOC/section numbering are supported. Callouts become text with bold label prefixes through `callouts-docx.lua`.
+
+Limits include no md2pdf syntax highlighting or `hl` line highlighting, no custom `@fig:`/`@tbl:` resolution, and no PDF title-page or print layout. Unsupported PDF-only options can be ignored with a warning.
+
+If `reference.docx` is found alongside the assets, it supplies Word styles. Create a base file and edit its styles in Word or LibreOffice:
+
+```sh
+pandoc -o reference.docx --print-default-data-file reference.docx
+```
+
+### HTML5
+
+```sh
+md2pdf notes.md -e html --lang en
+```
+
+HTML uses Pandoc's native HTML5 writer, `md2pdf.html`, `md2pdf.css`, and `html.lua`. CSS, local images, and generated SVG are embedded with `--embed-resources`. It supports callouts, code highlighting, figure/table links, responsive tables, MathML, print/night modes, and local task-answer storage.
+
+Screen layout is responsive; LaTeX page reservation rules do not apply. Browser printing uses CSS break properties and basic A4 page rules. `--titlepage` does not apply. See [HTML.md](HTML.md) for details and accessibility checks.
+
+### Moodle / IMS
+
+```sh
+md2pdf U1/ --ims U1-moodle.zip --ims-title "Unit 1: Introduction to programming" --lang en
+```
+
+The ZIP contains `imsmanifest.xml` at its root and self-contained HTML for every input document. Directory inputs use natural order; explicit file inputs retain their CLI order. Navigation titles use `activity`, then `title`, the first H1, or the filename.
+
+Links between included Markdown files are rewritten to HTML. Other linked local files are packaged under `recursos/`. Missing documents/resources warn in normal mode and prevent package generation in strict mode. See [IMS.md](IMS.md).
+
+### Print mode
+
+`--print` uses black links, white code backgrounds with gray borders, unfilled inline code, and no alternating PDF table-row shading. LuaLaTeX callouts retain borders but lose colored fills. HTML applies the print appearance on screen as well as its `@media print` rules.
+
+```sh
+md2pdf notes.md --lang en --print -o notes-print.pdf
+```
+
+### Warm reading mode
+
+`--night` is a **warm light/sepia palette**, not a dark background:
+
+| Element | Color |
+|---|---|
+| Page | `#F5F0E8` |
+| Text | `#2C1A0E` |
+| Code background | `#EDE8DC` |
+| Inline-code text | `#7A4F2E` |
+| Links, callout accents, TOC title | `#8B6347` |
+| Section / subsection / subsubsection | `#6B3A1F` / `#8B5230` / `#A86A42` |
+
+Icons use muted orange `#8B6347`, medium brown `#7A4F2E`, sienna `#A0522D`, or warm beige `#9E8872` according to their role.
+
+```sh
+md2pdf notes.md --lang en --night -o notes-warm.pdf
+```
+
+## Typography and pagination
+
+### Fonts, color, and spacing
+
+The default body and headings use Source Sans 3 (with Source Sans Pro as a fallback). `--serif` or `body-font: serif` selects Source Serif 4 for body text. Code uses Source Code Pro. PDF tables use lining numerals; serif running text can use old-style numerals. HTML uses Source families where installed and web-safe fallbacks otherwise.
+
+Day-mode section colors are slate blue: `#1C2F4A`, `#2E4B72`, and `#4A6A96` from sections to subsubsections. Print mode uses black.
+
+The PDF preamble enables microtype protrusion and approximately ±1% font expansion to improve optical margins and spacing. Paragraphs use `0.45em` separation without indentation. Code uses `0.45em` before and `0.7em` after; quotations use `0.45em` before and `0.6em` after.
+
+| Heading | Before | After | Approximate total with paragraph spacing |
+|---|---|---|---|
+| Section | `1.2em` | `0.4em` | `1.65em` / `0.85em` |
+| Subsection | `1.0em` | `0.3em` | `1.45em` / `0.75em` |
+| Subsubsection | `0.8em` | `0.3em` | `1.25em` / `0.75em` |
+
+Numbered procedural lists use bold theme-colored markers and `itemsep=0.5em`; nested lists and ordinary bullets use the more compact `0.25em`. HTML mirrors these distinctions with `::marker` and relative spacing. This separates multline instructions while keeping short feature lists compact.
+
+### Widows, orphans, and introductory paragraphs
+
+The PDF defaults discourage isolated lines with `\widowpenalty=3000`, `\clubpenalty=3000`, and `\displaywidowpenalty=2000` without making composition impossible.
+
+Section, subsection, and subsubsection headings reserve 8, 7, and 6 baseline lines. Consecutive headings share protection: `\if@nobreak` avoids forcing a break between a heading and its immediate subheading.
+
+`small-table.lua` reserves a heading and its following table together. For up to six rows, the estimate is rows plus five baseline lines, plus wrapping allowances of 0.9 lines per extra visual row line. Consecutive headings add three lines per earlier heading. For longer tables, it reserves the column header and the first protected body fragment, estimating each row at 1.4 lines plus 0.9 per extra wrapped line.
+
+Cell wrapping estimates use about 5 pt per prose character and 7.1 pt per code character; long words can wrap, and LaTeX commands such as `\color` do not count as visible text. These are estimates: an overestimate can move content earlier than necessary.
+
+A paragraph ending in a colon before code, a list, or a table is kept with the material it introduces. `keep-with-next.lua` estimates prose at about 85 characters per line and code at 66, reserving a whole short block or the first four lines of a longer one. Source lines still determine `code-keep-lines`. A list reserves its first item, up to four lines; tables use their own estimator.
+
+Reservations can move above preceding section headings, but never above the level-one document title: Pandoc must see it as the first block to extract the title. `keep-with-next: false` disables introductory-paragraph protection.
+
+Standalone small tables retain the simpler rows-plus-five reservation, without extra wrapping allowance: an unbreakable table already moves whole if it cannot fit. Long tables remain splittable. See the historical [code pagination verification](CODE-VERIFICATION.md) for measured cases and limitations.
+
+### Titles and activity labels
+
+Without `--titlepage`, the document title is centered before the TOC. If `activity` is present, an opening label appears before the first `##`, with decorative rules sized to the text. Long labels wrap; nonbreaking spaces in the metadata are preserved as LaTeX `~`.
+
+The label uses `heading-section` and reserves 14 baselines: approximately six for itself and eight for the following section. If no section follows, it reserves six. The `% md2pdf:activity-label` marker lets pagination filters place combined reservations before the label.
+
+With `--titlepage`, the separate PDF cover uses `module` as a tracked small-caps context line, `subject` as the main title, `activity` as the subtitle, and `school`/`course` in the lower-right block. `author` is the fallback when school is absent. The activity label also opens the content. About 28% of the page height is left above the cover text.
+
+There are no running page headers. Page numbers sit at the lower outside corner through KOMA-Script's `\rofoot` and `\lefoot`, keeping repeated header text out of copied code.
+
+### Language and hyphenation
+
+The default document language is Galician; use `--lang` for another language. The default setup also includes English/Spanish language handling and technical-word hyphenation exceptions. `\tolerance=1500` allows somewhat wider spaces before excessive hyphenation.
+
+## Validation
+
+Before conversion, md2pdf reports a leading BOM, unclosed or misplaced YAML, missing or unclosed code fences, malformed/unclosed callouts, missing blank lines after callout openings, and multiple level-one headings.
+
+Normally these are warnings. With `--strict`, structural problems stop conversion before Pandoc and return a nonzero status. Diagram failures also stop strict conversion. Diagram small-text and reduced-validation warnings do not.
+
+HTML checks the final output for duplicate IDs, broken internal links, invalid `aria-labelledby` targets, unresolved figure/table references, and informative images without alternative text. Strict mode removes invalid generated HTML. IMS adds checks for excluded Markdown destinations and missing local resources.
+
+Pandoc's own `[WARNING]` messages are also shown after conversion, deduplicated and limited to ten. They do not automatically become strict-mode failures.
+
+```sh
+md2pdf notes.md --lang en --strict
+md2pdf notes.md -e html --lang en --strict
+```
+
+There is no separate lint-only CLI mode. Validation catches specific defects, not all visual or semantic issues. Inspect final diagrams and representative pages. See [diagram validation](DIAGRAMS.md#validation-and-readability) and [PDF links](LINKS.md) for check coverage and historical verification limits.
+
+## Using AI assistants
+
+[md2pdf-ai-reference.md](md2pdf-ai-reference.md) is an optional authoring contract for assistants creating teaching materials. It brings together pedagogy, supported syntax, format differences, and delivery checks.
+
+Provide it at the start of the conversation or in the assistant's instructions, with your unit plan and existing material:
+
+```text
+[Contents of md2pdf-ai-reference.md]
+
+Create an activity on [topic] using the reference above.
+Write the material in [language] and follow the target repository's conventions.
+```
+
+The reference helps avoid unsupported references, malformed callouts, missing blank lines, and GitHub-specific Markdown assumptions. A teacher still chooses the learning progression, which code lines deserve highlighting, callout severity, and whether diagrams are readable.
+
+## Project structure
+
+```text
+md2pdf/
+├── README.md                  Project introduction
+├── LICENSE                    GNU GPL version 3 text
+├── md2pdf_runner.py           Checkout / installed Windows entry point
+├── install-md2pdf.py          User-level Linux and Windows installer
+├── md2pdf/                    Python package
+│   ├── __main__.py            CLI and watch mode
+│   ├── config.py              Defaults, fonts, mappings, version compatibility
+│   ├── assets.py              Asset and dependency lookup
+│   ├── metadata.py            Metadata extraction
+│   ├── preprocess.py          Markdown preprocessing
+│   ├── lint.py                Structural checks
+│   ├── converter.py           Conversion orchestration
+│   ├── ims.py                 IMS packaging
+│   ├── diagrams/              Renderer protocol, adapters, processing, cache
+│   ├── mermaid.py             Mermaid compatibility API
+│   └── engines/               LuaLaTeX, DOCX, and HTML engines
+├── md2pdf.latex               Pandoc / KOMA-Script PDF template
+├── md2pdf-preamble.tex        PDF styling and typography
+├── md2pdf.html                Pandoc HTML5 template
+├── md2pdf.css                 Responsive HTML, night, and print styling
+├── drake-jb.theme             Syntax highlighting theme
+├── javadoc.xml                Javadoc syntax adjustment
+├── *.lua                      Pandoc transformations and layout filters
+├── scripts/windows/           Assisted Windows setup and smoke sample
+├── tests/                     Automated tests and fixtures
+└── docs/                      User guides, examples, and verification notes
+```
+
+Filters include `auto-table-widths.lua`, `small-table.lua`, `br.lua`, `callouts.lua`, `callouts-docx.lua`, `html.lua`, `hl-lines.lua`, `compact-code.lua`, `keep-code.lua`, `keep-with-next.lua`, `terminal-blocks.lua`, `term-pairs.lua`, and `figure-captions.lua`.
+
+## Design decisions
+
+### Pandoc and LuaLaTeX
+
+Pandoc supplies one document model for the three outputs. LuaLaTeX and the custom KOMA-Script `scrartcl` template provide PDF typography and explicit control of tables, page breaks, headings, links, and code boxes. The class option is `fontsize=13pt`, rather than the short `13pt` form that puts KOMA-Script into its historical `version=first` compatibility mode.
+
+A previous Typst engine was removed because it lacked feature parity: filters, callouts, line highlighting, references, and newer inline-code handling diverged. PDF now has one supported composition engine; HTML uses Pandoc's native writer rather than duplicating another PDF layout implementation.
+
+The title page is generated as LaTeX and injected with Pandoc `-B` separately from the body template, avoiding competing cover-page mechanisms.
+
+### Default page layout
+
+A4 side margins are 22 mm, leaving a 166 mm text area (about 472.3 pt). Top/bottom margins are 14/16 mm, with 7 mm footskip. These defaults balance room for code and tables with readable prose.
+
+`ragged2e` settings include:
+
+```latex
+\setlength{\RaggedRightRightskip}{0pt plus 3.8em}
+\RaggedRightParfillskip=0pt plus 0.75\textwidth
+```
+
+The right-skip setting encourages moderate line lengths; the paragraph-fill setting discourages very short final lines without inserting rigid boxes. Actual line lengths and page density depend on content and fonts. HTML uses `text-wrap: pretty` where supported. These choices do not by themselves certify accessibility conformance.
+
+### Fonts and color
+
+Source Sans, Source Serif, and Source Code provide a related visual vocabulary. STIX Two Math supplies OpenType mathematics through `unicode-math`, compatible with the fontspec-based PDF setup.
+
+The bundled highlighting palette was selected for contrast on `#f6f8fa`. Recorded contrast ratios include:
+
+| Token | Color | Recorded contrast |
+|---|---|---|
+| Normal | `#24292e` | 13.8:1 |
+| Keyword | `#cf3544` | 4.7:1 |
+| Operator | `#cf222e` | 5.0:1 |
+| Variable | `#b54700` | 5.1:1 |
+| DataType | `#005cc5` | 5.9:1 |
+| Function | `#6f42c1`, bold | 6.1:1 |
+| String | `#0a3069` | 12.0:1 |
+| Comment | `#6a737d`, italic | 4.5:1 |
+| Preprocessor | `#8250df`, bold | 4.7:1 |
+| Attribute | `#953800` | 6.9:1 |
+| Other | `#1b7c83` | 4.6:1 |
+
+### Why replace emoji in PDF?
+
+FontAwesome5 icons follow ordinary LaTeX colors, so print/night modes can recolor them. Color emoji fonts embed their own colors and do not respond to `\color{}` in the same way. Vector icons also avoid requiring a platform-specific color emoji font.
+
+Supported PDF emoji include ⚠️ 💡 📘 ❌ ✅ ✓ 🔴 🐛 🖥️ 🌐 ▶️ ⏹ 📝 🔒 🔑 📂 📁 🚀 ⚙️ 🎯 💻 ✏️ 🏆 ⛔. In code, mappings use plain text such as `[OK]`, `[X]`, `[bug]`, `[Web]`, `[PC]`, `[nota]`, `[lock]`, `[key]`, `[dir]`, `[cfg]`, or `[obj]`. Mapping strings remain implementation-defined and are not translated by this documentation.
+
+To experiment with native color emoji, customize `EMOJI_MAP` and configure a suitable font in the preamble; this changes print/night behavior and is not the default:
 
 ```latex
 \newfontfamily\emojifont{NotoColorEmoji}[Renderer=HarfBuzz]
 \usepackage{newunicodechar}
-\newunicodechar{🚀}{{\emojifont 🚀}}  % rexistrar cada emoji
+\newunicodechar{🚀}{{\emojifont 🚀}}
 ```
 
-### Hifenación multilingüe
+### Why render diagrams before Pandoc?
 
-Os documentos técnicos mezclan galego, inglés e castelán. Babel cárgase con galego como lingua principal e inglés/castelán como secundarias, proporcionando patróns de hifenación correctos. As excepcións manuais (`\hyphenation{}`) cubren termos técnicos frecuentes.
+An early nested Python → Pandoc → Lua → mmdc → Chromium pipeline could hang while Chromium inherited file descriptors and waited for input. Python subprocess control allows explicit `stdin=DEVNULL`, controlled environment, and timeouts. Mermaid's Puppeteer configuration uses `--no-sandbox` for environments where Chromium's sandbox is unavailable; documents must therefore be trusted.
 
-### Portada propia en LaTeX puro
+Preprocessing produces ordinary Markdown images with explicit sizes. Pandoc then receives standard image content, avoiding renderer subprocesses inside Lua filters and the separate LuaLaTeX issue with unsized vector images.
 
-O paquete non usa ningún template de portada de terceiros. A portada xérase completamente en Python con LaTeX puro e inxéctase vía `-B` (include-before-body de Pandoc). O template LaTeX principal (`--template`) xestiona só o corpo do documento, o que evita conflitos entre a lóxica de portada e o contido.
+## Customization
 
-### Por que preprocesar Mermaid en Python e non con un filtro Lua
+### Assets and lookup
 
-A forma natural de procesar bloques `mermaid` en Pandoc sería un filtro Lua que detecte cada bloque, chame a `mmdc` e substitúa o nodo por unha imaxe. A primeira implementación seguiu este enfoque, pero **`mmdc` quedaba indefinidamente á espera** sen producir saída.
+Assets are looked up in the running package's parent directory (`INSTALL_DIR`: the installed data directory or checkout root), then the current working directory. Template lookup additionally searches Pandoc's template directories. Use `--template` for an explicit template path.
 
-A causa é que `mmdc` lanza Chromium internamente vía Puppeteer. Cando se executa nunha cadea anidada (Python → Pandoc → Lua → mmdc → Chromium), Chromium herda descriptores de ficheiro do proceso pai e queda esperando a stdin que nunca chega. Os redirects con `</dev/null >/dev/null 2>&1` na liña de comando do filtro Lua non resolvían o problema porque `os.execute` de Lua non controla os descriptores con suficiente granularidade.
+Edit installed assets deliberately, or edit the checkout and rerun the installer; a checkout edit alone does not update an installed launcher.
 
-A solución é executar `mmdc` desde Python con `subprocess.run()`, que permite pasar `stdin=subprocess.DEVNULL` e un env controlado. O paquete `md2pdf/diagrams/` escanea o markdown, chama a `mmdc` cun ficheiro de configuración de Puppeteer que activa `--no-sandbox`, e substitúe cada bloque por unha referencia `![](<ruta>){width=...}` antes de pasar o documento a Pandoc. O ancho explícito é necesario para evitar outro problema independente de LuaLaTeX, que cólgase con PDFs vectoriais sen tamaño explícito.
+### Highlighting and visual style
 
-A arquitectura resultante é máis limpa: Pandoc recibe markdown estándar con imaxes normais, sen filtros que dependan de procesos externos.
+- `drake-jb.theme`: Pandoc JSON highlighting palette.
+- `md2pdf-preamble.tex`: PDF headers/footers, microtypography, widow/orphan rules, heading protection, language exceptions, spacing, quotations, figures, code, tables, mathematics, TOC/heading colors, and icons.
+- `md2pdf.css` and `md2pdf.html`: HTML styling and structure.
+- `reference.docx`: optional Word styles.
 
+### Font selection
 
-## Emojis soportados
+`md2pdf/config.py` declares `FONT_CANDIDATES`; `_detect_font()` checks candidates with `luaotfload-tool`. Current candidates prefer Source Sans 3 / Source Sans Pro for sans, Source Serif 4 / Source Serif Pro for serif, and Source Code Pro for mono. To select another monospaced font, change the candidate configuration rather than relying on installation alone.
 
-No motor LuaLaTeX, os emojis no texto convértense en iconas FontAwesome5 vectoriais. Dentro de bloques de código, convértense en texto plano.
+Add technical-word exceptions to `\hyphenation{}` in the PDF preamble.
 
-| Emoji | Texto (código) | Descrición |
-|---|---|---|
-| ⚠️ | `/!\` | Aviso |
-| 💡 | `(i)` | Consello |
-| 📘 | `(i)` | Información |
-| ❌ | `[X]` | Erro |
-| ✅ | `[OK]` | Correcto |
-| 🐛 | `[bug]` | Bug |
-| 🌐 | `[Web]` | Web |
-| 🖥️ | `[PC]` | Escritorio |
-| 📝 | `[nota]` | Nota |
-| 🔒 | `[lock]` | Bloqueo |
-| 🔑 | `[key]` | Clave |
-| 📂 | `[dir]` | Directorio |
-| 🚀 | `[!]` | Lanzamento |
-| ⚙️ | `[cfg]` | Configuración |
-| 🎯 | `[obj]` | Obxectivo |
-| 💻 | `[PC]` | Portátil |
-| ▶️ | `[>]` | Reproducir |
-| ⏹ | `[stop]` | Parar |
+### Table width tuning
 
+Important `auto-table-widths.lua` parameters include:
 
-## Busca automática de ficheiros
+| Parameter | Default meaning |
+|---|---|
+| `MAX_CELL_LEN = 60` | Effective cell-length cap |
+| `CHAR_WIDTH = 0.013` | Estimated mono character width as a fraction of the line |
+| `MAX_MBOX_LEN = 15` | Short-code protection limit, alongside the shorter unconditional rule |
+| `NATURAL_MAX_TOTAL = 0.85` | Natural-width table threshold |
+| `SANS_REGULAR_PT`, `SERIF_PT` | Measured body-font glyph widths at table size |
+| `SANS_BOLD_PT` | Bold heading glyph widths |
+| `SPACE_PT`, `OTHER_PT` | Word spacing / fallback glyph width; body-font dependent |
+| `LINE_PT = 472.3` | Reference A4 text width with 22 mm side margins |
+| `TABCOLSEP_PT = 6` | Cell side padding |
+| `WORD_MARGIN = 1.03` | Word-width safety margin |
+| `OVERFLOW_PT = 8` | Allowed small overflow for unbreakable words |
+| `LOOKAHEAD_PT = 2` | Margin while choosing a column to shrink |
 
-O paquete busca o preámbulo, o template LaTeX, o tema de resaltado e os filtros Lua automaticamente nesta orde:
+The selected body family changes the measurement tables. Explicit per-table widths can instead be requested with different separator dash counts; see [manual widths](#manual-widths).
 
-1. Directorio de instalación (`~/.local/share/md2pdf/`), se se executou o instalador.
-2. Directorio do paquete (onde está `install-md2pdf.py`).
-3. Directorio actual de traballo.
+### Heading icons and callouts
 
+Edit `HEADING_ADMONITIONS` and `CALLOUT_BLOCKQUOTE_TYPES` in `md2pdf/config.py`. PDF callout styles are defined in `callouts.lua`; HTML and DOCX have their own filters. Keep behavior consistent across the formats you intend to support.
 
-## Personalización
+### PDF metadata in the preamble
 
-### Modificar as cores de resaltado
-
-Editar `drake-jb.theme` (formato JSON de Pandoc).
-
-### Modificar o estilo visual
-
-Editar `md2pdf-preamble.tex`. As seccións están separadas con comentarios:
-
-1. Cabeceira e pé
-2. Microtipografía
-3. Orfas e viúvas
-4. Protección de cabeceiras
-5. Hifenación multilingüe (con excepcións manuais)
-6. Espazado vertical
-7. Blockquotes
-8. Imaxes e figuras (max width, captions centrados)
-9. Código en liña
-10. Fondo para bloques de código (con fvextra para rotura de liñas)
-11. Configuración de fontes en táboas (`\small`, `\arraystretch{1.5}`, `\tabcolsep{6pt}`, `\arrayrulecolor{heading-section}`, zebra striping con reset de rowcolors, supresión de `\toprule`/`\midrule`/`\bottomrule`)
-12. Matemáticas (unicode-math + STIX Two Math)
-13. Cor do título do TOC
-14. **Cores de cabeceiras** (`heading-section`, `heading-subsection`, `heading-subsubsection`)
-15. Iconas FontAwesome5
-
-### Configurar fontes
-
-A selección de fontes realízase automaticamente en `config.py` e `engines/lualatex.py`. O script detecta con `_detect_font()` cal está dispoñible no sistema e usa a mellor opción:
-
-- **Corpo por defecto e cabeceiras (sans-serif)**: busca `Source Sans 3` primeiro, logo `Source Sans Pro`.
-- **Modo serif para o corpo (`--serif`)**: busca `Source Serif 4` primeiro, logo `Source Serif Pro`. Activábel con `--serif` na liña de ordes ou con `body-font: serif` no YAML front matter / `metadata.yaml`.
-- **Monoespaciada**: busca `Source Code Pro` (ou `JetBrains Mono` se está instalada).
-
-### Engadir excepcións de hifenación
-
-Engadir palabras na sección `\hyphenation{}` de `md2pdf-preamble.tex`.
-
-### Axustar os anchos das táboas
-
-O filtro `auto-table-widths.lua` detecta automaticamente a familia do corpo (`sans` por defecto, ou `serif` cando se activa `--serif` ou `body-font: serif`) e adapta os parámetros de cálculo de celas:
-
-- `MAX_CELL_LEN = 60` — lonxitude máxima efectiva por cela
-- `CHAR_WIDTH = 0.013` — ancho estimado dun carácter mono (fracción da liña)
-- `MAX_MBOX_LEN = 15` — código en liña ata 8 caracteres (ou ata 15 sen `/ \ . : = ? - _`) vai nun `\mbox` indivisible; o resto rompe en `\allowbreak`/`\discretionary`
-- `NATURAL_MAX_TOTAL = 0.85` — se todas as columnas caben sen partir liñas e a táboa ocupa como moito o 85 % da liña, non se fixan anchos: Pandoc usa columnas `l`/`c`/`r` co ancho natural e a táboa céntrase. As táboas con algunha columna sen contido no corpo (para encher) ocupan sempre toda a liña
-- `SANS_REGULAR_PT` e `SERIF_PT` — táboas de ancho (pt) dos glifos medidas en `\small` co corpo de 13 pt para Source Sans 3 (por defecto) e Source Serif 4 (con `--serif`), respectivamente.
-- `SANS_BOLD_PT` — anchos dos glifos en negra para as cabeceiras de táboa.
-- `SPACE_PT` (2.37 pt en sans / 2.76 pt en serif) e `OTHER_PT` (5.95 pt en sans / 6.4 pt en serif) — espazo entre palabras e ancho medio para caracteres non tabulados.
-- `LINE_PT = 472.3` e `TABCOLSEP_PT = 6` — o `\linewidth` en A4 con marxes de 22 mm e o `\tabcolsep` das táboas.
-- `WORD_MARGIN = 1.03`, `OVERFLOW_PT = 8` e `LOOKAHEAD_PT = 2` — marxe sobre as palabras divisibles, invasión permitida ás que non se poden dividir e marxe de seguridade ao escoller a columna que cede espazo
-- Para fixar os anchos a man nunha táboa concreta, usa guións de lonxitude distinta na liña separadora (ver [Anchos manuais](#anchos-manuais))
-
-### Configurar admonitions automáticos
-
-Editar o dicionario `HEADING_ADMONITIONS` en `preprocess.py`:
-
-```python
-HEADING_ADMONITIONS = {
-    'Tarefa':       '🎯',
-    'Exercicio':    '✏️',
-    'Reto':         '🏆',
-    'Exemplo':      '▶️',
-}
-```
-
-As iconas LaTeX correspondentes defínense en `md2pdf-preamble.tex`.
-
-### Configurar callouts
-
-O filtro `callouts.lua` define os estilos e cores de cada tipo de callout no dicionario `CALLOUT_STYLES`. Os tipos de callout recoñecidos defínense tamén en `CALLOUT_BLOCKQUOTE_TYPES` de `preprocess.py` (para a conversión de sintaxe GitHub/Obsidian).
-
-### Metadatos do preámbulo LaTeX
-
-Para engadir `pdflang`, `pdfcreator` e `pdfproducer` aos metadatos do PDF en LuaLaTeX, engadir en `md2pdf-preamble.tex`:
+For custom PDF language/producer metadata:
 
 ```latex
-% ── Metadatos PDF ──────────────────────────────────
 \AtBeginDocument{%
   \hypersetup{%
-    pdflang=gl,
+    pdflang=en,
     pdfcreator={md2pdf + LuaLaTeX + Pandoc},
     pdfproducer={md2pdf},%
   }%
 }
 ```
 
+Prefer the existing `--lang` option for ordinary document-language selection.
 
-## Licenza
+## Possible future work
 
-Uso libre para fins educativos e persoais.
+These are ideas, **not implemented features or delivery commitments**:
 
-## Fiabilidade dos gráficos
+- Interactive task-list checkboxes with PDF form fields and persistent HTML controls.
+- Embedded starter files in PDFs and corresponding HTML downloads.
+- Collapsible hints/solutions, with format-appropriate fallbacks.
+- An optional wider notes margin for Cornell-style study materials.
+- More configurable semantic callout titles.
+- A dedicated `<kbd>` rendering filter.
+- Further stabilization of the experimental inline-code pill styling.
+- Reliable subtle borders around screenshots.
 
-Consulta [DIAGRAMAS.md](DIAGRAMAS.md#validación-e-lexibilidade) para activar a
-validación adicional, usar `--strict` e coñecer os límites das comprobacións.
+The older roadmap also mentioned escaping inline backslashes; current filters already handle literal backslashes, tildes, carets, and accented text, so that is documented as supported behavior rather than a pending feature.
 
-### Validación da saída HTML
+## License
 
-O motor HTML valida o ficheiro final: detecta referencias internas rotas, IDs duplicados, relacións `aria-labelledby` inválidas e imaxes informativas sen texto alternativo. Con `--strict` estes problemas fan fallar a conversión. As táboas usan un contedor responsive sen alterar a semántica do elemento `<table>`.
+See [LICENSE](../LICENSE) for the GNU General Public License, version 3. Third-party components retain their respective licenses.
