@@ -434,15 +434,28 @@ end
 -- antes da primeira cabeceira da serie, sumando tres liñas por cada cabeceira
 -- anterior. Se se puxese só antes da última, o salto quedaría entre elas.
 local LINES_PER_EXTRA_HEADER = 3
+-- O rótulo de actividade que md2pdf pon antes da primeira cabeceira de nivel
+-- 2 vai nun bloque en bruto con esta marca e ocupa unhas seis liñas base.
+local ACTIVITY_LABEL_MARK = '^%% md2pdf:activity%-label'
+local ACTIVITY_LABEL_LINES = 6
 
 local function insert_needspace(out, needed)
   local pos = #out + 1
   -- Non sobe por riba dun título de nivel 1: con --shift-heading-level-by=-1
   -- é o título do documento, e Pandoc só o toma como tal se é o primeiro
   -- bloque. Unha reserva antes del deixaba o documento sen \title.
-  while pos > 1 and out[pos - 1].t == 'Header' and out[pos - 1].level > 1 do
+  -- Tampouco queda entre o rótulo de actividade e a cabeceira que o segue:
+  -- sobe por riba del e suma as súas liñas.
+  while pos > 1 do
+    local prev = out[pos - 1]
+    if prev.t == 'Header' and prev.level > 1 then
+      needed = needed + LINES_PER_EXTRA_HEADER
+    elseif prev.t == 'RawBlock' and prev.text:match(ACTIVITY_LABEL_MARK) then
+      needed = needed + ACTIVITY_LABEL_LINES
+    else
+      break
+    end
     pos = pos - 1
-    needed = needed + LINES_PER_EXTRA_HEADER
   end
   out:insert(pos, pandoc.RawBlock('latex',
     string.format('\\Needspace{%d\\baselineskip}', needed)))

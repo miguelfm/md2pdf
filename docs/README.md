@@ -719,6 +719,7 @@ O script xera dous modos de presentación do título, ambos construídos en LaTe
 - Antes do TOC vai o título do documento (o primeiro `#` ou `title`), centrado en `\LARGE\bfseries`.
 - A etiqueta `activity` abre a primeira páxina de contido, antes do primeiro `##`: centrada en `\LARGE\bfseries`, con **liñas decorativas** arriba e abaixo axustadas ao ancho do texto (`\sbox`/`\wd`). Se non cabe nunha liña, a etiqueta pártese e as liñas decorativas quedan no ancho da liña.
 - Un espazo non separábel (U+00A0) no valor de `activity` pasa a `~`: serve para que as dúas últimas palabras dunha etiqueta longa non queden separadas.
+- Antes da etiqueta vai un `\Needspace` de 14 liñas base: as seis da etiqueta e as oito que reserva a cabeceira seguinte. Sen el, unha etiqueta ao pé da páxina quedaba soa, porque a cabeceira non collía e pasaba á seguinte. Se a etiqueta vai ao final do documento, por non haber ningún `##`, reserva só as seis. O bloque leva a marca `% md2pdf:activity-label`, e as reservas de `keep-with-next.lua` e `small-table.lua` para a primeira cabeceira van antes da etiqueta e suman as súas seis liñas.
 - A cor da etiqueta e das liñas decorativas usa o ton `heading-section` (`#1C2F4A` en día, tostado en noite, negro en impresión).
 - Sen `activity`, non se xera ningunha etiqueta.
 

@@ -97,6 +97,24 @@ def _build_activity_label(activity: str, print_mode: bool,
     )
 
 
+# Reserva antes do rótulo de actividade. O rótulo ocupa unhas seis liñas base
+# desde o texto anterior, e a cabeceira que o segue reserva outras oito
+# (\section, no preámbulo). Sen a reserva, un rótulo ao pé da páxina quedaba
+# só: a cabeceira non collía e pasaba á seguinte. A marca permite que
+# keep-with-next.lua e small-table.lua leven as súas reservas por riba del.
+ACTIVITY_LABEL_MARK = '% md2pdf:activity-label'
+ACTIVITY_LABEL_LINES = 6
+SECTION_RESERVE_LINES = 8
+
+
+def _activity_label_block(act_latex: str, before_section: bool) -> str:
+    """Bloque LaTeX en bruto do rótulo, coa súa reserva, para o Markdown."""
+    lines = ACTIVITY_LABEL_LINES + (SECTION_RESERVE_LINES if before_section else 0)
+    return ('```{=latex}\n' + ACTIVITY_LABEL_MARK + '\n'
+            + f'\\Needspace{{{lines}\\baselineskip}}\n'
+            + act_latex + '```\n\n')
+
+
 def _build_titlepage_snippet(meta: dict, print_mode: bool,
                               night_mode: bool = False,
                               front_author: bool = False) -> str:
@@ -540,14 +558,14 @@ def prepare_lualatex_extras(
     if activity_val and not plain:
         act_latex = _build_activity_label(
             activity_val, print_mode, night_mode=night_mode)
-        raw_block = '```{=latex}\n' + act_latex + '```\n\n'
         m2 = re.search(r'^##\s', processed, re.MULTILINE)
         if m2:
             processed = (processed[:m2.start()]
-                         + raw_block
+                         + _activity_label_block(act_latex, True)
                          + processed[m2.start():])
         else:
-            processed = processed + '\n' + raw_block
+            processed = (processed + '\n'
+                         + _activity_label_block(act_latex, False))
         with open(tmp_path, 'w', encoding='utf-8') as f_upd:
             f_upd.write(processed)
 
