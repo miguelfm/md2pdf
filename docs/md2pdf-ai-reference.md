@@ -535,7 +535,7 @@ Continue with [Type conversions](U1A5_Operators.md#type-conversions).
 
 IMS rewrites included Markdown destinations to HTML and copies other linked local resources such as starter code, PDFs, and ZIPs. See section 19.
 
-To put a small source file inside the PDF, add the `attach` class to a local link and keep the path as link text: `` [`code/A8/Demo.java`](code/A8/Demo.java){.attach} ``. Do not attach files that the reader must not receive yet, such as solutions. See [ATTACHMENTS.md](ATTACHMENTS.md).
+To put a small source file inside the PDF, add the `attach` class to a local link, with the file name as link text and the path as destination: `` [`Demo.java`](code/A8/Demo.java){.attach} ``. Do not attach files that the reader must not receive yet, such as solutions. See [ATTACHMENTS.md](ATTACHMENTS.md).
 
 ## 18. Other elements
 

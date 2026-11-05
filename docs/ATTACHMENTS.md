@@ -3,7 +3,7 @@
 A local link with the `attach` class embeds the file in the PDF:
 
 ```markdown
-The program [`code/A8/DuplicateCost.java`](code/A8/DuplicateCost.java){.attach}
+The program [`DuplicateCost.java`](code/A8/DuplicateCost.java){.attach}
 compares both algorithms.
 ```
 
@@ -38,8 +38,12 @@ Observed on 5 November 2026:
   attachments and not the annotation ones.
 - Chromium 156 on Linux drew the paperclip, did not react to clicks on the
   link or the icon, and showed no attachments panel, not even for the
-  document attachments. Keep the path visible in the link text, as in the example, so that
-readers using such a viewer can still find the file elsewhere.
+  document attachments.
+
+The paperclip already marks the link as an attachment, so the link text can
+be just the file name, with the path in the destination. A reader whose
+viewer does not open attachments sees that name: make sure the file can be
+found under it wherever the material is published.
 
 ## Verification
 

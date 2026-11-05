@@ -588,10 +588,10 @@ Screenshot borders are not implemented reliably; see [possible future work](#pos
 A local link with the `attach` class embeds the file in the PDF, with a paperclip icon after the link text:
 
 ```markdown
-[`code/A8/DuplicateCost.java`](code/A8/DuplicateCost.java){.attach}
+[`DuplicateCost.java`](code/A8/DuplicateCost.java){.attach}
 ```
 
-Each file is also listed once among the document's attachments, for viewers that only show those. The viewer shows only the file name. In HTML the link downloads the file; in DOCX it is an ordinary link. A missing file or a URL stops the conversion. Some viewers do not open attachments, so keep the path in the link text. See [ATTACHMENTS.md](ATTACHMENTS.md).
+Each file is also listed once among the document's attachments, for viewers that only show those. The viewer shows only the file name. In HTML the link downloads the file; in DOCX it is an ordinary link. A missing file or a URL stops the conversion. The paperclip marks the attachment, so the link text can be just the file name; some viewers do not open attachments, and their readers see only that name. See [ATTACHMENTS.md](ATTACHMENTS.md).
 
 ## Output formats and reading modes
 
