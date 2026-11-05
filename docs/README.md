@@ -591,7 +591,7 @@ A local link with the `attach` class embeds the file in the PDF, with a papercli
 [`code/A8/DuplicateCost.java`](code/A8/DuplicateCost.java){.attach}
 ```
 
-The viewer shows only the file name. In HTML the link downloads the file; in DOCX it is an ordinary link. A missing file or a URL stops the conversion. Some viewers do not open attachments, so keep the path in the link text. See [ATTACHMENTS.md](ATTACHMENTS.md).
+Each file is also listed once among the document's attachments, for viewers that only show those. The viewer shows only the file name. In HTML the link downloads the file; in DOCX it is an ordinary link. A missing file or a URL stops the conversion. Some viewers do not open attachments, so keep the path in the link text. See [ATTACHMENTS.md](ATTACHMENTS.md).
 
 ## Output formats and reading modes
 

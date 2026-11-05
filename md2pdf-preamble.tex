@@ -386,10 +386,12 @@
 \DeclareRobustCommand{\icontrophy}{{\color{orange!80!black}\scalebox{0.9}{\faTrophy}}}
 \DeclareRobustCommand{\iconban}{{\color{red!70!black}\faBan}}
 % ── Ficheiros adxuntos (attach.lua) ───────────────────────────
-% [texto](ruta){.attach}: o ficheiro vai no PDF. O texto e a icona do clip
+% [texto](ruta){.attach}: o ficheiro vai no PDF, tamén entre os adxuntos do
+% documento (embedfile, desde attach.lua). O texto e a icona do clip
 % van no contido da páxina, e por riba deles, unha anotación do mesmo tamaño
 % cunha aparencia baleira. \textattachfile só debuxaría o texto dentro da
 % anotación: un visor que non a amosa perdería tamén o nome do ficheiro.
+\usepackage{embedfile}
 \usepackage{attachfile2}
 \DeclareRobustCommand{\mdattachicon}{{\color{inline-fg}\small\faPaperclip}}
 \newsavebox{\mdattachbox}

@@ -1,4 +1,5 @@
 """Ficheiros adxuntos con attach.lua: [texto](ruta){.attach}."""
+import re
 import shutil
 import subprocess
 import tempfile
@@ -44,6 +45,20 @@ class AttachFilterTests(unittest.TestCase):
             r'\mdattachfile{mimetype=text/plain,ucfilespec={Demo.java},'
             r'description={Demo.java}}{code/A8/Demo.java}'
             r'{\texttt{code/A8/Demo.java}}', result.stdout)
+        self.assertIn(
+            r'\embedfile[filespec={Demo.java},ucfilespec={Demo.java},'
+            r'mimetype={text/plain},desc={Demo.java}]{code/A8/Demo.java}',
+            result.stdout)
+
+    def test_each_file_is_registered_once(self):
+        result = self.pandoc('[a](code/A8/Demo.java){.attach} '
+                             '[b](code/A8/Demo.java){.attach} '
+                             '[c](code/A8/U2T4_usuario.java){.attach}')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count(r'\embedfile['), 2)
+        self.assertEqual(result.stdout.count(r'\mdattachfile{'), 3)
+        self.assertIn(r'filespec={U2T4_usuario.java},'
+                      r'ucfilespec={U2T4\_usuario.java}', result.stdout)
 
     def test_unknown_extension_and_explicit_mimetype(self):
         result = self.pandoc('[a](data.bin){.attach} '
@@ -88,7 +103,8 @@ class AttachFilterTests(unittest.TestCase):
     def test_pdf_embeds_identical_file_without_path(self):
         markdown = ('O programa [`code/A8/Demo.java`](code/A8/Demo.java)'
                     '{.attach} e a partida '
-                    '[`U2T4_usuario.java`](code/A8/U2T4_usuario.java){.attach}.\n')
+                    '[`U2T4_usuario.java`](code/A8/U2T4_usuario.java){.attach}.'
+                    ' De novo [Demo](code/A8/Demo.java){.attach}.\n')
         (self.dir / 'doc.md').write_text(markdown)
         result = subprocess.run(
             ['pandoc', 'doc.md', '-o', 'doc.pdf', '--pdf-engine=lualatex',
@@ -104,9 +120,11 @@ class AttachFilterTests(unittest.TestCase):
         listing = subprocess.run(['pdfdetach', '-list', 'doc.pdf'],
                                  capture_output=True, text=True,
                                  cwd=self.dir).stdout
-        self.assertIn('2 embedded files', listing)
-        self.assertIn('1: Demo.java', listing)
-        self.assertIn('2: U2T4_usuario.java', listing)
+        # pdfdetach lista os adxuntos do documento e os das anotacións
+        self.assertIn('5 embedded files', listing)
+        names = re.findall(r'^\d+: (.+)$', listing, re.M)
+        self.assertEqual(sorted(names), ['Demo.java'] * 3
+                         + ['U2T4_usuario.java'] * 2)
         out = self.dir / 'out'
         out.mkdir()
         subprocess.run(['pdfdetach', '-saveall', '../doc.pdf'], cwd=out,
@@ -122,12 +140,18 @@ class AttachFilterTests(unittest.TestCase):
             import pypdf
         except ImportError:
             self.skipTest('falta pypdf para ler o contido da páxina')
-        page = pypdf.PdfReader(self.dir / 'doc.pdf').pages[0]
+        reader = pypdf.PdfReader(self.dir / 'doc.pdf')
+        page = reader.pages[0]
         self.assertIn('code/A8/Demo.java', page.extract_text())
         annots = [a.get_object() for a in page.get('/Annots', [])]
         attachments = [a for a in annots
                        if a.get('/Subtype') == '/FileAttachment']
-        self.assertEqual(len(attachments), 2)
+        self.assertEqual(len(attachments), 3)
+        # Adxuntos do documento (/EmbeddedFiles): un por ficheiro
+        self.assertEqual(
+            {name: [data.decode() for data in contents]
+             for name, contents in reader.attachments.items()},
+            {'Demo.java': [SOURCE], 'U2T4_usuario.java': [SOURCE]})
 
 
 if __name__ == '__main__':

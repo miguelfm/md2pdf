@@ -3,10 +3,13 @@
 -- Sintaxe: unha ligazón local coa clase attach.
 --   [`code/A8/DuplicateCost.java`](code/A8/DuplicateCost.java){.attach}
 --
--- LuaLaTeX: o ficheiro vai dentro do PDF (attachfile2) e o texto da
--- ligazón, seguido dunha icona de clip, abre ou garda o adxunto nos
--- visores que o admiten. O visor amosa só o nome do ficheiro, sen a
--- ruta. O tipo MIME dedúcese da extensión; mimetype=... cámbiao.
+-- LuaLaTeX: o ficheiro vai dentro do PDF de dúas maneiras. O texto da
+-- ligazón, seguido dunha icona de clip, é unha anotación FileAttachment
+-- (attachfile2) que o abre ou o garda nos visores que a admiten. Ademais,
+-- cada ficheiro rexístrase unha vez entre os adxuntos do documento
+-- (embedfile, /EmbeddedFiles), que é o que listan os visores que só len
+-- eses, como zathura con poppler. O visor amosa só o nome do ficheiro,
+-- sen a ruta. O tipo MIME dedúcese da extensión; mimetype=... cámbiao.
 -- HTML: ligazón normal ao ficheiro, co atributo download.
 -- DOCX e as demais saídas: ligazón normal.
 --
@@ -62,6 +65,9 @@ local function mimetype(link, name)
     or 'application/octet-stream'
 end
 
+-- Ficheiros xa rexistrados entre os adxuntos do documento, pola ruta
+local registered = {}
+
 function Link(link)
   if not link.classes:includes('attach') then
     return nil
@@ -82,10 +88,19 @@ function Link(link)
       option_value(mimetype(link, name)), pdfstring_value(name),
       pdfstring_value(name))
     -- \mdattachfile está no preámbulo: o texto da ligazón e a icona
-    local inlines = {
-      pandoc.RawInline('latex',
-        '\\mdattachfile{' .. options .. '}{' .. target .. '}{'),
-    }
+    local inlines = {}
+    if not registered[target] then
+      registered[target] = true
+      -- embedfile escapa el o nome da entrada; o nome Unicode pasa por
+      -- \pdfstringdef, como en attachfile2.
+      table.insert(inlines, pandoc.RawInline('latex', string.format(
+        '\\embedfile[filespec={%s},ucfilespec={%s},mimetype={%s},'
+          .. 'desc={%s}]{%s}',
+        option_value(name), pdfstring_value(name),
+        option_value(mimetype(link, name)), pdfstring_value(name), target)))
+    end
+    table.insert(inlines, pandoc.RawInline('latex',
+      '\\mdattachfile{' .. options .. '}{' .. target .. '}{'))
     for _, inline in ipairs(link.content) do
       table.insert(inlines, inline)
     end
