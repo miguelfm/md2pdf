@@ -583,6 +583,16 @@ The problem involves the interaction of Pandoc's `\pandocbounded{}`, `adjustbox`
 
 Screenshot borders are not implemented reliably; see [possible future work](#possible-future-work).
 
+## File attachments
+
+A local link with the `attach` class embeds the file in the PDF, with a paperclip icon after the link text:
+
+```markdown
+[`code/A8/DuplicateCost.java`](code/A8/DuplicateCost.java){.attach}
+```
+
+The viewer shows only the file name. In HTML the link downloads the file; in DOCX it is an ordinary link. A missing file or a URL stops the conversion. Some viewers do not open attachments, so keep the path in the link text. See [ATTACHMENTS.md](ATTACHMENTS.md).
+
 ## Output formats and reading modes
 
 ### PDF / LuaLaTeX

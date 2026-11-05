@@ -23,6 +23,7 @@ from ..assets import (
     _find_callouts_filter,
     _find_compact_code_filter,
     _find_keep_code_filter,
+    _find_attach_filter,
     _find_keep_with_next_filter,
     _find_hl_lines_filter,
     _find_javadoc_syntax,
@@ -439,6 +440,12 @@ def build_lualatex_cmd(
     hl_filter = _find_hl_lines_filter()
     if hl_filter:
         cmd.extend(['--lua-filter', str(hl_filter)])
+
+    # Ficheiros adxuntos: despois das reservas de keep-with-next e
+    # small-table, que miden o texto da ligazón antes de que sexa LaTeX.
+    attach_filter = _find_attach_filter()
+    if attach_filter:
+        cmd.extend(['--lua-filter', str(attach_filter)])
 
     # Pés de figura. Vai ao final: traballa sobre a secuencia de bloques que
     # deixa o preprocesado de mermaid (raw + imaxe + raw + parágrafo do pé),

@@ -114,6 +114,11 @@ def _find_keep_with_next_filter() -> Path | None:
     return _find_asset('keep-with-next.lua')
 
 
+def _find_attach_filter() -> Path | None:
+    """Busca o filtro Lua dos ficheiros adxuntos (attach.lua)."""
+    return _find_asset('attach.lua')
+
+
 def _find_keep_code_filter() -> Path | None:
     """Busca o filtro Lua para manter xuntos os bloques de código curtos."""
     return _find_asset('keep-code.lua')

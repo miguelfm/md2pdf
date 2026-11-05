@@ -114,7 +114,7 @@ Use one level-one heading for the document title, start sections at `##`, and le
 - [User guide](docs/README.md): installation, options, Markdown syntax, typography, and customization.
 - [Windows installation](docs/INSTALL_WINDOWS.md): assisted setup scripts and manual instructions.
 - [Diagrams](docs/DIAGRAMS.md) and [Vega-Lite charts](docs/VEGA-LITE.md), with [chart examples](docs/vega-lite-examples.md).
-- [HTML output](docs/HTML.md), [Moodle / IMS packages](docs/IMS.md), and [PDF links](docs/LINKS.md).
+- [HTML output](docs/HTML.md), [Moodle / IMS packages](docs/IMS.md), [PDF links](docs/LINKS.md), and [file attachments](docs/ATTACHMENTS.md).
 - [AI authoring reference](docs/md2pdf-ai-reference.md): an optional guide for drafting teaching materials that work with md2pdf.
 - Historical verification notes: [diagram validation](docs/DIAGRAM-VERIFICATION.md) and [code pagination](docs/CODE-VERIFICATION.md).
 
