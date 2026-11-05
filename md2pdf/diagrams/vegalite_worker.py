@@ -21,10 +21,12 @@ def main():
         'pdf': vlc.vegalite_to_pdf,
         'png': vlc.vegalite_to_png,
     }[fmt]
-    # Lista baleira: ningunha orixe externa permitida.
+    # Lista baleira: ningunha orixe externa permitida. A familia vai entre
+    # aspas: «Source Sans 3» sen elas non é un nome CSS válido polo 3 final,
+    # e vl-convert debuxaba os textos en Times New Roman.
     kwargs = {
         'allowed_base_urls': [],
-        'config': {'font': 'Source Sans 3, sans-serif'},
+        'config': {'font': '"Source Sans 3", sans-serif'},
     }
     theme = options.get('theme')
     if theme and theme not in ('default', 'none'):

@@ -75,6 +75,32 @@ class VegaTests(unittest.TestCase):
                 self.assertEqual(bad_out, bad_theme)
                 self.assertTrue(stats.errors['vega-lite'])
 
+    @unittest.skipUnless(importlib.util.find_spec('vl_convert')
+                         and importlib.util.find_spec('pypdf'),
+                         'fan falta vl-convert-python e pypdf')
+    def test_pdf_embeds_document_font(self):
+        # A familia vai entre aspas: sen elas, o 3 final non é un nome CSS
+        # válido e vl-convert cae en Times New Roman.
+        fonts = subprocess.run(['fc-list', ':family=Source Sans 3', 'family'],
+                               capture_output=True, text=True).stdout
+        if 'Source Sans 3' not in fonts:
+            self.skipTest('Source Sans 3 non está instalada')
+        import pypdf
+        spec = dict(SPEC, mark='text',
+                    encoding={'text': {'value': 'Táboa'}})
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch('md2pdf.diagrams.processor.cache_dir', return_value=root):
+                _, stats = process_diagrams(
+                    '```vega-lite\n' + json.dumps(spec) + '\n```', 'latex')
+                self.assertFalse(stats.errors.get('vega-lite'))
+                pdf = next(root.glob('*.pdf'))
+                names = set()
+                for page in pypdf.PdfReader(pdf).pages:
+                    for font in page['/Resources']['/Font'].values():
+                        names.add(str(font.get_object()['/BaseFont']))
+                self.assertTrue(any('SourceSans3' in n for n in names), names)
+
     @unittest.skipUnless(importlib.util.find_spec('vl_convert'), 'vl-convert-python non instalado')
     def test_modern_vegalite_specs(self):
         # Gráfico circular (arc) e xerador de secuencia con transform

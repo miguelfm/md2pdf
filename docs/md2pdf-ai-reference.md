@@ -400,7 +400,7 @@ digraph {
 
 Use static charts for quantitative data. Content must be **strict JSON** without comments or trailing commas. Supply inline `data.values`/`datasets`, or supported generators such as `sequence`. External `url`/`href` and `image` marks are rejected, including data fields with these names.
 
-The configured font is `Source Sans 3, sans-serif`, subject to renderer font availability. Themes include `carbong10`, `carbong100`, `carbong90`, `carbonwhite`, `dark`, `excel`, `fivethirtyeight`, `ggplot2`, `googlecharts`, `latimes`, `powerbi`, `quartz`, `urbaninstitute`, `vox`, and `default`/`none`. Additional styles may be set in JSON `config`.
+The configured font is `"Source Sans 3", sans-serif`, subject to renderer font availability; keep the quotes if a chart overrides `config.font`. Themes include `carbong10`, `carbong100`, `carbong90`, `carbonwhite`, `dark`, `excel`, `fivethirtyeight`, `ggplot2`, `googlecharts`, `latimes`, `powerbi`, `quartz`, `urbaninstitute`, `vox`, and `default`/`none`. Additional styles may be set in JSON `config`.
 
 ````markdown
 ```{.vega-lite #fig:times theme=fivethirtyeight width=85% caption="Response time distribution"}

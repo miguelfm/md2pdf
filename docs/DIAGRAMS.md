@@ -80,7 +80,7 @@ Renderer subprocesses run in the Markdown file's directory. D2 creates a tempora
 
 Cache keys account for rendering options and the source directory. Figure attributes do not require rerendering. Blocks that suggest external dependencies (`@`, `image`, or `icon`) bypass reuse: this is a conservative policy rather than a dependency parser.
 
-The key includes the launcher's path, size, and modification time, the source directory, and Mermaid's Puppeteer configuration. This detects launcher changes, but cannot detect every internal Node/Chromium or font update. If necessary, remove the affected renderer's temporary md2pdf cache directory. Vega-Lite keys also include the installed `vl-convert-python` version.
+The key includes the launcher's path, size, and modification time, the source directory, and Mermaid's Puppeteer configuration. This detects launcher changes, but cannot detect every internal Node/Chromium or font update. If necessary, remove the affected renderer's temporary md2pdf cache directory. Vega-Lite keys also include the installed `vl-convert-python` version. Each renderer also has a `render_tag` that is bumped when its output changes, such as the Vega-Lite font fix, so that only its cached diagrams are rebuilt.
 
 Outputs are published through atomic replacement after a successful run and format validation. Cached files are checked on reuse; a damaged entry triggers a warning and regeneration. An invalid result never replaces a valid entry. Cache-key changes may cause a one-time rebuild without requiring manual cache deletion.
 
@@ -124,7 +124,7 @@ The target label size is **12 pt in PDF** and **`.96rem` in HTML**, close to the
 - It measures the most prevalent text size in the generated PDF using PyMuPDF, or SVG `font-size` attributes. For PNG, or without a measurement library, it uses the renderer's nominal size.
 - Graphviz renders graph, node, and edge text at 12 pt. Explicit `fontsize` and `fontname` attributes take precedence.
 - Mermaid renders with `fontSize: 16px` (12 pt at 96 DPI). md2pdf queries `mmdc --help` once and adds `--pdfFit` only when supported; Mermaid CLI 12 removed it.
-- Graphviz and Mermaid use Source Sans 3. D2 and Vega-Lite retain their renderer-specific font behavior; the tested vl-convert environment did not resolve the Source Sans 3 OTF font even with its directory registered.
+- Graphviz, Mermaid, and Vega-Lite use Source Sans 3; D2 retains its renderer-specific font behavior. For Vega-Lite the family must be quoted, `"Source Sans 3"`: unquoted, the trailing `3` makes it invalid CSS and vl-convert falls back to Times New Roman, which earlier verification mistook for an unresolved OTF font.
 - Width is limited to the text line and height to 560 pt (about 20 cm). A diagram that cannot fit at the target size is reduced.
 
 With PyMuPDF, a warning is emitted if estimated final text is more than 10% below the target, including when a manual width causes the reduction. This uses the engine's reference text width, which may differ for custom margins or columns; text converted to outlines cannot be measured. Explicit width and height retain priority.

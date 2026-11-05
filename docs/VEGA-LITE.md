@@ -14,7 +14,7 @@ Tested with `vl-convert-python 1.9.0.post1`. It requires neither Node.js nor a b
 
 Use a `vega-lite` or `vegalite` fence containing **strict JSON**, without comments or trailing commas. Common diagram attributes `width`, `height`, `caption`, and `#identifier` are supported, along with `theme`.
 
-The default font configuration is `Source Sans 3, sans-serif`, matching the document's intended visual style. Actual font availability depends on the renderer; see [label sizing and fonts](DIAGRAMS.md#label-sizing-and-fonts).
+The default font configuration is `"Source Sans 3", sans-serif`, matching the document's intended visual style. The quotes are required: unquoted, the trailing `3` makes the family name invalid CSS, and vl-convert falls back to Times New Roman. Quote it the same way when a chart sets `config.font`. Actual font availability depends on the renderer; see [label sizing and fonts](DIAGRAMS.md#label-sizing-and-fonts).
 
 Themes: `carbong10`, `carbong100`, `carbong90`, `carbonwhite`, `dark`, `excel`, `fivethirtyeight`, `ggplot2`, `googlecharts`, `latimes`, `powerbi`, `quartz`, `urbaninstitute`, `vox`, or `default`/`none`. Additional styles can be specified in the JSON's `config`. `layout` does not apply to Vega-Lite.
 
