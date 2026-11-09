@@ -101,8 +101,7 @@
             "bold": true
         },
         "Error": {
-            "text-color": "#cf222e",
-            "background-color": "#ffebe9"
+            "text-color": "#0a3069"
         }
     }
 }
