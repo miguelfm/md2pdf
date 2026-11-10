@@ -17,7 +17,7 @@ def _extract_md_metadata(text: str) -> dict[str, str]:
     Claves recoñecidas: title, author, keywords, subject, activity,
                         module, course, school, subtitle (alias de activity),
                         decimal-align, serif, body-font, font-body, code-keep-lines,
-                        keep-with-next.
+                        keep-with-next, toc-auto-width.
     """
     meta: dict[str, str] = {}
     m = re.match(r'^---\s*\n(.*?)\n(?:---|\.\.\.)\s*\n', text, re.DOTALL)
@@ -29,7 +29,7 @@ def _extract_md_metadata(text: str) -> dict[str, str]:
                 'module', 'course', 'school', 'subtitle', 'decimal-align',
                 'serif', 'body-font', 'font-body', 'inline-pill',
                 'terminal-blocks', 'terminal-style', 'code-keep-lines',
-                'keep-with-next'):
+                'keep-with-next', 'toc-auto-width'):
         km = re.search(rf'^{key}:\s*(.+)$', yaml_block,
                        re.MULTILINE | re.IGNORECASE)
         if km:

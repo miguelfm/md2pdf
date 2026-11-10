@@ -235,6 +235,7 @@ activity: "A01: Control structures"
 | `code-compact-threshold` | Source-line count at which code becomes compact; `0` disables automatic compaction |
 | `code-keep-lines` | Maximum source lines for keeping an entire PDF code block together; default `12`, `0` disables |
 | `keep-with-next` | `false` disables the reservation keeping an introductory paragraph with its following block |
+| `toc-auto-width` | `false` keeps the PDF table of contents at its fixed reference width instead of fitting it automatically |
 | `diagrams` | Nested defaults for individual diagram renderers; requires PyYAML |
 
 Use single-line scalar values for ordinary fields; lists and multiline values are not supported by the simple metadata reader. The nested `diagrams:` section is handled separately. Omit metadata entirely if not needed, or pass `--no-metadata` to disable loading it.
@@ -695,6 +696,14 @@ A paragraph ending in a colon before code, a list, or a table is kept with the m
 Reservations can move above preceding section headings, but never above the level-one document title: Pandoc must see it as the first block to extract the title. `keep-with-next: false` disables introductory-paragraph protection.
 
 Standalone small tables retain the simpler rows-plus-five reservation, without extra wrapping allowance: an unbreakable table already moves whole if it cannot fit. Long tables remain splittable. See the historical [code pagination verification](CODE-VERIFICATION.md) for measured cases and limitations.
+
+### Table-of-contents width
+
+PDF output fits the table of contents to the narrowest tested width that preserves each entry's line count and existing hyphenation points. It measures the actual KOMA-Script paragraphs, fonts, indentation, and page numbers. The reference width is 80% of the text area; candidates are spaced 0.5 mm apart. The line carrying a page number must leave at least 1.25 em between the title and the first digit. Earlier lines retain the style's right-hand reservation.
+
+The result is cached between LaTeX passes and checked again before rendering. A change in the TOC references, unsupported vertical content, or a failed measurement keeps the reference width and produces a warning. If the final references still do not stabilize, conversion retries once at the reference width and then fails if instability remains. These checks do not introduce an unlimited rerun loop.
+
+Set `toc-auto-width: false` in front matter or external metadata to retain the fixed reference width. HTML and DOCX output are unaffected. The implementation is in `toc-width.tex` and `toc-width.lua`.
 
 ### Titles and activity labels
 

@@ -30,6 +30,7 @@ IMS is a packaging layer over HTML, rather than a separate rendering engine.
 - Render **Mermaid, D2, Graphviz, and Vega-Lite** blocks using optional renderers, with caching and output validation.
 - Use syntax highlighting, highlighted code lines, compact listings, and distinct terminal blocks.
 - Add callouts, numbered figures and tables, cross-references, footnotes, and equations.
+- Fit PDF tables of contents to their entries while preserving wrapping and page-number spacing; [details and opt-out](docs/README.md#table-of-contents-width).
 - Share course metadata between documents and optionally generate a PDF title page.
 - Select a warm reading palette with `--night`, a print palette with `--print`, or serif PDF body text with `--serif`.
 - Catch structural Markdown problems and failed diagrams with `--strict`; HTML also checks internal links, IDs, and image descriptions.

@@ -20,6 +20,7 @@ from ..config import (
     _to_polyglossia,
 )
 from ..assets import (
+    _find_asset,
     _find_callouts_filter,
     _find_compact_code_filter,
     _find_keep_code_filter,
@@ -66,6 +67,17 @@ def _temp_tex_file(content: str) -> str:
     tmp.write(content)
     tmp.close()
     return tmp.name
+
+
+def _build_toc_width_header() -> str | None:
+    """Carga os activos do TOC sen expoñer rutas ao analizador de TeX."""
+    header = _find_asset('toc-width.tex')
+    script = _find_asset('toc-width.lua')
+    if not header or not script:
+        return None
+    encoded_path = script.resolve().as_posix().encode('utf-8').hex()
+    text = header.read_text(encoding='utf-8')
+    return _temp_tex_file(text.replace('@MD2PDF_TOC_LUA_HEX@', encoded_path))
 
 
 # ── Xeradores de snippets LaTeX ───────────────────────────────
@@ -575,6 +587,13 @@ def prepare_lualatex_extras(
                          + _activity_label_block(act_latex, False))
         with open(tmp_path, 'w', encoding='utf-8') as f_upd:
             f_upd.write(processed)
+
+    auto_toc = str(md_meta.get('toc-auto-width', True)).strip().lower()
+    if '--toc' in cmd and auto_toc not in ('false', 'no', '0'):
+        toc_header = _build_toc_width_header()
+        if toc_header:
+            extra_tmp_files.append(toc_header)
+            cmd.extend(['-H', toc_header])
 
     return processed, extra_tmp_files, True
 

@@ -45,6 +45,8 @@ from pathlib import Path
 DATA_FILES_REQUIRED = [
     'md2pdf.latex',
     'md2pdf-preamble.tex',
+    'toc-width.tex',
+    'toc-width.lua',
     'auto-table-widths.lua',
     'term-pairs.lua',
     'terminal-blocks.lua',

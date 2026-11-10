@@ -326,14 +326,31 @@ def convert_one(
                             print()
 
         # ── Executar ──────────────────────────────────────────
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding='utf-8',
-            errors='replace',
-            cwd=str(input_path.parent),
-        )
+        for toc_attempt in range(2):
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                cwd=str(input_path.parent),
+            )
+            unstable_toc = (engine == 'lualatex' and result.returncode == 0
+                            and 'MD2PDF_TOC_UNSTABLE' in (result.stderr or ''))
+            if not unstable_toc:
+                break
+            if toc_attempt:
+                print('  ✗ O índice non estabiliza as referencias, mesmo co ancho fixo.',
+                      file=sys.stderr)
+                return False
+            print('    ⚠ O índice non estabilizou: repítese co ancho de referencia.',
+                  file=sys.stderr)
+            # Unha soa repetición, nun traballo novo de Pandoc. Mantense a
+            # comprobación final das referencias e desactívase só o axuste.
+            from .engines.lualatex import _temp_tex_file
+            fixed_header = _temp_tex_file(r'\mdpdfTocAutofalse' + '\n')
+            extra_tmp_files.append(fixed_header)
+            cmd.extend(['-H', fixed_header])
 
         if result.returncode != 0:
             print(f'  ✗ ERRO ao converter {input_path.name}:',

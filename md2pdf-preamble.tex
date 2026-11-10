@@ -326,7 +326,7 @@
   \sloppy\hbadness=9999\emergencystretch=3em%
 }
 \makeatother
-% ── Índice (opción B centrada: caixa restrinxida sen puntos guía) ─────
+% ── Índice (caixa centrada ao 80 % do texto, sen puntos guía) ─────────
 \AtBeginDocument{%
   \DeclareTOCStyleEntry[
     beforeskip=1.1em plus 1pt,
@@ -350,8 +350,8 @@
   \renewcommand{\tableofcontents}{%
     % A lista conserva a largura centrada e admite saltos de páxina.
     \begin{list}{}{%
-      \setlength{\leftmargin}{0.16\linewidth}%
-      \setlength{\rightmargin}{0.16\linewidth}%
+      \setlength{\leftmargin}{0.10\linewidth}%
+      \setlength{\rightmargin}{0.10\linewidth}%
       \setlength{\labelwidth}{0pt}%
       \setlength{\labelsep}{0pt}%
       \setlength{\topsep}{0pt}%
