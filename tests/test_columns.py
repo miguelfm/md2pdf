@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FILTERS = ['auto-table-widths.lua', 'small-table.lua', 'keep-with-next.lua',
-           'columns.lua', 'callouts.lua']
+           'columns.lua', 'callouts.lua', 'figure-captions.lua']
 
 TABLES = '''
 :::: columns
@@ -85,6 +85,30 @@ class ColumnsTests(unittest.TestCase):
         before = latex[:latex.index('Ao final do programa:')].rstrip()
         self.assertRegex(before, r'\\Needspace\{\d+\\baselineskip\}$')
         self.assertEqual(latex.count(r'\Needspace'), 1)
+
+    def test_caption_in_column_uses_captionof(self):
+        markdown = columns().replace('| `other` | B |\n',
+                                     '| `other` | B |\n\n: Referencias {#tbl:refs}\n', 1)
+        latex = self.render(markdown + '\nVéxase @tbl:refs.\n')
+        self.assertIn(r'\captionof{table}{Referencias}\label{tbl:refs}' + '\n'
+                      r'\noindent\begin{tabular}', latex)
+        self.assertNotIn('longtable', latex)
+        self.assertNotIn(r'\caption{', latex)
+        self.assertNotIn(r'\endfirsthead', latex)
+        self.assertIn(r'\ref*{tbl:refs}', latex)
+
+    def test_long_table_in_column_is_tabular(self):
+        rows = ''.join(f'| r{i} | {i} |\n' for i in range(10))
+        markdown = (':::: columns\n\n::: column\n\n| a | b |\n|---|---|\n' + rows
+                    + '\n:::\n\n::: column\n\nTexto.\n\n:::\n\n::::\n')
+        latex = self.render(markdown)
+        self.assertNotIn('longtable', latex)
+        self.assertIn(r'\begin{tabular}', latex)
+
+    def test_caption_outside_columns_stays_longtable(self):
+        latex = self.render('| a | b |\n|---|---|\n| 1 | 2 |\n\n: Pé\n')
+        self.assertIn(r'\begin{longtable}', latex)
+        self.assertNotIn('captionof', latex)
 
     def test_html_keeps_pandoc_divs(self):
         html = self.render(columns('.column width="30%"', '.column'), target='html')

@@ -2,7 +2,8 @@
 -- Xestión avanzada da paxinación de táboas:
 --   1. Táboas pequenas (≤ THRESHOLD filas): convértense a tabular + \Needspace
 --      para garantir que son indivisibles e nunca rompen entre páxinas.
---   2. Táboas grandes (> THRESHOLD filas ou con pé): mantéñense como longtable
+--   2. Táboas grandes (> THRESHOLD filas ou con pé): mantéñense como longtable,
+--      agás dentro dunha columna de columns.lua, onde van sempre en tabular
 --      con dúas melloras esenciais para a lectura:
 --      - Estratexia A (evitar orfas e viúvas): as primeiras 4 filas e a
 --        penúltima fila protéxense con \\* para impedir cortes prematuros
@@ -161,7 +162,7 @@ local function enhance_longtable(latex, num_cols, total_rows, lang)
   return before_head .. new_head .. foot_part .. enhanced_body
 end
 
-local function longtable_to_tabular(latex, needed_lines, include_needspace)
+local function longtable_to_tabular(latex, needed_lines, include_needspace, caption)
   local state   = 'start'
   local head    = {}
   local foot    = {}
@@ -203,6 +204,7 @@ local function longtable_to_tabular(latex, needed_lines, include_needspace)
   if include_needspace then
     table.insert(out, string.format('\\Needspace{%d\\baselineskip}', needed_lines))
   end
+  if caption then table.insert(out, caption) end
   table.insert(out, string.format('\\noindent\\begin{tabular}{%s}', colspec))
   for _, l in ipairs(head)  do table.insert(out, l) end
   for _, l in ipairs(body)  do table.insert(out, l) end
@@ -211,22 +213,65 @@ local function longtable_to_tabular(latex, needed_lines, include_needspace)
   return table.concat(out, '\n')
 end
 
+-- As táboas dunha columna (columns.lua) van nunha minipage, onde longtable
+-- non funciona. Convértense sempre a tabular, tamén as longas, que alí non
+-- poden partir, e as que teñen pé, que leva \captionof. A marca pona o
+-- primeiro pase deste filtro, porque despois os divs xa non se ven.
+local COLUMN_MARK = 'md2pdf-column'
+
+local function mark_column_tables(div)
+  if not div.classes:includes('column') then return nil end
+  return div:walk({
+    Table = function(tbl)
+      tbl.attributes[COLUMN_MARK] = '1'
+      return tbl
+    end,
+  })
+end
+
+local function has_caption(tbl)
+  return tbl.caption and tbl.caption.long and #tbl.caption.long > 0
+end
+
 local function is_small_convertible_table(tbl)
+  local in_column = tbl.attributes[COLUMN_MARK] ~= nil
   -- Táboas con pé: quedan como longtable. \caption e \label só funcionan
   -- alí; dentro dun tabular fóra de float, \caption dá «\caption outside
   -- float». Ademais, figure-captions.lua (que corre despois) necesita ver a
-  -- táboa como Table para extraer o {#tbl:…} do pé.
-  if tbl.caption and tbl.caption.long and #tbl.caption.long > 0 then
+  -- táboa como Table para extraer o {#tbl:…} do pé. Nunha columna, o pé
+  -- vai con \captionof e o identificador que xa lle deu Pandoc.
+  if has_caption(tbl) and not in_column then
     return false
   end
 
   local nrows = count_body_rows(tbl)
-  return nrows <= THRESHOLD, nrows
+  return in_column or nrows <= THRESHOLD, nrows
+end
+
+local function column_caption(tbl)
+  if not has_caption(tbl) then return nil, tbl end
+  local text = pandoc.write(pandoc.Pandoc(tbl.caption.long), 'latex')
+  text = text:gsub('^%s+', ''):gsub('%s+$', '')
+  local caption = '\\captionof{table}{' .. text .. '}'
+  if tbl.identifier ~= '' then
+    caption = caption .. '\\label{' .. tbl.identifier .. '}'
+  end
+  -- Sen pé nin identificador, Pandoc escribe a longtable sen \caption nin
+  -- \endfirsthead, que longtable_to_tabular non sabería quitar.
+  tbl = tbl:clone()
+  tbl.caption = pandoc.Caption()
+  tbl.identifier = ''
+  return caption, tbl
 end
 
 local function convert_small_table(tbl, needed_lines, include_needspace)
+  local caption = nil
+  if tbl.attributes[COLUMN_MARK] then
+    caption, tbl = column_caption(tbl)
+    tbl.attributes[COLUMN_MARK] = nil
+  end
   local latex = pandoc.write(pandoc.Pandoc({tbl}), 'latex')
-  local result = longtable_to_tabular(latex, needed_lines, include_needspace)
+  local result = longtable_to_tabular(latex, needed_lines, include_needspace, caption)
   if not result then return nil end
   return pandoc.RawBlock('latex', result)
 end
@@ -617,5 +662,6 @@ end
 
 return {
   { Meta = read_meta },
+  { Div = mark_column_tables },
   { Blocks = Blocks },
 }

@@ -615,7 +615,7 @@ Pandoc's column divs place short blocks next to each other, such as two small ta
 ::::
 ```
 
-The outer div uses four colons so that it can contain the three-colon inner ones. Leave a blank line after each opening. In PDF, `columns.lua` turns each column into a top-aligned minipage; columns without `width` share the width left by the others, minus a 4% gap. A column cannot break across pages, so keep its content short. The reservations of the inner tables are replaced by a single one before the group, which also keeps an introductory paragraph ending in a colon with it. HTML uses flexbox and stacks the columns on narrow screens; DOCX keeps them one after another. Do not describe the layout in the text ("on the left"): name the tables by their content.
+The outer div uses four colons so that it can contain the three-colon inner ones. Leave a blank line after each opening. In PDF, `columns.lua` turns each column into a top-aligned minipage; columns without `width` share the width left by the others, minus a 4% gap. A column cannot break across pages, so keep its content short: its tables always become `tabular`, whatever their length. A table caption inside a column is set with `\captionof` above the table and keeps its number and `@tbl:` reference. The reservations of the inner tables are replaced by a single one before the group, which also keeps an introductory paragraph ending in a colon with it. HTML uses flexbox and stacks the columns on narrow screens; DOCX keeps them one after another. Do not describe the layout in the text ("on the left"): name the tables by their content.
 
 ## 19. Moodle and IMS packages
 
