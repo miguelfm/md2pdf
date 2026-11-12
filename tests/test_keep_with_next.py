@@ -268,5 +268,52 @@ class KeepWithNextTests(unittest.TestCase):
 FILLER_LINES = 37
 
 
+@unittest.skipUnless(shutil.which('pandoc') and shutil.which('lualatex'),
+                     'pandoc ou lualatex non están instalados')
+class KeepWithNextPdfTests(unittest.TestCase):
+    """A reserva dentro dunha lista non pode mover o número do elemento."""
+
+    MARKDOWN = (
+        '# Proba\n\n'
+        '1. Engade os casos:\n\n'
+        '   - Un.\n'
+        '   - Dous.\n\n'
+        '2. Executa as probas:\n\n'
+        '   ```bash\n'
+        '   php ficheiro.php\n'
+        '   ```\n'
+    )
+
+    def convert(self, markdown):
+        import pymupdf
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'in.md'
+            output = Path(directory) / 'out.pdf'
+            source.write_text(markdown, encoding='utf-8')
+            # Os activos da fonte, independentemente da instalación local.
+            with patch('md2pdf.assets.INSTALL_DIR', ROOT):
+                cmd = build_lualatex_cmd(
+                    tmp_path=str(source), output_path=str(output),
+                    template=ROOT / 'md2pdf.latex', toc=False, toc_depth=3,
+                    section_numbering='', lang='gl', papersize='a4',
+                    highlight=str(ROOT / 'drake-jb.theme'),
+                )
+            result = subprocess.run(cmd, cwd=ROOT, capture_output=True,
+                                    text=True, timeout=180)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            document = pymupdf.open(output)
+            return [word for page in document for word in page.get_text('words')]
+
+    def test_item_after_nested_list_keeps_its_number(self):
+        # Despois dunha lista aniñada, a liña en branco tras \Needspace
+        # executaba o \par de \@doendpe, que borraba o número do elemento
+        # en \everypar, e «2.» saía ao lado do código.
+        words = self.convert(self.MARKDOWN)
+        number = next(w for w in words if w[4] == '2.')
+        lead_in = next(w for w in words if w[4] == 'Executa')
+        self.assertLess(abs(number[3] - lead_in[3]), 2,
+                        'o número non vai na liña do seu parágrafo')
+
+
 if __name__ == '__main__':
     unittest.main()

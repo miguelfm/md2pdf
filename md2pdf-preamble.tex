@@ -46,6 +46,18 @@
 
 % ── Protección de cabeceiras ───────────────────────────────
 \usepackage{needspace}
+% Tras unha lista ou outro ambiente, \@doendpe redefine \par ata o fin
+% do parágrafo seguinte, e ese \par baleira \everypar. Se un \item vén
+% despois e o seu primeiro bloque é un \Needspace, a liña en branco que
+% Pandoc deixa detrás é un \par en modo vertical: executa esa versión,
+% borra o número que \item deixou en \everypar, e o número acaba ao lado
+% do bloque seguinte. Restaurar \par cando o número está pendente evítao.
+\makeatletter
+\let\mdpdf@Needspace\Needspace
+\renewcommand{\Needspace}{%
+  \ifvmode\if@inlabel\@restorepar\fi\fi
+  \mdpdf@Needspace}
+\makeatother
 % ── Hifenación multilingüe ──────────────────────────────────
 \tolerance=1500
 \hbadness=1500
