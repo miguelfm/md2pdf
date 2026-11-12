@@ -589,6 +589,34 @@ $$
 
 Do not add `{#eq:...}` or `@eq:...`: equation cross-references are unsupported. Refer to the formula descriptively in prose.
 
+### 18.8 Side-by-side columns
+
+Pandoc's column divs place short blocks next to each other, such as two small tables that are read together:
+
+```markdown
+:::: columns
+
+::: column
+
+| Reference | Object |
+|---|:---:|
+| `start` | A |
+
+:::
+
+::: {.column width="55%"}
+
+| Object | Class | State |
+|:---:|---|---|
+| A | `Point` | (3, 3) |
+
+:::
+
+::::
+```
+
+The outer div uses four colons so that it can contain the three-colon inner ones. Leave a blank line after each opening. In PDF, `columns.lua` turns each column into a top-aligned minipage; columns without `width` share the width left by the others, minus a 4% gap. A column cannot break across pages, so keep its content short. The reservations of the inner tables are replaced by a single one before the group, which also keeps an introductory paragraph ending in a colon with it. HTML uses flexbox and stacks the columns on narrow screens; DOCX keeps them one after another. Do not describe the layout in the text ("on the left"): name the tables by their content.
+
 ## 19. Moodle and IMS packages
 
 Use self-contained HTML for an individual activity, or package a unit:

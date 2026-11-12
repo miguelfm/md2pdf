@@ -783,7 +783,7 @@ md2pdf/
 └── docs/                      User guides, examples, and verification notes
 ```
 
-Filters include `auto-table-widths.lua`, `small-table.lua`, `br.lua`, `callouts.lua`, `callouts-docx.lua`, `html.lua`, `hl-lines.lua`, `compact-code.lua`, `keep-code.lua`, `keep-with-next.lua`, `terminal-blocks.lua`, `term-pairs.lua`, and `figure-captions.lua`.
+Filters include `auto-table-widths.lua`, `small-table.lua`, `br.lua`, `callouts.lua`, `callouts-docx.lua`, `html.lua`, `hl-lines.lua`, `compact-code.lua`, `keep-code.lua`, `keep-with-next.lua`, `columns.lua`, `terminal-blocks.lua`, `term-pairs.lua`, and `figure-captions.lua`.
 
 ## Design decisions
 

@@ -26,6 +26,7 @@ from ..assets import (
     _find_keep_code_filter,
     _find_attach_filter,
     _find_keep_with_next_filter,
+    _find_columns_filter,
     _find_hl_lines_filter,
     _find_javadoc_syntax,
     _find_terminal_blocks_filter,
@@ -418,6 +419,12 @@ def build_lualatex_cmd(
             keep_with_next_value = str(keep_with_next_value).split('#', 1)[0]
             keep_with_next_value = keep_with_next_value.strip().strip('\'"')
             cmd.extend(['--metadata', f'keep-with-next={keep_with_next_value}'])
+
+    # Despois das reservas de small-table e keep-with-next, que este filtro
+    # recolle dentro das columnas, e antes de callouts.
+    columns_filter = _find_columns_filter()
+    if columns_filter:
+        cmd.extend(['--lua-filter', str(columns_filter)])
 
     if callouts:
         callouts_filter = _find_callouts_filter()
