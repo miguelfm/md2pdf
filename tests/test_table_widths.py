@@ -179,9 +179,32 @@ body-font: serif
         self.assertNotIn(r'\mbox{\texttt{\$c', latex)
         self.assertIn(r'?\discretionary{}{}{}', latex)
 
-    def test_long_identifier_can_split_at_underscore(self):
-        latex = self.render_latex('Texto `zend_exception_ignore_args` longo.\n')
+    def test_body_identifier_is_not_split(self):
+        for code, tex in (
+                ('session_get_cookie_params()', r'session\_get\_cookie\_params()'),
+                ("$_SERVER['REQUEST_METHOD']", r"\$\_SERVER['REQUEST\_METHOD']"),
+                ('session_regenerate_id(true)', r'session\_regenerate\_id(true)')):
+            with self.subTest(code=code):
+                latex = self.render_latex(f'Texto `{code}` longo.\n')
+                self.assertIn(r'\mbox{\texttt{' + tex + '}}', latex)
+
+    def test_table_identifier_keeps_table_rule(self):
+        # A regra das palabras de ata 40 caracteres é só do texto corrido:
+        # nunha cela, protexela obrigaría a ensanchar a columna.
+        latex = self.render_latex(
+            '| Función | Descrición |\n|---|---|\n'
+            '| `session_get_cookie_params()` | As opcións da cookie |\n')
+        self.assertNotIn(r'\mbox{\texttt{session', latex)
+
+    def test_very_long_identifier_can_split_at_underscore(self):
+        latex = self.render_latex(
+            'Texto `a_very_long_identifier_with_more_than_forty_chars` longo.\n')
         self.assertIn(r'\_\discretionary{}{}{}', latex)
+
+    def test_long_body_path_keeps_break_points(self):
+        latex = self.render_latex('Texto `/var/lib/php/sessions/sess_abc` longo.\n')
+        self.assertNotIn(r'\mbox{\texttt{/var', latex)
+        self.assertIn(r'/\discretionary{}{}{}', latex)
 
     def test_manual_narrow_column_relaxes_short_identifier(self):
         latex = self.render_latex(

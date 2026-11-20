@@ -557,7 +557,7 @@ Leave a blank line before a list. Align nested items with the parent item's text
 
 Use bold for key terms, italics for work titles or introduced foreign terms, and backticks for identifiers, files, and commands.
 
-Inline code defaults to a theme-colored monospaced face without a background. `--inline-pill` adds an experimental subtle fill. Long paths/expressions can wrap; outside tables, code up to 20 characters is kept whole. Table code can break at available separators when needed, with underscores as a secondary option. Manual widths remain respected; warnings indicate remaining overflow.
+Inline code defaults to a theme-colored monospaced face without a background. `--inline-pill` adds an experimental subtle fill. Long paths/expressions can wrap; outside tables, code up to 20 characters is kept whole, and so is code up to 40 characters without spaces or separators other than underscores and parentheses (`session_get_cookie_params()`). Table code can break at available separators when needed, with underscores as a secondary option. Manual widths remain respected; warnings indicate remaining overflow.
 
 Write `\n`, `\t`, `\\`, tildes, carets, and accented characters literally in backticks. Filters handle LaTeX escaping. Prefer a fenced block when length or context requires it.
 

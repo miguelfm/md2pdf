@@ -411,7 +411,7 @@ The threshold counts source lines, rather than wrapped visual lines. Avoid a thr
 
 By default, inline code is monospaced, with a theme-colored foreground and no background. `--inline-pill`, `inline-pill: true`, or `\mdpdfinlinepilltrue` enables the experimental pill background: subtle gray `#F0F2F5` by day, cream `#EDE8DC` at night, and transparent in print. Rounded corners and horizontal padding are 1.5 pt, with no vertical padding to disturb paragraph leading.
 
-Short inline code is protected from splitting: at most 8 characters, or at most 15 without separators, with a separate 20-character rule outside tables. An underscore does not by itself split a protected identifier. Longer paths and expressions can break at separators without visible hyphens.
+Short inline code is protected from splitting: at most 8 characters, or at most 15 without separators, with a separate 20-character rule outside tables. Outside tables, code without spaces or separators other than underscores and parentheses, such as `session_get_cookie_params()`, is also kept whole up to 40 characters. An underscore does not by itself split a protected identifier. Longer paths and expressions can break at separators without visible hyphens.
 
 In tables, if protected code does not fit the assigned cell, it can break at spaces, operators, and separators, then underscores as a secondary option. Automatic widths use the same segmentation; manual widths are respected. A warning indicates code that still cannot fit. There are no arbitrary breaks inserted into identifiers to hide a width problem.
 
