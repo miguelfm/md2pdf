@@ -688,11 +688,23 @@ local function is_body_token(text)
   return (utf8.len(text) or #text) <= BODY_TOKEN_LEN
     and not text:match("[%s/\\%.:=%?%-,;]")
 end
+-- Unha palabra de código longa que xa non cabe ao final da liña pasa enteira
+-- á seguinte, e pode deixar un oco maior ca o que admite o aliñamento á
+-- esquerda (\RaggedRightRightskip); sen máis, TeX preferiría desbordar a
+-- marxe. Diante dela vai un punto de corte co seu propio estiramento, que só
+-- conta se se corta alí: se non, as dúas glues anúlanse.
+local TOKEN_BREAK = "\\hskip0pt plus 8em\\penalty0\\hskip0pt plus -8em\\relax"
 local function body_code(el)
   if not FORMAT:match("latex") then return nil end
   local text = el.text
-  return code_to_latex(el, #text <= BODY_MBOX_LEN or is_mbox(text)
-    or is_body_token(text))
+  if #text <= BODY_MBOX_LEN or is_mbox(text) then
+    return code_to_latex(el, true)
+  end
+  if is_body_token(text) then
+    return pandoc.RawInline("latex", "\\leavevmode\\strut" .. TOKEN_BREAK
+      .. "\\mbox{\\texttt{" .. escape(text) .. "}}")
+  end
+  return code_to_latex(el, false)
 end
 -- Os anchos finais poden ser menores ca os mínimos, ou vir impostos polo
 -- autor. Relaxamos só o código que non cabe e volvemos medir a táboa coas
