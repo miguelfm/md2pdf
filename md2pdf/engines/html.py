@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from ..assets import (
+    _find_attach_filter,
     _find_compact_code_filter,
     _find_html_css,
     _find_html_filter,
@@ -80,6 +81,11 @@ def build_html_cmd(
     compact_filter = _find_compact_code_filter()
     if compact_filter:
         cmd.extend(['--lua-filter', str(compact_filter)])
+
+    # Ficheiros adxuntos: no HTML, ligazóns ao ficheiro con download
+    attach_filter = _find_attach_filter()
+    if attach_filter:
+        cmd.extend(['--lua-filter', str(attach_filter)])
 
     html_filter = _find_html_filter()
     if html_filter:

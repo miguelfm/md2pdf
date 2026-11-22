@@ -1,0 +1,139 @@
+% Axuste local: conserva o índice orixinal e mide sen escribir auxiliares.
+\makeatletter
+\directlua{mdpdf_toc = dofile((('@MD2PDF_TOC_LUA_HEX@'):gsub('..', function(s) return string.char(tonumber(s,16)) end)))}
+\newif\ifmdpdfTocAuto
+\mdpdfTocAutotrue
+\newif\ifmdpdfTocScan
+\newif\ifmdpdfTocMeasure
+\newcount\mdpdfTocSkip
+\newcount\mdpdfTocSolved
+\newcount\mdpdfTocEntries
+\newcount\mdpdfTocIndex
+\newcount\mdpdfTocSteps
+\newbox\mdpdfTocBox
+\newbox\mdpdfTocNumberBox
+\newdimen\mdpdfTocBodyWidth
+\newdimen\mdpdfTocReference
+\newdimen\mdpdfTocWidth
+\newdimen\mdpdfTocGap
+\newdimen\mdpdfTocPageWidth
+\newdimen\mdpdfTocRightIndent
+\newcommand*\mdpdfTocCache[4]{\directlua{mdpdf_toc.restore('#1','#2',#3,#4)}}
+\newcommand*\mdpdfTocWriteCache[4]{%
+  \protected@write\@auxout{}{\string\mdpdfTocCache{#1}{#2}{#3}{#4}}%
+}
+
+\newcommand*\mdpdfTocContents{%
+  \begin{list}{}{%
+    \leftmargin=\dimexpr(\linewidth-\mdpdfTocWidth)/2\relax
+    \rightmargin=\leftmargin
+    \labelwidth=0pt\labelsep=0pt\topsep=0pt\partopsep=0pt
+  }%
+    \item[]\origtableofcontents
+  \end{list}%
+}
+
+\newcommand*\mdpdfTocEntry[4]{%
+  \ifnum\mdpdfTocSkip=0
+    \@ifundefined{#1tocdepth}{%
+      \directlua{mdpdf_toc.unsupported_source()}%
+      \mdpdfTocOldContentsline{#1}{#2}{#3}{#4}%
+    }{%
+      \ifnum\csname #1tocdepth\endcsname>\c@tocdepth
+        \mdpdfTocOldContentsline{#1}{#2}{#3}{#4}%
+      \else
+        \global\advance\mdpdfTocEntries by 1
+        \@ifundefined{scr@tso@#1@pagenumberwidth}{%
+          \directlua{mdpdf_toc.unsupported_source()}%
+        }{%
+          \ifmdpdfTocScan
+            \@tempdima=\csname scr@tso@#1@pagenumberwidth\endcsname\relax
+            \ifdim\@tempdima>\mdpdfTocPageWidth\global\mdpdfTocPageWidth=\@tempdima\fi
+            \@tempdima=\csname scr@tso@#1@rightindent\endcsname\relax
+            \ifdim\@tempdima>\mdpdfTocRightIndent\global\mdpdfTocRightIndent=\@tempdima\fi
+            \setbox\mdpdfTocNumberBox=\hbox{\normalfont\normalsize\csname scr@tso@#1@pagenumberformat\endcsname{#3}}%
+            \ifdim\wd\mdpdfTocNumberBox>\mdpdfTocPageWidth\global\mdpdfTocPageWidth=\wd\mdpdfTocNumberBox\fi
+          \fi
+        }%
+        \ifmdpdfTocMeasure
+          \directlua{mdpdf_toc.active_entry=\number\mdpdfTocEntries}%
+          \mdpdfTocOldContentsline{#1}{{\mdpdfTocRole=1 #2}}{{\mdpdfTocRole=2 #3}}{#4}%
+          \directlua{mdpdf_toc.active_entry=nil}%
+        \else
+          \mdpdfTocOldContentsline{#1}{#2}{#3}{#4}%
+        \fi
+      \fi
+    }%
+  \fi
+}
+
+\newcommand*\mdpdfTocTrial[1]{%
+  \global\mdpdfTocEntries=0
+  \directlua{mdpdf_toc.begin_candidate(\number\mdpdfTocWidth,'#1')}%
+  \setbox\mdpdfTocBox=\vbox{%
+    \hsize=\mdpdfTocBodyWidth\linewidth=\hsize
+    \@fileswfalse\let\BeforeClosingMainAux\@gobble
+    \let\mdpdfTocOldContentsline\contentsline
+    \let\contentsline\mdpdfTocEntry
+    \mdpdfTocContents
+  }%
+  \ifmdpdfTocMeasure\directlua{mdpdf_toc.end_candidate(\number\mdpdfTocEntries)}\fi
+}
+
+\AtBeginDocument{%
+  \@ifundefined{origtableofcontents}{}{%
+    \renewcommand*\tableofcontents{%
+      \begingroup
+        \mdpdfTocBodyWidth=\linewidth
+        \mdpdfTocReference=0.8\linewidth
+        \mdpdfTocWidth=\mdpdfTocReference
+        \mdpdfTocGap=1.25em
+        \global\mdpdfTocPageWidth=0pt\global\mdpdfTocRightIndent=0pt
+        \directlua{mdpdf_toc.start(\number\mdpdfTocBodyWidth,\number\mdpdfTocReference,\number\mdpdfTocGap)}%
+        \ifmdpdfTocAuto
+          \IfFileExists{\jobname.toc}{%
+            \mdpdfTocScantrue\mdpdfTocMeasurefalse
+            \mdpdfTocTrial{scan}%
+            \mdpdfTocScanfalse
+            \ifdim\mdpdfTocPageWidth>0pt
+              \ifdim\dimexpr\mdpdfTocPageWidth+1em\relax>\mdpdfTocRightIndent
+                \global\mdpdfTocRightIndent=\dimexpr\mdpdfTocPageWidth+1em\relax
+              \fi
+              \DeclareTOCStyleEntries[pagenumberwidth=\mdpdfTocPageWidth,rightindent=\mdpdfTocRightIndent]{tocline}{section,subsection,subsubsection}%
+              \directlua{mdpdf_toc.rightindent=\number\mdpdfTocRightIndent}%
+              \mdpdfTocMeasuretrue
+              \mdpdfTocTrial{baseline}%
+              \ifnum\directlua{tex.sprint(mdpdf_toc.can_search() and 1 or 0)}=1
+                \ifnum\directlua{tex.sprint(mdpdf_toc.try_cached() and 1 or 0)}=1
+                  \mdpdfTocTrial{search}%
+                \fi
+                \mdpdfTocIndex=1
+                \mdpdfTocSteps=\directlua{tex.sprint(mdpdf_toc.grid_steps())}\relax
+                \loop\ifnum\mdpdfTocIndex<\numexpr\mdpdfTocSteps+1\relax
+                  \ifnum\mdpdfTocSolved=0
+                    \mdpdfTocWidth=\directlua{tex.sprint(mdpdf_toc.grid_width(\number\mdpdfTocIndex))}sp\relax
+                    \mdpdfTocTrial{search}%
+                  \fi
+                  \advance\mdpdfTocIndex by 1
+                \repeat
+                \ifnum\mdpdfTocSolved=0
+                  \mdpdfTocWidth=\mdpdfTocReference\mdpdfTocTrial{search}%
+                \fi
+              \fi
+              \directlua{mdpdf_toc.choose()}%
+              \mdpdfTocTrial{verify}%
+              \directlua{mdpdf_toc.choose(); mdpdf_toc.complete()}%
+            \fi
+          }{}%
+        \fi
+        \mdpdfTocMeasurefalse
+        \mdpdfTocContents
+      \endgroup
+    }%
+  }%
+}
+\AddToHook{enddocument/afteraux}{%
+  \@ifundefined{tf@toc}{}{\immediate\closeout\csname tf@toc\endcsname}%
+  \directlua{mdpdf_toc.check_end()}%
+}
+\makeatother

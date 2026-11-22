@@ -5,6 +5,7 @@ engines/docx.py — Comando Pandoc para saída DOCX (Word).
 from pathlib import Path
 
 from ..assets import (
+    _find_attach_filter,
     _find_callouts_docx_filter,
     _find_docx_reference,
     _find_lua_filter,
@@ -53,6 +54,11 @@ def build_docx_cmd(
     lua_filter = _find_lua_filter()
     if lua_filter:
         cmd.extend(['--lua-filter', str(lua_filter)])
+
+    # Ficheiros adxuntos: no DOCX quedan como ligazóns normais
+    attach_filter = _find_attach_filter()
+    if attach_filter:
+        cmd.extend(['--lua-filter', str(attach_filter)])
 
     if author:
         cmd.extend(['--metadata', f'author={author}'])

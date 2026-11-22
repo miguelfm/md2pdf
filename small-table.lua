@@ -2,7 +2,8 @@
 -- Xestión avanzada da paxinación de táboas:
 --   1. Táboas pequenas (≤ THRESHOLD filas): convértense a tabular + \Needspace
 --      para garantir que son indivisibles e nunca rompen entre páxinas.
---   2. Táboas grandes (> THRESHOLD filas ou con pé): mantéñense como longtable
+--   2. Táboas grandes (> THRESHOLD filas ou con pé): mantéñense como longtable,
+--      agás dentro dunha columna de columns.lua, onde van sempre en tabular
 --      con dúas melloras esenciais para a lectura:
 --      - Estratexia A (evitar orfas e viúvas): as primeiras 4 filas e a
 --        penúltima fila protéxense con \\* para impedir cortes prematuros
@@ -161,7 +162,7 @@ local function enhance_longtable(latex, num_cols, total_rows, lang)
   return before_head .. new_head .. foot_part .. enhanced_body
 end
 
-local function longtable_to_tabular(latex, needed_lines, include_needspace)
+local function longtable_to_tabular(latex, needed_lines, include_needspace, caption)
   local state   = 'start'
   local head    = {}
   local foot    = {}
@@ -203,6 +204,7 @@ local function longtable_to_tabular(latex, needed_lines, include_needspace)
   if include_needspace then
     table.insert(out, string.format('\\Needspace{%d\\baselineskip}', needed_lines))
   end
+  if caption then table.insert(out, caption) end
   table.insert(out, string.format('\\noindent\\begin{tabular}{%s}', colspec))
   for _, l in ipairs(head)  do table.insert(out, l) end
   for _, l in ipairs(body)  do table.insert(out, l) end
@@ -211,22 +213,65 @@ local function longtable_to_tabular(latex, needed_lines, include_needspace)
   return table.concat(out, '\n')
 end
 
+-- As táboas dunha columna (columns.lua) van nunha minipage, onde longtable
+-- non funciona. Convértense sempre a tabular, tamén as longas, que alí non
+-- poden partir, e as que teñen pé, que leva \captionof. A marca pona o
+-- primeiro pase deste filtro, porque despois os divs xa non se ven.
+local COLUMN_MARK = 'md2pdf-column'
+
+local function mark_column_tables(div)
+  if not div.classes:includes('column') then return nil end
+  return div:walk({
+    Table = function(tbl)
+      tbl.attributes[COLUMN_MARK] = '1'
+      return tbl
+    end,
+  })
+end
+
+local function has_caption(tbl)
+  return tbl.caption and tbl.caption.long and #tbl.caption.long > 0
+end
+
 local function is_small_convertible_table(tbl)
+  local in_column = tbl.attributes[COLUMN_MARK] ~= nil
   -- Táboas con pé: quedan como longtable. \caption e \label só funcionan
   -- alí; dentro dun tabular fóra de float, \caption dá «\caption outside
   -- float». Ademais, figure-captions.lua (que corre despois) necesita ver a
-  -- táboa como Table para extraer o {#tbl:…} do pé.
-  if tbl.caption and tbl.caption.long and #tbl.caption.long > 0 then
+  -- táboa como Table para extraer o {#tbl:…} do pé. Nunha columna, o pé
+  -- vai con \captionof e o identificador que xa lle deu Pandoc.
+  if has_caption(tbl) and not in_column then
     return false
   end
 
   local nrows = count_body_rows(tbl)
-  return nrows <= THRESHOLD, nrows
+  return in_column or nrows <= THRESHOLD, nrows
+end
+
+local function column_caption(tbl)
+  if not has_caption(tbl) then return nil, tbl end
+  local text = pandoc.write(pandoc.Pandoc(tbl.caption.long), 'latex')
+  text = text:gsub('^%s+', ''):gsub('%s+$', '')
+  local caption = '\\captionof{table}{' .. text .. '}'
+  if tbl.identifier ~= '' then
+    caption = caption .. '\\label{' .. tbl.identifier .. '}'
+  end
+  -- Sen pé nin identificador, Pandoc escribe a longtable sen \caption nin
+  -- \endfirsthead, que longtable_to_tabular non sabería quitar.
+  tbl = tbl:clone()
+  tbl.caption = pandoc.Caption()
+  tbl.identifier = ''
+  return caption, tbl
 end
 
 local function convert_small_table(tbl, needed_lines, include_needspace)
+  local caption = nil
+  if tbl.attributes[COLUMN_MARK] then
+    caption, tbl = column_caption(tbl)
+    tbl.attributes[COLUMN_MARK] = nil
+  end
   local latex = pandoc.write(pandoc.Pandoc({tbl}), 'latex')
-  local result = longtable_to_tabular(latex, needed_lines, include_needspace)
+  local result = longtable_to_tabular(latex, needed_lines, include_needspace, caption)
   if not result then return nil end
   return pandoc.RawBlock('latex', result)
 end
@@ -246,6 +291,9 @@ end
 local TEXT_WIDTH_PT = 470
 local TABCOLSEP_PT = 6
 local CHAR_WIDTH_PT = 5.0
+-- O código das celas vai en Source Code Pro de 11,8 pt: 7,1 pt por carácter,
+-- medido no PDF. Contalo coma o texto deixaba as filas de código nunha liña.
+local CODE_CHAR_WIDTH_PT = 7.1
 local HEADING_LINES = 5
 local ROW_LINES = 1.4
 local EXTRA_LINE = 0.9
@@ -255,38 +303,58 @@ local CAPTION_LINES = 1.5
 -- porque auto-table-widths axusta as columnas estreitas á palabra máis longa.
 -- O ancho de cada p{} é a súa fracción de \linewidth menos os \tabcolsep
 -- entre columnas.
--- auto-table-widths converte o código das celas en LaTeX en bruto, que
--- stringify descarta. Para medilo quítanse as ordes e as chaves.
+-- auto-table-widths converte o código das celas en LaTeX en bruto. Para
+-- medilo quítanse as ordes e as chaves. O argumento de \color non é texto:
+-- a cabeceira leva \color{heading-section}, e contado coma unha palabra facía
+-- partir as cabeceiras das columnas estreitas.
 local function latex_text(s)
+  s = s:gsub('\\color%b{}', '')
   s = s:gsub('\\discretionary%b{}%b{}%b{}', '')
   s = s:gsub('\\[%a@]+%*?', '')
   return (s:gsub('[{}]', ''))
 end
 
-local function cell_text(cell)
-  return pandoc.utils.stringify(cell.contents:walk({
+-- Ancho en pt de cada palabra da cela: o texto a CHAR_WIDTH_PT por carácter
+-- e o código, que auto-table-widths converte en \texttt, a CODE_CHAR_WIDTH_PT.
+local function cell_words(cell)
+  local words = {}
+  local function add(text, char_width)
+    for word in text:gmatch('%S+') do
+      table.insert(words, (utf8.len(word) or #word) * char_width)
+    end
+  end
+  cell.contents:walk({
+    Str = function(str) add(str.text, CHAR_WIDTH_PT) end,
+    Code = function(code) add(code.text, CODE_CHAR_WIDTH_PT) end,
     RawInline = function(raw)
-      if raw.format:match('latex') then return pandoc.Str(latex_text(raw.text)) end
+      if raw.format:match('latex') then
+        local is_code = raw.text:match('\\texttt') ~= nil
+        add(latex_text(raw.text), is_code and CODE_CHAR_WIDTH_PT or CHAR_WIDTH_PT)
+      end
     end,
-  }))
+  })
+  return words
 end
 
 local function cell_lines(cell, width, ncols)
   -- Columnas de ancho natural: o texto non parte.
   if type(width) ~= 'number' or width <= 0 then return 1 end
   local avail = width * (TEXT_WIDTH_PT - 2 * TABCOLSEP_PT * (ncols - 1))
-  local per_line = math.max(1, math.floor(avail / CHAR_WIDTH_PT))
   local lines, used = 1, 0
-  for word in cell_text(cell):gmatch('%S+') do
-    local len = utf8.len(word) or #word
-    if used == 0 then
-      used = len
-    elseif used + 1 + len <= per_line then
-      used = used + 1 + len
-    else
+  for _, w in ipairs(cell_words(cell)) do
+    if used > 0 and used + CHAR_WIDTH_PT + w > avail then
       lines = lines + 1
-      used = len
+      used = 0
+    elseif used > 0 then
+      used = used + CHAR_WIDTH_PT
     end
+    -- Unha palabra máis longa ca a columna parte (as rutas, nas barras).
+    while used + w > avail do
+      lines = lines + 1
+      w = w - (avail - used)
+      used = 0
+    end
+    used = used + w
   end
   return lines
 end
@@ -298,6 +366,28 @@ local function row_lines(row, colspecs)
     k = math.max(k, cell_lines(cell, spec and spec[2], #colspecs))
   end
   return ROW_LINES + EXTRA_LINE * (k - 1)
+end
+
+-- Reserva dunha táboa pequena: unha liña por fila e cinco para a cabeceira e
+-- as separacións, máis as liñas que suman as filas cuxas celas parten. Sen
+-- esas liñas, unha táboa de filas con dúas liñas non cabía na reserva: o
+-- título ou o parágrafo que a presenta quedaba ao pé da páxina, e o tabular,
+-- indivisíbel, pasaba enteiro á seguinte.
+local function small_table_lines(tbl, nrows)
+  local extra = 0
+  local function add(row)
+    local k = 1
+    for j, cell in ipairs(row.cells) do
+      local spec = tbl.colspecs[j]
+      k = math.max(k, cell_lines(cell, spec and spec[2], #tbl.colspecs))
+    end
+    extra = extra + EXTRA_LINE * (k - 1)
+  end
+  for _, row in ipairs(tbl.head.rows) do add(row) end
+  for _, body in ipairs(tbl.bodies) do
+    for _, row in ipairs(body.body) do add(row) end
+  end
+  return nrows + 5 + math.ceil(extra)
 end
 
 local function first_chunk_lines(tbl)
@@ -389,12 +479,28 @@ end
 -- antes da primeira cabeceira da serie, sumando tres liñas por cada cabeceira
 -- anterior. Se se puxese só antes da última, o salto quedaría entre elas.
 local LINES_PER_EXTRA_HEADER = 3
+-- O rótulo de actividade que md2pdf pon antes da primeira cabeceira de nivel
+-- 2 vai nun bloque en bruto con esta marca e ocupa unhas seis liñas base.
+local ACTIVITY_LABEL_MARK = '^%% md2pdf:activity%-label'
+local ACTIVITY_LABEL_LINES = 6
 
 local function insert_needspace(out, needed)
   local pos = #out + 1
-  while pos > 1 and out[pos - 1].t == 'Header' do
+  -- Non sobe por riba dun título de nivel 1: con --shift-heading-level-by=-1
+  -- é o título do documento, e Pandoc só o toma como tal se é o primeiro
+  -- bloque. Unha reserva antes del deixaba o documento sen \title.
+  -- Tampouco queda entre o rótulo de actividade e a cabeceira que o segue:
+  -- sobe por riba del e suma as súas liñas.
+  while pos > 1 do
+    local prev = out[pos - 1]
+    if prev.t == 'Header' and prev.level > 1 then
+      needed = needed + LINES_PER_EXTRA_HEADER
+    elseif prev.t == 'RawBlock' and prev.text:match(ACTIVITY_LABEL_MARK) then
+      needed = needed + ACTIVITY_LABEL_LINES
+    else
+      break
+    end
     pos = pos - 1
-    needed = needed + LINES_PER_EXTRA_HEADER
   end
   out:insert(pos, pandoc.RawBlock('latex',
     string.format('\\Needspace{%d\\baselineskip}', needed)))
@@ -412,17 +518,19 @@ function Blocks(blocks)
     if current.t == 'Header' and next_block and next_block.t == 'Table' then
       local convertible, nrows = is_small_convertible_table(next_block)
       if convertible then
-        local needed = nrows + 5
+        local needed = small_table_lines(next_block, nrows)
         local converted = convert_small_table(next_block, needed, false)
         if converted then
-          insert_needspace(out, needed)
+          if current.level > 1 then insert_needspace(out, needed) end
           out:insert(current)
           out:insert(converted)
           i = i + 2
           goto continue
         end
       elseif FORMAT:match('latex') then
-        insert_needspace(out, first_chunk_lines(next_block))
+        if current.level > 1 then
+          insert_needspace(out, first_chunk_lines(next_block))
+        end
         out:insert(current)
         out:insert(convert_large_table(next_block))
         i = i + 2
@@ -441,10 +549,10 @@ function Blocks(blocks)
       local tbl = blocks[i + 2]
       local convertible, nrows = is_small_convertible_table(tbl)
       if convertible then
-        local needed = nrows + 5
+        local needed = small_table_lines(tbl, nrows)
         local converted = convert_small_table(tbl, needed, false)
         if converted then
-          insert_needspace(out, needed)
+          if current.level > 1 then insert_needspace(out, needed) end
           out:insert(current)
           out:insert(next_block)
           out:insert(converted)
@@ -453,7 +561,9 @@ function Blocks(blocks)
           goto continue
         end
       elseif FORMAT:match('latex') then
-        insert_needspace(out, first_chunk_lines(tbl))
+        if current.level > 1 then
+          insert_needspace(out, first_chunk_lines(tbl))
+        end
         out:insert(current)
         out:insert(next_block)
         out:insert(convert_large_table(tbl))
@@ -478,8 +588,9 @@ function Blocks(blocks)
         local convertible, nrows = is_small_convertible_table(tbl)
         local converted, needed
         if convertible then
-          converted = convert_small_table(tbl, nrows + 5, false)
-          needed = nrows + 5 + para
+          local lines = small_table_lines(tbl, nrows)
+          converted = convert_small_table(tbl, lines, false)
+          needed = lines + para
         else
           converted = convert_large_table(tbl)
           -- HEADING_LINES estima a cabeceira; dun parágrafo quedan dúas liñas
@@ -506,6 +617,9 @@ function Blocks(blocks)
     if current.t == 'Table' then
       local convertible, nrows = is_small_convertible_table(current)
       if convertible then
+        -- Sen cabeceira nin parágrafo de entrada que protexer, o tabular
+        -- salta enteiro se non cabe: a reserva non suma as filas que parten,
+        -- porque só adiantaría o salto e deixaría a páxina medio baleira.
         local needed = nrows + 5
         local converted = convert_small_table(current, needed, true)
         if converted then
@@ -548,5 +662,6 @@ end
 
 return {
   { Meta = read_meta },
+  { Div = mark_column_tables },
   { Blocks = Blocks },
 }

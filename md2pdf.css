@@ -358,6 +358,17 @@ div.sourceCode pre > code > span.md2pdf-hl-line {
 background: var(--hl-bg);
 box-shadow: .28rem 0 0 var(--hl-bg), -.28rem 0 0 var(--hl-bg);
 }
+/* Columnas de Pandoc (:::: columns / ::: column): lado a lado mentres caiban.
+   Unha columna con width leva ese ancho en style; as outras reparten o resto. */
+.columns {
+display: flex;
+flex-wrap: wrap;
+gap: 1rem 4%;
+align-items: flex-start;
+}
+.column { flex: 1 1 0; min-width: min(100%, 14rem); }
+.column[style*="width"] { flex: 0 1 auto; }
+.column > :first-child { margin-top: 0; }
 blockquote {
 margin: 1.2rem 0;
 padding: .2rem .95rem;

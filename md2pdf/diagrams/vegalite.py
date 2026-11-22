@@ -25,7 +25,9 @@ class VegaLiteRenderer(BaseRenderer):
     name: str = 'vega-lite'
     languages: tuple[str, ...] = ('vega-lite', 'vegalite')
     executable_names: tuple[str, ...] = ()
-    render_tag: str = 'v2-inline'
+    # v3: a fonte por defecto vai entre aspas (vegalite_worker.py); as
+    # gráficas da caché anterior estaban en Times New Roman.
+    render_tag: str = 'v3-inline'
     font_px: float = 10.0
     boolean_flags: frozenset[str] = field(default_factory=frozenset)
     allowed_options: frozenset[str] = field(default_factory=lambda: frozenset({'theme'}))

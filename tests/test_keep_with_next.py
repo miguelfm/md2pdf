@@ -61,6 +61,38 @@ class KeepWithNextTests(unittest.TestCase):
         latex = self.render('Programa:\n\n' + self.code(30))
         self.assertEqual(self.reserve_before(latex, 'Programa:'), 1 + 4 + 2)
 
+    def test_long_code_lines_count_as_they_wrap(self):
+        # 30 palabras de 7 letras: 8 por liña de 66 caracteres, catro liñas.
+        words = ' '.join(['palabra'] * 30)
+        latex = self.render(f'Saída:\n\n```text\n{words}\nfin\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 4 + 1 + 2)
+        # Unha palabra máis longa ca a liña parte en calquera punto.
+        latex = self.render('Saída:\n\n```text\n' + 'x' * 150 + '\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 3 + 2)
+        # A sangría conta na primeira liña.
+        line = '    ' + ' '.join(['abcdefghi'] * 7)
+        latex = self.render(f'Saída:\n\n```text\n{line}\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 2 + 2)
+
+    def test_wrapped_lines_do_not_change_the_keep_limit(self):
+        # keep-code.lua decide coas liñas da fonte: un bloque de 12 liñas
+        # segue sendo curto aínda que as súas liñas partan.
+        long_line = ' '.join(['palabra'] * 20)
+        block = '\n'.join([long_line] * 12)
+        latex = self.render(f'Saída:\n\n```text\n{block}\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 12 * 3 + 2)
+        block = '\n'.join([long_line] * 13)
+        latex = self.render(f'Saída:\n\n```text\n{block}\n```\n')
+        self.assertEqual(self.reserve_before(latex, 'Saída:'), 1 + 4 + 2)
+
+    def test_reserve_never_goes_before_the_document_title(self):
+        # md2pdf usa --shift-heading-level-by=-1: o # inicial é o título, e
+        # Pandoc só o toma se é o primeiro bloque.
+        md = '# Título\n\nCódigo:\n\n' + self.code(3)
+        latex = self.render(md, '-s', '--shift-heading-level-by=-1')
+        self.assertIn(r'\title{Título}', latex)
+        self.assertEqual(self.reserve_before(latex, 'Código:'), 1 + 3 + 2)
+
     def test_code_keep_lines_metadata(self):
         latex = self.render('Programa:\n\n' + self.code(8), '-M', 'code-keep-lines=5')
         self.assertEqual(self.reserve_before(latex, 'Programa:'), 1 + 4 + 2)
@@ -77,10 +109,11 @@ class KeepWithNextTests(unittest.TestCase):
         self.assertEqual(self.reserve_before(latex, 'Unha lista:'), 1 + 1 + 4)
 
     def test_reserve_goes_before_headers(self):
-        latex = self.render('# Sección\n\n## Apartado\n\nCódigo:\n\n' + self.code(2))
+        # Niveis 2 e 3, como as seccións de md2pdf: o nivel 1 é o título.
+        latex = self.render('## Sección\n\n### Apartado\n\nCódigo:\n\n' + self.code(2))
         # Entre a cabeceira e o parágrafo, \Needspace deixaría un punto de corte.
         self.assertIsNone(self.reserve_before(latex, 'Código:'))
-        self.assertEqual(self.reserve_before(latex, r'\section'), 1 + 2 + 2 + 3 + 3)
+        self.assertEqual(self.reserve_before(latex, r'\subsection'), 1 + 2 + 2 + 3 + 3)
 
     def test_nested_lists_and_callouts(self):
         md = ('1. Engade esta liña:\n\n   ```java\n   int x = 1;\n   ```\n\n'
@@ -106,6 +139,42 @@ class KeepWithNextTests(unittest.TestCase):
         self.assertEqual(self.reserve_before(latex, 'Unha táboa:'), 2 + 5 + 1)
         self.assertEqual(latex.count(r'\Needspace'), 1)
         self.assertIn(r'\begin{tabular}', latex)
+
+    def test_small_table_with_wrapped_rows_before_lead_in(self):
+        long_text = 'texto longo que ocupa varias liñas na cela ' * 2
+        rows = ''.join(f'| {i} | {long_text} |\n' for i in range(3))
+        latex = self.render('Unha táboa:\n\n| A | B |\n|---|---|\n' + rows)
+        # Máis ca unha liña por fila: as celas parten.
+        self.assertGreater(self.reserve_before(latex, 'Unha táboa:'), 3 + 5 + 1)
+        self.assertIn(r'\begin{tabular}', latex)
+
+    def test_code_cells_count_with_the_code_width(self):
+        # Como na tarefa U3T5 de DWCS: código de 45 caracteres nunha columna
+        # de media páxina. A 5 pt por carácter collería nunha liña; o
+        # código, a 7,1 pt, parte en dúas.
+        call = "`uploadError(['error' => 0, 'size' => 1000])`"
+        rows = ''.join(f'| {call} | `{i}` |\n' for i in range(3))
+        md = ('Os casos:\n\n| Chamada | Esperado |\n'
+              '|----------------------------------------------------|'
+              '----------------------------------------------|\n' + rows)
+        filters = ['auto-table-widths.lua', 'small-table.lua', 'keep-with-next.lua']
+        latex = self.render(md, filters=filters)
+        self.assertIn(r'\begin{tabular}', latex)
+        self.assertGreater(self.reserve_before(latex, 'Os casos:'), 3 + 5 + 1)
+
+    def test_header_styling_does_not_count_as_text(self):
+        # Como na rúbrica de DWCS: unha columna estreita de puntos. O LaTeX
+        # co que auto-table-widths destaca a cabeceira leva
+        # \color{heading-section}; contado coma texto, a cabeceira dunha
+        # columna estreita partía en tres liñas e a reserva pasaba de 13 a 15.
+        text = ('Todos os apartados levan as saídas reais da propia VM, '
+                'completas e pegadas como texto.')
+        rows = ''.join(f'| {i} | {text} |\n' for i in range(4))
+        md = '### Criterio A\n\n| Puntos | Descrición |\n|---|---|\n' + rows
+        filters = ['auto-table-widths.lua', 'small-table.lua']
+        latex = self.render(md, filters=filters)
+        # Catro filas de dúas liñas: 4 + 5 + ceil(4 × 0,9), antes da cabeceira.
+        self.assertIn('\\Needspace{13\\baselineskip}\n\n\\subsubsection{Criterio A}', latex)
 
     def test_large_table_reserve_before_lead_in(self):
         rows = ''.join(f'| {i} | x |\n' for i in range(9))
@@ -197,6 +266,53 @@ class KeepWithNextTests(unittest.TestCase):
 
 # Liñas de recheo que deixan o parágrafo de entrada na última liña da páxina 1.
 FILLER_LINES = 37
+
+
+@unittest.skipUnless(shutil.which('pandoc') and shutil.which('lualatex'),
+                     'pandoc ou lualatex non están instalados')
+class KeepWithNextPdfTests(unittest.TestCase):
+    """A reserva dentro dunha lista non pode mover o número do elemento."""
+
+    MARKDOWN = (
+        '# Proba\n\n'
+        '1. Engade os casos:\n\n'
+        '   - Un.\n'
+        '   - Dous.\n\n'
+        '2. Executa as probas:\n\n'
+        '   ```bash\n'
+        '   php ficheiro.php\n'
+        '   ```\n'
+    )
+
+    def convert(self, markdown):
+        import pymupdf
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'in.md'
+            output = Path(directory) / 'out.pdf'
+            source.write_text(markdown, encoding='utf-8')
+            # Os activos da fonte, independentemente da instalación local.
+            with patch('md2pdf.assets.INSTALL_DIR', ROOT):
+                cmd = build_lualatex_cmd(
+                    tmp_path=str(source), output_path=str(output),
+                    template=ROOT / 'md2pdf.latex', toc=False, toc_depth=3,
+                    section_numbering='', lang='gl', papersize='a4',
+                    highlight=str(ROOT / 'drake-jb.theme'),
+                )
+            result = subprocess.run(cmd, cwd=ROOT, capture_output=True,
+                                    text=True, timeout=180)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            document = pymupdf.open(output)
+            return [word for page in document for word in page.get_text('words')]
+
+    def test_item_after_nested_list_keeps_its_number(self):
+        # Despois dunha lista aniñada, a liña en branco tras \Needspace
+        # executaba o \par de \@doendpe, que borraba o número do elemento
+        # en \everypar, e «2.» saía ao lado do código.
+        words = self.convert(self.MARKDOWN)
+        number = next(w for w in words if w[4] == '2.')
+        lead_in = next(w for w in words if w[4] == 'Executa')
+        self.assertLess(abs(number[3] - lead_in[3]), 2,
+                        'o número non vai na liña do seu parágrafo')
 
 
 if __name__ == '__main__':

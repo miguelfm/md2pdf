@@ -1,96 +1,85 @@
-# Paquetes IMS para Moodle
+# IMS packages for Moodle
 
-`md2pdf` pode agrupar varios documentos Markdown nun **IMS Content Package** para Moodle. Non é un cuarto motor de renderizado: cada `.md` convértese primeiro co motor HTML5 autocontido e despois empaquétanse os HTML xunto cun `imsmanifest.xml` nun ZIP.
+md2pdf can bundle Markdown documents into an **IMS Content Package** for Moodle. This is a packaging layer, not a fourth rendering engine: each `.md` is converted to self-contained HTML5, then the HTML files and an `imsmanifest.xml` are placed in a ZIP.
 
-```bash
-md2pdf U1/ --ims U1-moodle.zip
-md2pdf U1/*.md --ims U1-moodle.zip --ims-title "UD1. Introdución á programación"
+```sh
+md2pdf U1/ --ims U1-moodle.zip --lang en
+md2pdf U1/*.md --ims U1-moodle.zip --ims-title "Unit 1: Introduction to programming" --lang en
 ```
-
-O ZIP resultante ten unha estrutura semellante a:
 
 ```text
 U1-moodle.zip
 ├── imsmanifest.xml
-├── U1A1_Introducion.html
-├── U1A2_Execucion.html
+├── U1A1_Introduction.html
+├── U1A2_Execution.html
 └── U1A3_....html
 ```
 
-Os HTML seguen sendo autocontidos: CSS, imaxes e diagramas SVG quedan embebidos. O manifesto só necesita declarar cada HTML como recurso `webcontent`.
+CSS, local images, and SVG diagrams remain embedded in each HTML file. The manifest declares each document as a `webcontent` resource.
 
-## Navegación e orde
+## Navigation and ordering
 
-A orde dos elementos IMS é exactamente a orde dos ficheiros recollidos por `md2pdf`. Ao pasar un directorio, `collect_files()` usa **orde natural**: `U1A2` vai antes que `U1A10` (coa orde alfabética simple quedaría `U1A1`, `U1A10`, `U1A2`). Se pasas os ficheiros un a un, respéctase a orde da liña de comandos.
+IMS items follow the order collected by md2pdf. Directory inputs use **natural order**, so `U1A2` precedes `U1A10`. Explicit file inputs retain command-line order; a shell-expanded wildcard follows the order supplied by the shell.
 
-O título de cada elemento de navegación obténse nesta orde:
+Navigation titles use the first available value:
 
-1. `activity` dos metadatos;
-2. `title` dos metadatos;
-3. primeiro `# H1` do Markdown;
-4. nome do ficheiro.
+1. `activity` metadata;
+2. `title` metadata;
+3. the first Markdown H1;
+4. the filename.
 
-O título global do paquete é o nome do ZIP sen extensión. Pódese substituír con `--ims-title`.
+The package title defaults to the ZIP basename. Override it with `--ims-title`.
 
-## Ligazóns entre documentos
+## Links between documents
 
-Se un documento do paquete enlaza outro Markdown tamén incluído:
+Link to another included Markdown document using a relative path:
 
 ```markdown
-[Seguinte actividade](U1A2_Execucion.md#o-caso-de-java)
+[Next activity](U1A2_Execution.md#the-java-case)
 ```
 
-`md2pdf` reescribe automaticamente a ligazón para que apunte ao HTML do paquete. O fragmento (`#o-caso-de-java`) é o identificador que Pandoc xera para a cabeceira `## O caso de Java`: non inclúe o número da sección. A reescritura cambia o ficheiro de destino, pero conserva o fragmento: non transforma `#2-o-caso-de-java` en `#o-caso-de-java`. Para remisións estábeis, declara un identificador explícito na cabeceira de destino, por exemplo `## 2. O caso de Java {#o-caso-de-java}`, e usa ese identificador na ligazón.
-
-Resultado:
+md2pdf rewrites the filename to its packaged HTML counterpart and preserves the fragment:
 
 ```html
-<a href="U1A2_Execucion.html#o-caso-de-java">...</a>
+<a href="U1A2_Execution.html#the-java-case">...</a>
 ```
 
-As ligazóns locais a `.md` que non forman parte do paquete producen un aviso. Con `--strict` impiden xerar o ZIP, para evitar publicar un paquete con navegación rota.
-
-## Recursos enlazados
-
-As ligazóns a outros ficheiros locais (código de partida, PDF, ZIP de exercicios…) inclúense no paquete dentro de `recursos/` e a ligazón reescríbese para apuntar alí:
+Pandoc's heading IDs do not include section numbers after md2pdf preprocessing. Rewriting a filename does not repair a fragment such as `#2-the-java-case`. For stable links, declare an explicit target ID:
 
 ```markdown
-Descarga o [código de partida](recursos/exercicio.zip).
+## 2. The Java case {#the-java-case}
+```
+
+A local `.md` link whose document is excluded from the package generates a warning. With `--strict`, it prevents ZIP generation.
+
+## Linked resources
+
+Other local linked files, such as starter code, PDFs, or exercise ZIPs, are copied into the package's **`recursos/`** directory. This directory name is part of the current implementation, including for English documents.
+
+```markdown
+Download the [starter code](resources/exercise.zip).
 ```
 
 ```text
 U1-moodle.zip
 ├── imsmanifest.xml
-├── U1A1_Introducion.html
+├── U1A1_Introduction.html
 └── recursos/
-    └── exercicio.zip
+    └── exercise.zip
 ```
 
-Cada ficheiro engádese unha soa vez aínda que o enlacen varios documentos, e declárase como `<file>` no recurso IMS que o usa. Se dous ficheiros distintos teñen o mesmo nome, o segundo recibe un sufixo (`exercicio-2.zip`).
+Links are rewritten to the packaged path. A file is copied once even if several documents link to it, and is declared as a `<file>` in each IMS resource that uses it. Distinct files sharing a basename receive suffixes such as `exercise-2.zip`.
 
-Se a ligazón apunta a un ficheiro que non existe, `md2pdf` avisa e deixa a ligazón tal cal; con `--strict` non se xera o ZIP. As imaxes non pasan por aquí: xa van incrustadas no HTML.
+Missing resources generate a warning and retain the original link; strict mode prevents ZIP generation. Images use the HTML embedding pipeline instead of this resource-copy mechanism.
 
-## Opcións HTML compatibles
+## Supported HTML options
 
-O empaquetado IMS reutiliza a saída HTML, polo que admite:
+IMS reuses HTML output, including `--no-toc`, `--no-number`, `--no-callouts`, `--no-metadata`, `--night`, `--print`, `--plain`, `--strict`, `--toc-depth`, `--lang`, `--highlight`, and an HTML `--template`.
 
-- `--no-toc`;
-- `--no-number`;
-- `--no-callouts`;
-- `--no-metadata`;
-- `--night`;
-- `--print`;
-- `--plain`;
-- `--strict`;
-- `--toc-depth`;
-- `--lang`;
-- `--highlight`;
-- `--template` (template HTML).
+`--titlepage` does not apply. `--watch` is not implemented for IMS. `-o/--output` is not used; provide the destination directly to `--ims`.
 
-`--titlepage` non aplica ao paquete IMS. `--watch` non está implementado neste modo. `-o/--output` tampouco se usa: o destino indícase directamente en `--ims`.
+## Import into Moodle
 
-## Importación en Moodle
+Add an **IMS content package** resource to the Moodle course and upload the ZIP. Moodle uses the organization in `imsmanifest.xml` for navigation.
 
-No curso Moodle, engade un recurso **IMS content package / Paquete de contido IMS** e carga o ZIP xerado. Moodle usa a organización declarada no `imsmanifest.xml` para presentar os recursos e a súa navegación.
-
-O paquete segue IMS Content Packaging 1.1.4 e coloca obrigatoriamente `imsmanifest.xml` na raíz do ZIP.
+The package follows IMS Content Packaging 1.1.4, with `imsmanifest.xml` at the ZIP root.

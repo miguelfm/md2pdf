@@ -20,10 +20,13 @@ from ..config import (
     _to_polyglossia,
 )
 from ..assets import (
+    _find_asset,
     _find_callouts_filter,
     _find_compact_code_filter,
     _find_keep_code_filter,
+    _find_attach_filter,
     _find_keep_with_next_filter,
+    _find_columns_filter,
     _find_hl_lines_filter,
     _find_javadoc_syntax,
     _find_terminal_blocks_filter,
@@ -67,6 +70,17 @@ def _temp_tex_file(content: str) -> str:
     return tmp.name
 
 
+def _build_toc_width_header() -> str | None:
+    """Carga os activos do TOC sen expoñer rutas ao analizador de TeX."""
+    header = _find_asset('toc-width.tex')
+    script = _find_asset('toc-width.lua')
+    if not header or not script:
+        return None
+    encoded_path = script.resolve().as_posix().encode('utf-8').hex()
+    text = header.read_text(encoding='utf-8')
+    return _temp_tex_file(text.replace('@MD2PDF_TOC_LUA_HEX@', encoded_path))
+
+
 # ── Xeradores de snippets LaTeX ───────────────────────────────
 
 def _build_activity_label(activity: str, print_mode: bool,
@@ -95,6 +109,24 @@ def _build_activity_label(activity: str, print_mode: bool,
         '\\end{center}\n'
         '\\vspace{0.3em}\n'
     )
+
+
+# Reserva antes do rótulo de actividade. O rótulo ocupa unhas seis liñas base
+# desde o texto anterior, e a cabeceira que o segue reserva outras oito
+# (\section, no preámbulo). Sen a reserva, un rótulo ao pé da páxina quedaba
+# só: a cabeceira non collía e pasaba á seguinte. A marca permite que
+# keep-with-next.lua e small-table.lua leven as súas reservas por riba del.
+ACTIVITY_LABEL_MARK = '% md2pdf:activity-label'
+ACTIVITY_LABEL_LINES = 6
+SECTION_RESERVE_LINES = 8
+
+
+def _activity_label_block(act_latex: str, before_section: bool) -> str:
+    """Bloque LaTeX en bruto do rótulo, coa súa reserva, para o Markdown."""
+    lines = ACTIVITY_LABEL_LINES + (SECTION_RESERVE_LINES if before_section else 0)
+    return ('```{=latex}\n' + ACTIVITY_LABEL_MARK + '\n'
+            + f'\\Needspace{{{lines}\\baselineskip}}\n'
+            + act_latex + '```\n\n')
 
 
 def _build_titlepage_snippet(meta: dict, print_mode: bool,
@@ -388,6 +420,12 @@ def build_lualatex_cmd(
             keep_with_next_value = keep_with_next_value.strip().strip('\'"')
             cmd.extend(['--metadata', f'keep-with-next={keep_with_next_value}'])
 
+    # Despois das reservas de small-table e keep-with-next, que este filtro
+    # recolle dentro das columnas, e antes de callouts.
+    columns_filter = _find_columns_filter()
+    if columns_filter:
+        cmd.extend(['--lua-filter', str(columns_filter)])
+
     if callouts:
         callouts_filter = _find_callouts_filter()
         if callouts_filter:
@@ -421,6 +459,12 @@ def build_lualatex_cmd(
     hl_filter = _find_hl_lines_filter()
     if hl_filter:
         cmd.extend(['--lua-filter', str(hl_filter)])
+
+    # Ficheiros adxuntos: despois das reservas de keep-with-next e
+    # small-table, que miden o texto da ligazón antes de que sexa LaTeX.
+    attach_filter = _find_attach_filter()
+    if attach_filter:
+        cmd.extend(['--lua-filter', str(attach_filter)])
 
     # Pés de figura. Vai ao final: traballa sobre a secuencia de bloques que
     # deixa o preprocesado de mermaid (raw + imaxe + raw + parágrafo do pé),
@@ -540,16 +584,23 @@ def prepare_lualatex_extras(
     if activity_val and not plain:
         act_latex = _build_activity_label(
             activity_val, print_mode, night_mode=night_mode)
-        raw_block = '```{=latex}\n' + act_latex + '```\n\n'
         m2 = re.search(r'^##\s', processed, re.MULTILINE)
         if m2:
             processed = (processed[:m2.start()]
-                         + raw_block
+                         + _activity_label_block(act_latex, True)
                          + processed[m2.start():])
         else:
-            processed = processed + '\n' + raw_block
+            processed = (processed + '\n'
+                         + _activity_label_block(act_latex, False))
         with open(tmp_path, 'w', encoding='utf-8') as f_upd:
             f_upd.write(processed)
+
+    auto_toc = str(md_meta.get('toc-auto-width', True)).strip().lower()
+    if '--toc' in cmd and auto_toc not in ('false', 'no', '0'):
+        toc_header = _build_toc_width_header()
+        if toc_header:
+            extra_tmp_files.append(toc_header)
+            cmd.extend(['-H', toc_header])
 
     return processed, extra_tmp_files, True
 

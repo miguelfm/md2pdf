@@ -46,6 +46,18 @@
 
 % ── Protección de cabeceiras ───────────────────────────────
 \usepackage{needspace}
+% Tras unha lista ou outro ambiente, \@doendpe redefine \par ata o fin
+% do parágrafo seguinte, e ese \par baleira \everypar. Se un \item vén
+% despois e o seu primeiro bloque é un \Needspace, a liña en branco que
+% Pandoc deixa detrás é un \par en modo vertical: executa esa versión,
+% borra o número que \item deixou en \everypar, e o número acaba ao lado
+% do bloque seguinte. Restaurar \par cando o número está pendente evítao.
+\makeatletter
+\let\mdpdf@Needspace\Needspace
+\renewcommand{\Needspace}{%
+  \ifvmode\if@inlabel\@restorepar\fi\fi
+  \mdpdf@Needspace}
+\makeatother
 % ── Hifenación multilingüe ──────────────────────────────────
 \tolerance=1500
 \hbadness=1500
@@ -326,7 +338,7 @@
   \sloppy\hbadness=9999\emergencystretch=3em%
 }
 \makeatother
-% ── Índice (opción B centrada: caixa restrinxida sen puntos guía) ─────
+% ── Índice (caixa centrada ao 80 % do texto, sen puntos guía) ─────────
 \AtBeginDocument{%
   \DeclareTOCStyleEntry[
     beforeskip=1.1em plus 1pt,
@@ -350,8 +362,8 @@
   \renewcommand{\tableofcontents}{%
     % A lista conserva a largura centrada e admite saltos de páxina.
     \begin{list}{}{%
-      \setlength{\leftmargin}{0.16\linewidth}%
-      \setlength{\rightmargin}{0.16\linewidth}%
+      \setlength{\leftmargin}{0.10\linewidth}%
+      \setlength{\rightmargin}{0.10\linewidth}%
       \setlength{\labelwidth}{0pt}%
       \setlength{\labelsep}{0pt}%
       \setlength{\topsep}{0pt}%
@@ -385,6 +397,21 @@
 \DeclareRobustCommand{\iconpencil}{{\color{orange!70!black}\scalebox{0.9}{\faIcon{pencil-alt}}}}
 \DeclareRobustCommand{\icontrophy}{{\color{orange!80!black}\scalebox{0.9}{\faTrophy}}}
 \DeclareRobustCommand{\iconban}{{\color{red!70!black}\faBan}}
+% ── Ficheiros adxuntos (attach.lua) ───────────────────────────
+% [texto](ruta){.attach}: o ficheiro vai no PDF, tamén entre os adxuntos do
+% documento (embedfile, desde attach.lua). O texto e a icona do clip
+% van no contido da páxina, e por riba deles, unha anotación do mesmo tamaño
+% cunha aparencia baleira. \textattachfile só debuxaría o texto dentro da
+% anotación: un visor que non a amosa perdería tamén o nome do ficheiro.
+\usepackage{embedfile}
+\usepackage{attachfile2}
+\DeclareRobustCommand{\mdattachicon}{{\color{inline-fg}\small\faPaperclip}}
+\newsavebox{\mdattachbox}
+\newcommand{\mdattachfile}[3]{%
+  \leavevmode
+  \sbox{\mdattachbox}{#3\,\mdattachicon}%
+  \rlap{\usebox{\mdattachbox}}%
+  \textattachfile[#1]{#2}{\phantom{\usebox{\mdattachbox}}}}
 % ── Formularios interactivos (AcroForms) ──────────────────────
 \providecommand{\mdpdftaskborder}{0.75 0.75 0.75}
 \providecommand{\mdpdftaskbg}{1 1 1}

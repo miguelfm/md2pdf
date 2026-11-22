@@ -1,64 +1,64 @@
-# Exemplos de Vega-Lite
+# Vega-Lite examples
 
-## Histograma
+## Histogram
 
-```{.vega-lite width=85% caption="Histograma"}
+```{.vega-lite width=85% caption="Histogram"}
 {
   "data": {
     "values": [
       {
-        "tempo": 12
+        "time": 12
       },
       {
-        "tempo": 15
+        "time": 15
       },
       {
-        "tempo": 15
+        "time": 15
       },
       {
-        "tempo": 18
+        "time": 18
       },
       {
-        "tempo": 22
+        "time": 22
       },
       {
-        "tempo": 24
+        "time": 24
       },
       {
-        "tempo": 25
+        "time": 25
       },
       {
-        "tempo": 25
+        "time": 25
       },
       {
-        "tempo": 26
+        "time": 26
       },
       {
-        "tempo": 30
+        "time": 30
       }
     ]
   },
   "mark": "bar",
   "encoding": {
     "x": {
-      "field": "tempo",
+      "field": "time",
       "type": "quantitative",
       "bin": {
         "maxbins": 5
       },
-      "title": "Tempo (ms)"
+      "title": "Time (ms)"
     },
     "y": {
       "aggregate": "count",
-      "title": "Frecuencia"
+      "title": "Frequency"
     }
   }
 }
 ```
 
-## Puntos e regresión lineal
+## Scatter plot and linear regression
 
-```{.vega-lite width=85% caption="Puntos e regresión lineal"}
+```{.vega-lite width=85% caption="Scatter plot and linear regression"}
 {
   "data": {
     "values": [
@@ -88,12 +88,12 @@
     "x": {
       "field": "x",
       "type": "quantitative",
-      "title": "Entrada"
+      "title": "Input"
     },
     "y": {
       "field": "y",
       "type": "quantitative",
-      "title": "Medición"
+      "title": "Measurement"
     }
   },
   "layer": [
@@ -119,34 +119,34 @@
 }
 ```
 
-## Gráfico de sectores
+## Pie chart
 
-```{.vega-lite width=85% caption="Gráfico de sectores"}
+```{.vega-lite width=85% caption="Pie chart"}
 {
   "data": {
     "values": [
       {
-        "tipo": "Lecturas",
-        "valor": 60
+        "type": "Reads",
+        "value": 60
       },
       {
-        "tipo": "Escrituras",
-        "valor": 25
+        "type": "Writes",
+        "value": 25
       },
       {
-        "tipo": "Outras",
-        "valor": 15
+        "type": "Other",
+        "value": 15
       }
     ]
   },
   "mark": "arc",
   "encoding": {
     "theta": {
-      "field": "valor",
+      "field": "value",
       "type": "quantitative"
     },
     "color": {
-      "field": "tipo",
+      "field": "type",
       "type": "nominal"
     }
   }

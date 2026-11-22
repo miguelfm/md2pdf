@@ -6,6 +6,12 @@ local MAX_MBOX_LEN = 15
 -- curta como `$c ? $a : $b` partida en dúas liñas cústalle lela a quen a
 -- está aprendendo. Na liña do corpo hai sitio para levala enteira á seguinte.
 local BODY_MBOX_LEN = 20
+-- Tampouco se parte, ata BODY_TOKEN_LEN caracteres, o código sen espazos nin
+-- outros puntos de corte ca o guión baixo e as parénteses, como
+-- `session_get_cookie_params()` ou `$_SERVER['REQUEST_METHOD']`: é unha soa
+-- palabra para quen le, cabe na liña, e partila no guión baixo ou despois da
+-- paréntese dificulta recoñecela. O código máis longo pode partirse aí.
+local BODY_TOKEN_LEN = 40
 local BREAK_CLASS = "[,%s/%.:=%?%-_%(;]"
 -- Táboas que caben sen partir liñas: se o ancho natural de todas as columnas
 -- (a liña máis longa de cada unha) suma como moito NATURAL_MAX_TOTAL da liña,
@@ -678,9 +684,27 @@ local function table_code(el)
   return pandoc.RawInline("latex", "\\leavevmode\\strut\\texttt{"
     .. table.concat(escaped, "\\discretionary{}{}{}") .. "}")
 end
+local function is_body_token(text)
+  return (utf8.len(text) or #text) <= BODY_TOKEN_LEN
+    and not text:match("[%s/\\%.:=%?%-,;]")
+end
+-- Unha palabra de código longa que xa non cabe ao final da liña pasa enteira
+-- á seguinte, e pode deixar un oco maior ca o que admite o aliñamento á
+-- esquerda (\RaggedRightRightskip); sen máis, TeX preferiría desbordar a
+-- marxe. Diante dela vai un punto de corte co seu propio estiramento, que só
+-- conta se se corta alí: se non, as dúas glues anúlanse.
+local TOKEN_BREAK = "\\hskip0pt plus 8em\\penalty0\\hskip0pt plus -8em\\relax"
 local function body_code(el)
   if not FORMAT:match("latex") then return nil end
-  return code_to_latex(el, #el.text <= BODY_MBOX_LEN or is_mbox(el.text))
+  local text = el.text
+  if #text <= BODY_MBOX_LEN or is_mbox(text) then
+    return code_to_latex(el, true)
+  end
+  if is_body_token(text) then
+    return pandoc.RawInline("latex", "\\leavevmode\\strut" .. TOKEN_BREAK
+      .. "\\mbox{\\texttt{" .. escape(text) .. "}}")
+  end
+  return code_to_latex(el, false)
 end
 -- Os anchos finais poden ser menores ca os mínimos, ou vir impostos polo
 -- autor. Relaxamos só o código que non cabe e volvemos medir a táboa coas

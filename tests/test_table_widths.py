@@ -179,9 +179,32 @@ body-font: serif
         self.assertNotIn(r'\mbox{\texttt{\$c', latex)
         self.assertIn(r'?\discretionary{}{}{}', latex)
 
-    def test_long_identifier_can_split_at_underscore(self):
-        latex = self.render_latex('Texto `zend_exception_ignore_args` longo.\n')
+    def test_body_identifier_is_not_split(self):
+        for code, tex in (
+                ('session_get_cookie_params()', r'session\_get\_cookie\_params()'),
+                ("$_SERVER['REQUEST_METHOD']", r"\$\_SERVER['REQUEST\_METHOD']"),
+                ('session_regenerate_id(true)', r'session\_regenerate\_id(true)')):
+            with self.subTest(code=code):
+                latex = self.render_latex(f'Texto `{code}` longo.\n')
+                self.assertIn(r'\mbox{\texttt{' + tex + '}}', latex)
+
+    def test_table_identifier_keeps_table_rule(self):
+        # A regra das palabras de ata 40 caracteres é só do texto corrido:
+        # nunha cela, protexela obrigaría a ensanchar a columna.
+        latex = self.render_latex(
+            '| Función | Descrición |\n|---|---|\n'
+            '| `session_get_cookie_params()` | As opcións da cookie |\n')
+        self.assertNotIn(r'\mbox{\texttt{session', latex)
+
+    def test_very_long_identifier_can_split_at_underscore(self):
+        latex = self.render_latex(
+            'Texto `a_very_long_identifier_with_more_than_forty_chars` longo.\n')
         self.assertIn(r'\_\discretionary{}{}{}', latex)
+
+    def test_long_body_path_keeps_break_points(self):
+        latex = self.render_latex('Texto `/var/lib/php/sessions/sess_abc` longo.\n')
+        self.assertNotIn(r'\mbox{\texttt{/var', latex)
+        self.assertIn(r'/\discretionary{}{}{}', latex)
 
     def test_manual_narrow_column_relaxes_short_identifier(self):
         latex = self.render_latex(
@@ -267,6 +290,36 @@ class TableWidthPdfTests(unittest.TestCase):
                                   capture_output=True, text=True).stdout
         for word in ('Enteiro', 'Decimal', 'Booleano'):
             self.assertIn(word, text)
+
+    def test_long_body_token_moves_to_next_line_inside_margin(self):
+        # Casos da U2T3 e da U2T5 de DWCS: a palabra enteira non cabía ao
+        # final da liña, e TeX desbordaba a marxe antes que deixar o oco.
+        text = (
+            '4. Por que coa versión orixinal pasaban os casos '
+            "`ean13CheckDigit('841234567890')` e "
+            "`isValidEan13('8412345678905')`?\n\n"
+            'A caixa do reembolso só se comproba coa presenza: '
+            "`isset($post['chkRefund'])`.\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            src, pdf = Path(tmp) / 'token.md', Path(tmp) / 'token.pdf'
+            src.write_text(text, encoding='utf-8')
+            run = subprocess.run(
+                [sys.executable, '-m', 'md2pdf', '--no-toc', '-o', str(pdf),
+                 str(src)], cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            bbox = subprocess.run(['pdftotext', '-bbox', str(pdf), '-'],
+                                  capture_output=True, text=True, check=True)
+        root = ET.fromstring(bbox.stdout)
+        page = next(root.iter('{http://www.w3.org/1999/xhtml}page'))
+        right = float(page.get('width')) - 62.36 + 0.5   # marxe de 22 mm
+        words = {w.text: float(w.get('xMax'))
+                 for w in root.iter('{http://www.w3.org/1999/xhtml}word')}
+        for word in ("ean13CheckDigit('841234567890')",
+                     "isset($post['chkRefund']).",
+                     "isValidEan13('8412345678905')?"):
+            with self.subTest(word=word):
+                self.assertIn(word, words)
+                self.assertLessEqual(words[word], right)
 
     def test_identifier_column_keeps_each_row_on_one_line(self):
         with tempfile.TemporaryDirectory() as tmp:
