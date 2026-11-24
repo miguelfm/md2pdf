@@ -109,13 +109,13 @@ tlmgr install collection-luatex collection-latexextra collection-fontsextra coll
 Additional packages that may be needed:
 
 ```powershell
-tlmgr install babel-galician hyphen-galician babel-english footnotebackref footnotehyper mdwtools zref luatexbase koma-script tcolorbox fontawesome5 fvextra needspace stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl setspace ragged2e
+tlmgr install babel-galician hyphen-galician babel-english footnotebackref footnotehyper mdwtools zref luatexbase koma-script tcolorbox fontawesome5 fvextra needspace stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl setspace ragged2e pdfcrop
 ```
 
 For a more selective installation, the existing project dependency list is:
 
 ```powershell
-tlmgr install fontspec tcolorbox fontawesome5 fvextra needspace etoolbox microtype csquotes koma-script geometry hyperref graphicx fancyvrb babel babel-spanish babel-english babel-galician hyphen-spanish hyphen-english hyphen-galician footnotebackref footnotehyper mdwtools zref luatexbase luaotfload unicode-math amsmath tools booktabs longtable caption float xcolor environ trimspaces ly1 mweights footmisc pagecolor mdframed setspace lineno fancyhdr lastpage eso-pic stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl array multirow enumitem polyglossia tagpdf ragged2e
+tlmgr install fontspec tcolorbox fontawesome5 fvextra needspace etoolbox microtype csquotes koma-script geometry hyperref graphicx fancyvrb babel babel-spanish babel-english babel-galician hyphen-spanish hyphen-english hyphen-galician footnotebackref footnotehyper mdwtools zref luatexbase luaotfload unicode-math amsmath tools booktabs longtable caption float xcolor environ trimspaces ly1 mweights footmisc pagecolor mdframed setspace lineno fancyhdr lastpage eso-pic stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl array multirow enumitem polyglossia tagpdf ragged2e pdfcrop
 ```
 
 For a missing `xxx.sty`, search its owning package and install it:
@@ -274,6 +274,20 @@ A legacy Windows console encoding such as cp1252 cannot represent every Unicode 
 
 ```powershell
 [Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "User")
+```
+
+### Graphviz diagrams at full width, or `UnicodeDecodeError` from `pdfinfo`
+
+Cairo 1.18 in Graphviz for Windows stores the page of a diagram in a compressed object stream, so md2pdf cannot read its size directly. It measures it with PyMuPDF and, failing that, with Poppler's `pdfinfo`. `pdfinfo` writes the creation date with the localized time zone in the ANSI code page (`Hora estándar romance` in cp1252), which Python's UTF-8 mode cannot decode. Before the fix, a reader thread printed `UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe1` and the diagram silently fell back to the full text width. Update the checkout and reinstall:
+
+```powershell
+python install-md2pdf.py
+```
+
+Install PyMuPDF in the launcher's interpreter (step 2 does) and the `pdfcrop` TeX package from an administrator PowerShell, so that diagrams are cropped as on Linux:
+
+```powershell
+tlmgr install pdfcrop
 ```
 
 ### `File 'xxx.sty' not found`

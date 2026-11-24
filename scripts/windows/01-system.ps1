@@ -42,7 +42,7 @@ if (-not (Get-Command lualatex.exe -ErrorAction SilentlyContinue)) {
 Refresh-Path
 if (-not (Get-Command tlmgr -ErrorAction SilentlyContinue)) { throw 'Non se atopa tlmgr. Abre outro terminal e executa de novo este script.' }
 Invoke-Checked 'tlmgr' @('update','--self')
-$packages = ('fontspec tcolorbox fontawesome5 fvextra needspace etoolbox microtype csquotes koma-script geometry hyperref graphicx fancyvrb babel babel-spanish babel-english babel-galician hyphen-spanish hyphen-english hyphen-galician footnotebackref footnotehyper mdwtools zref luatexbase luaotfload unicode-math amsmath tools booktabs longtable caption float xcolor environ trimspaces ly1 mweights footmisc pagecolor mdframed setspace lineno fancyhdr lastpage eso-pic stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl multirow enumitem polyglossia tagpdf xurl listings').Split(' ')
+$packages = ('fontspec tcolorbox fontawesome5 fvextra needspace etoolbox microtype csquotes koma-script geometry hyperref graphicx fancyvrb babel babel-spanish babel-english babel-galician hyphen-spanish hyphen-english hyphen-galician footnotebackref footnotehyper mdwtools zref luatexbase luaotfload unicode-math amsmath tools booktabs longtable caption float xcolor environ trimspaces ly1 mweights footmisc pagecolor mdframed setspace lineno fancyhdr lastpage eso-pic stix2-otf framed selnolig pdfcol tikzfill adjustbox titling colortbl multirow enumitem polyglossia tagpdf xurl listings pdfcrop').Split(' ')
 Invoke-Checked 'tlmgr' (@('install') + $packages + @('ragged2e'))
 
 # Download official release archives; install static fonts for all users.

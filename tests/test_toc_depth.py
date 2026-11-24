@@ -64,7 +64,8 @@ class TocPaginationTests(unittest.TestCase):
                 self.assertIn('Índice', first)
                 self.assertIn('Tema 0', first)
                 self.assertGreaterEqual(text.count(f'Tema {count - 1}'), 2)
-                info = subprocess.check_output(['pdfinfo', str(pdf)], text=True)
+                info = subprocess.check_output(['pdfinfo', str(pdf)], text=True,
+                                               encoding='utf-8', errors='replace')
                 pages = int(info.split('Pages:')[1].splitlines()[0])
                 self.assertLess(pages, 30)
 

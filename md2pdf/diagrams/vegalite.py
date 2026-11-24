@@ -75,6 +75,7 @@ class VegaLiteRenderer(BaseRenderer):
             result = subprocess.run(
                 command,
                 stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                encoding='utf-8', errors='replace',
                 timeout=context.timeout, cwd=context.source_dir)
             if result.returncode:
                 return 'Vega-Lite: ' + (result.stderr or result.stdout).strip()[:500]

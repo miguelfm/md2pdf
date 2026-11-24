@@ -44,9 +44,24 @@ def natural_size_px(path: Path, fmt: str) -> tuple[float, float] | None:
                 w, h = abs(x1 - x0), abs(y1 - y0)
                 if w > 0 and h > 0:
                     return w / 0.75, h / 0.75
+            # O cairo de Graphviz en Windows (1.18) garda a páxina nun fluxo
+            # de obxectos comprimido, onde as expresións non a ven.
+            try:
+                import pymupdf
+                with pymupdf.open(path) as document:
+                    rect = document[0].rect
+                if rect.width > 0 and rect.height > 0:
+                    return rect.width / 0.75, rect.height / 0.75
+            except Exception:
+                pass
+            # pdfinfo escribe a data co fuso horario do sistema e na súa
+            # codificación: en Windows, «Hora estándar romance» en cp1252.
+            # Co modo UTF-8 de Python, ler esa liña como texto rompía a
+            # lectura nun fío aparte e o diagrama quedaba ao 100 % do ancho.
             try:
                 proc = subprocess.run(['pdfinfo', str(path)], stdout=subprocess.PIPE,
-                                      stderr=subprocess.DEVNULL, text=True, timeout=2)
+                                      stderr=subprocess.DEVNULL, text=True,
+                                      encoding='utf-8', errors='replace', timeout=2)
                 if proc.returncode == 0:
                     m = re.search(r'Page size:\s*([-\d.]+)\s*x\s*([-\d.]+)', proc.stdout)
                     if m:

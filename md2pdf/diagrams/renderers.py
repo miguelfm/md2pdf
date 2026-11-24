@@ -44,6 +44,9 @@ def _run(command: list[str], timeout: int, env: dict[str, str] | None = None,
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
+            # As mensaxes dos programas de Windows poden vir en cp1252
+            encoding='utf-8',
+            errors='replace',
             timeout=timeout,
             env=env,
             cwd=cwd,
@@ -67,7 +70,8 @@ def _mmdc_supports_pdf_fit(executable: str) -> bool:
     """
     try:
         result = subprocess.run([executable, '--help'], stdin=subprocess.DEVNULL,
-                                capture_output=True, text=True, timeout=30)
+                                capture_output=True, text=True, encoding='utf-8',
+                                errors='replace', timeout=30)
     except (OSError, subprocess.TimeoutExpired):
         return True
     return '--pdfFit' in (result.stdout + result.stderr)

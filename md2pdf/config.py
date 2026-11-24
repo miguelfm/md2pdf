@@ -62,7 +62,8 @@ def _detect_font(role: str) -> str:
         try:
             result = subprocess.run(
                 ['luaotfload-tool', f'--find={name}'],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True, text=True, encoding='utf-8', errors='replace',
+                timeout=10,
             )
             if 'found!' in result.stdout.lower():
                 _font_cache[role] = name
@@ -148,7 +149,8 @@ def _pandoc_version() -> tuple[int, ...]:
     if _pandoc_version_cache is None:
         try:
             first = subprocess.run(
-                ['pandoc', '--version'], capture_output=True, text=True, timeout=10,
+                ['pandoc', '--version'], capture_output=True, text=True,
+                encoding='utf-8', errors='replace', timeout=10,
             ).stdout.splitlines()[0]
             _pandoc_version_cache = tuple(
                 int(part) for part in first.split()[1].split('.') if part.isdigit()

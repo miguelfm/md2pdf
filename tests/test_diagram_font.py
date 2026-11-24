@@ -82,8 +82,10 @@ class GraphvizFontTests(unittest.TestCase):
                          if span['text'].strip()]
             self.assertTrue(spans)
             self.assertEqual({size for _, size in spans}, {TARGET_FONT_PT})
-            if 'SourceSans3' in subprocess.run(['fc-match', '-f', '%{file}', 'Source Sans 3'],
-                                               capture_output=True, text=True).stdout:
+            # fc-match (fontconfig) non existe en Windows
+            if shutil.which('fc-match') and 'SourceSans3' in subprocess.run(
+                    ['fc-match', '-f', '%{file}', 'Source Sans 3'],
+                    capture_output=True, text=True).stdout:
                 self.assertTrue(all(font.startswith('SourceSans3') for font, _ in spans), spans)
 
     def test_font_name_is_not_parsed_as_size(self):
